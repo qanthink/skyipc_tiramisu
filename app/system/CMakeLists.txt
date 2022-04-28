@@ -1,0 +1,10 @@
+add_subdirectory(sensor)
+add_subdirectory(vif)
+add_subdirectory(vpe)
+add_subdirectory(venc)
+add_subdirectory(sys)
+add_subdirectory(audio_ai)
+add_subdirectory(audio_ao)
+add_subdirectory(rgn)
+add_subdirectory(ircut)
+

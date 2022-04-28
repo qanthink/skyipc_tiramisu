@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/linux/Workspace/mindsoft/mindcam/mindpub/libconfig/libconfig/tinytest/tinytest.c
+tinytest.h
+/home/linux/Workspace/mindsoft/mindcam/mindpub/libconfig/libconfig/tinytest/tinytest.h
+stdarg.h
+-
+stdio.h
+-
+io.h
+-
+unistd.h
+-
+
+/home/linux/Workspace/mindsoft/mindcam/mindpub/libconfig/libconfig/tinytest/tinytest.h
+setjmp.h
+-
+string.h
+-
+stdlib.h
+-
+

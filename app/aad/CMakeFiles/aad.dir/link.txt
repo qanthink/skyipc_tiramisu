@@ -1,0 +1,2 @@
+/usr/bin/ar qc libaad.a  CMakeFiles/aad.dir/aad.cpp.o
+/usr/bin/ranlib libaad.a

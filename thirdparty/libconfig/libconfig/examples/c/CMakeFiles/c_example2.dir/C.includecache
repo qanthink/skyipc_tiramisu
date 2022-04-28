@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/linux/Workspace/mindsoft/mindcam/mindpub/libconfig/libconfig/examples/c/example2.c
+stdio.h
+-
+stdlib.h
+-
+libconfig.h
+-
+
+lib/libconfig.h
+stdio.h
+-
+

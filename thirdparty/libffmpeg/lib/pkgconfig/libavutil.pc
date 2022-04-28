@@ -1,0 +1,14 @@
+prefix=/home/linux/Public/ffmpeg
+exec_prefix=${prefix}
+libdir=/home/linux/Public/ffmpeg/lib
+includedir=/home/linux/Public/ffmpeg/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 57.3.100
+Requires: 
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lavutil 
+Libs.private: -pthread -lm
+Cflags: -I${includedir}
