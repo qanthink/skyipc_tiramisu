@@ -387,7 +387,8 @@ void *routeAo(void *arg)
 		//stAudioFrame.u32Len = ret;
 		stAudioFrame.u32Len[0] = ret;
 		audioOut::getInstance()->sendStream(&stAudioFrame);
-		usleep(62 * 1000);  // 注意休眠时间，等待上一帧PCM 播放结束，再塞下一帧。
+		//usleep(62 * 1000);  // 注意休眠时间，等待上一帧PCM 播放结束，再塞下一帧。
+		usleep(31 * 1000);  // 注意休眠时间，等待上一帧PCM 播放结束，再塞下一帧。
 	}while(g_bRunning);
 
 	if(-1 != fd)

@@ -39,7 +39,7 @@ int audioOut::enable()
 	setPubAttr();
 	enableDev();
 	enableChanel();
-	setVolume(28);
+	setVolume(10);
 	bInitialized = true;
 
 	return 0;
