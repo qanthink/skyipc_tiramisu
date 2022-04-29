@@ -8,6 +8,7 @@ target_link_libraries(vpe
 	mi_vpe 
 	mi_isp 
 	cus3a
+	ispalgo
 	cam_os_wrapper
 )
 

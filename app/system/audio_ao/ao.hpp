@@ -8,9 +8,9 @@ xxx版权所有。
 
 #include "mi_ao.h"
 
-class audioOut{
+class AudioOut{
 public:
-	static audioOut *getInstance();			// 获取对象。
+	static AudioOut *getInstance();			// 获取对象。
 	int sendStream(void *pDataBuf, const unsigned int dataLen);		// 送PCM 数据到AO 模块。
 	
 	int enable();
@@ -28,10 +28,10 @@ public:
 
 private:
 	// 单例模式需要将如下4个函数声明为private 的。
-	audioOut();
-	~audioOut();
-	audioOut(const audioOut&);
-	audioOut& operator=(const audioOut&);
+	AudioOut();
+	~AudioOut();
+	AudioOut(const AudioOut&);
+	AudioOut& operator=(const AudioOut&);
 	
 	bool bInitialized = false;
 	
@@ -41,6 +41,6 @@ private:
 	const MI_AUDIO_SampleRate_e eSample = E_MI_AUDIO_SAMPLE_RATE_16000;	// 采样率
 	const MI_AUDIO_SoundMode_e eSoundmode = E_MI_AUDIO_SOUND_MODE_MONO;	// 单声道和立体声。
 	const unsigned u32PtNumPerFrm = 128 * 4;	// 每帧的采样点个数。取值范围为：128, 128*2,…,128*n.
-	const unsigned int defVol = 10;				// 默认音量。
+	const unsigned int defVol = 1;				// 默认音量。
 };
 

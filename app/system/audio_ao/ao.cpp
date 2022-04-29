@@ -10,24 +10,24 @@ xxx版权所有。
 
 using namespace std;
 
-audioOut::audioOut()
+AudioOut::AudioOut()
 {
 	enable();
 }
 
-audioOut::~audioOut()
+AudioOut::~AudioOut()
 {
 	disable();
 }
 
-audioOut* audioOut::getInstance()
+AudioOut* AudioOut::getInstance()
 {
-	static audioOut audioOut;
-	return &audioOut;
+	static AudioOut AudioOut;
+	return &AudioOut;
 };
 
 
-int audioOut::enable()
+int AudioOut::enable()
 {
 	if(bInitialized)
 	{
@@ -44,7 +44,7 @@ int audioOut::enable()
 	return 0;
 }
 
-int audioOut::disable()
+int AudioOut::disable()
 {
 	disableChanel();
 	disableDev();
@@ -80,7 +80,7 @@ MI_AUDIO_I2sConfig_t stI2sConfig;	设置I2S 工作属性
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int audioOut::setPubAttr()
+int AudioOut::setPubAttr()
 {
 	MI_AUDIO_Attr_t stAoAttr;
 	memset(&stAoAttr, 0, sizeof(MI_AUDIO_Attr_t));
@@ -115,7 +115,7 @@ int audioOut::setPubAttr()
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int audioOut::enableDev()
+int AudioOut::enableDev()
 {	
 	// MI_S32 MI_AO_Enable(MI_AUDIO_DEV AoDevId);
 	MI_S32 s32Ret = 0;
@@ -135,7 +135,7 @@ int audioOut::enableDev()
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int audioOut::disableDev()
+int AudioOut::disableDev()
 {
 	// MI_S32 MI_AO_Disable(MI_AUDIO_DEV AoDevId);
 	MI_S32 s32Ret = 0;
@@ -156,7 +156,7 @@ int audioOut::disableDev()
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int audioOut::enableChanel()
+int AudioOut::enableChanel()
 {
 	// MI_S32 MI_AO_EnableChn(MI_AUDIO_DEV AoDevId, MI_AO_CHN AoChn);
 	MI_S32 s32Ret = 0;
@@ -176,7 +176,7 @@ int audioOut::enableChanel()
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int audioOut::disableChanel()
+int AudioOut::disableChanel()
 {
 	// MI_S32 MI_AO_EnableChn(MI_AUDIO_DEV AoDevId, MI_AO_CHN AoChn);
 	MI_S32 s32Ret = 0;
@@ -196,7 +196,7 @@ int audioOut::disableChanel()
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int audioOut::sendStream(void *pDataBuf, const unsigned int dataLen)
+int AudioOut::sendStream(void *pDataBuf, const unsigned int dataLen)
 {
 	if(NULL == pDataBuf)
 	{
@@ -218,7 +218,7 @@ int audioOut::sendStream(void *pDataBuf, const unsigned int dataLen)
 	s32Ret = MI_AO_SendFrame(audioDev, audioChn, &stAudioFrame, 200);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_AO_SendFrame() in audioOut::sendStream(). s32Ret = " << s32Ret << endl;
+		cerr << "Fail to call MI_AO_SendFrame() in AudioOut::sendStream(). s32Ret = " << s32Ret << endl;
 		return s32Ret;
 	}
 
@@ -231,7 +231,7 @@ int audioOut::sendStream(void *pDataBuf, const unsigned int dataLen)
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int audioOut::setVolume(int volumeDb)
+int AudioOut::setVolume(int volumeDb)
 {
 	MI_S32 s32Ret = 0;
 	MI_AO_GainFading_e eFading = E_MI_AO_GAIN_FADING_OFF;

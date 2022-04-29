@@ -12,6 +12,7 @@ xxx版权所有。
 #include <fstream>
 #include <iostream>
 #include <string.h>
+#include <sys/fcntl.h>
 
 #include "testing.h"
 #include "venc.h"
@@ -21,7 +22,6 @@ xxx版权所有。
 #include "aad.h"
 #include "rgn.h"
 #include "avtp.h"
-#include "wifi.h"
 #include "ffmpeg.h"
 #include "live555rtsp.h"
 #include "spipanel.h"
@@ -375,7 +375,7 @@ void *routeAo(void *arg)
 		}
 
 		//cout << "Send pcm stream" << endl;
-		audioOut::getInstance()->sendStream(dataBuf, readBytes);
+		AudioOut::getInstance()->sendStream(dataBuf, readBytes);
 	}while(g_bRunning);
 
 	if(-1 != fd)

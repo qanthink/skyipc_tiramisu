@@ -5,6 +5,7 @@ sigma star版权所有。
 ----------------------------------------------------------------*/
 
 #include <iostream>
+#include <signal.h>
 
 #include "sys.h"
 #include "sensor.hpp"
@@ -16,7 +17,6 @@ sigma star版权所有。
 #include "aac.h"
 #include "aad.h"
 #include "rgn.h"
-#include "wifi.h"
 #include "avtp.h"
 #include "ircut.h"
 #include "live555rtsp.h"
