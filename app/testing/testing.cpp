@@ -356,39 +356,26 @@ void *routeAo(void *arg)
 
 	cout << "Success to call open() in routeAo()." << endl;
 
-	const unsigned int dataSize = audioOut::frameMaxSize;
-	char dataBuf[dataSize] = {0};
-	MI_AUDIO_Frame_t stAudioFrame;
-	stAudioFrame.apVirAddr[0] = dataBuf;
-	stAudioFrame.apSrcPcmVirAddr[0] = (void *)dataBuf;
-	stAudioFrame.eBitwidth = E_MI_AUDIO_BIT_WIDTH_16;
-	stAudioFrame.eSoundmode = E_MI_AUDIO_SOUND_MODE_MONO;
-	//stAudioFrame.u32SrcPcmLen = 2 * 1024;
-	stAudioFrame.u32SrcPcmLen[0] = 2 * 1024;
 	do{
-		int ret = 0;
-		//memset(&stAudioFrame, 0, sizeof(MI_AUDIO_Frame_t));
-
+		int readBytes = 0;
+		unsigned int dataBufMaxSize = 2 * 1024;
+		char dataBuf[dataBufMaxSize] = {0};
+		
 		cout << "Ready to call read() in routeAo()." << endl;
-		//ret = read(fd, stAudioFrame.apVirAddr[0], audioOut::frameMaxSize);
-		ret = read(fd, dataBuf, 2 * 1024);
-		if(-1 == ret)
+		readBytes = read(fd, dataBuf, dataBufMaxSize);
+		if(-1 == readBytes)
 		{
 			cerr << "Fail to call read(2), " << strerror(errno) << endl;
 			break;
 		}
-		else if(0 == ret)
+		else if(0 == readBytes)
 		{
 			cout << "Read file over!" << endl;
 			break;
 		}
 
 		//cout << "Send pcm stream" << endl;
-		//stAudioFrame.u32Len = ret;
-		stAudioFrame.u32Len[0] = ret;
-		audioOut::getInstance()->sendStream(&stAudioFrame);
-		//usleep(62 * 1000);  // 注意休眠时间，等待上一帧PCM 播放结束，再塞下一帧。
-		usleep(31 * 1000);  // 注意休眠时间，等待上一帧PCM 播放结束，再塞下一帧。
+		audioOut::getInstance()->sendStream(dataBuf, readBytes);
 	}while(g_bRunning);
 
 	if(-1 != fd)

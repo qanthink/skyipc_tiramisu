@@ -7,7 +7,6 @@ xxx版权所有。
 #include "ao.hpp"
 #include "string.h"
 #include "iostream"
-#include "errno.h"
 
 using namespace std;
 
@@ -38,10 +37,10 @@ int audioOut::enable()
 
 	setPubAttr();
 	enableDev();
+	setVolume(defVol);
 	enableChanel();
-	setVolume(10);
+	
 	bInitialized = true;
-
 	return 0;
 }
 
@@ -81,31 +80,26 @@ MI_AUDIO_I2sConfig_t stI2sConfig;	设置I2S 工作属性
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int audioOut::setPubAttr(MI_AUDIO_BitWidth_e eBitWidth, MI_AUDIO_SampleRate_e eSample)
+int audioOut::setPubAttr()
 {
-	MI_AUDIO_Attr_t stAttr;
-	memset(&stAttr, 0, sizeof(MI_AUDIO_Attr_t));
+	MI_AUDIO_Attr_t stAoAttr;
+	memset(&stAoAttr, 0, sizeof(MI_AUDIO_Attr_t));
 
-	stAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
-	stAttr.WorkModeSetting.stI2sConfig.bSyncClock = FALSE;
-	stAttr.WorkModeSetting.stI2sConfig.eFmt = E_MI_AUDIO_I2S_FMT_I2S_MSB;
-	stAttr.WorkModeSetting.stI2sConfig.eMclk = E_MI_AUDIO_I2S_MCLK_0;
-	stAttr.eBitwidth = eBitWidth;
-	stAttr.u32PtNumPerFrm = u32PtNumPerFrm;
-	stAttr.u32ChnCnt = u32ChnCnt;
-	stAttr.eSamplerate = eSample;
-	if(1 == u32ChnCnt)
-	{
-		stAttr.eSoundmode = E_MI_AUDIO_SOUND_MODE_MONO;
-	}
-	else if(2 == u32ChnCnt)
-	{
-		stAttr.eSoundmode = E_MI_AUDIO_SOUND_MODE_STEREO;
-	}
+	stAoAttr.u32ChnCnt = 1;
+	stAoAttr.eSamplerate = eSample;
+	stAoAttr.eBitwidth = eBitWidth;
+	stAoAttr.eSoundmode = eSoundmode;
+	stAoAttr.u32PtNumPerFrm = u32PtNumPerFrm;
+	stAoAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
+	stAoAttr.WorkModeSetting.stI2sConfig.u32TdmSlots = 0;		// 不懂。
+	stAoAttr.WorkModeSetting.stI2sConfig.bSyncClock = FALSE;	// 不懂。
+	stAoAttr.WorkModeSetting.stI2sConfig.eI2sBitWidth = eBitWidth;
+	stAoAttr.WorkModeSetting.stI2sConfig.eMclk = E_MI_AUDIO_I2S_MCLK_0;
+	stAoAttr.WorkModeSetting.stI2sConfig.eFmt = E_MI_AUDIO_I2S_FMT_I2S_MSB;
 
-	// MI_S32 MI_AO_SetPubAttr(MI_AUDIO_DEV AoDevId, MI_AUDIO_Attr_t *pstAttr);
+	// MI_S32 MI_AO_SetPubAttr(MI_AUDIO_DEV AoDevId, MI_AUDIO_Attr_t *pstAoAttr);
 	MI_S32 s32Ret = 0;
-	s32Ret = MI_AO_SetPubAttr(audioDev, &stAttr);
+	s32Ret = MI_AO_SetPubAttr(audioDev, &stAoAttr);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_AO_SetPubAttr(). s32Ret = 0x" << hex << s32Ret << endl;
@@ -202,16 +196,26 @@ int audioOut::disableChanel()
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int audioOut::sendStream(MI_AUDIO_Frame_t *pstAudioFrame)
+int audioOut::sendStream(void *pDataBuf, const unsigned int dataLen)
 {
-	if(NULL == pstAudioFrame)
+	if(NULL == pDataBuf)
 	{
 		cerr << "Fail to call sendStream(), argument has NULL value!" << endl;
 		return -1;
 	}
 
 	MI_S32 s32Ret = 0;
-	s32Ret = MI_AO_SendFrame(audioDev, audioChn, pstAudioFrame, -1);
+	MI_AUDIO_Frame_t stAudioFrame;
+	memset(&stAudioFrame, 0, sizeof(MI_AUDIO_Frame_t));
+
+	stAudioFrame.apVirAddr[0] = pDataBuf;
+	stAudioFrame.u32Len[0] = dataLen;
+	stAudioFrame.apSrcPcmVirAddr[0] = pDataBuf;
+	stAudioFrame.u32SrcPcmLen[0] = 2 * 1024;
+	stAudioFrame.eBitwidth = eBitWidth;
+	stAudioFrame.eSoundmode = eSoundmode;
+	
+	s32Ret = MI_AO_SendFrame(audioDev, audioChn, &stAudioFrame, 200);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_AO_SendFrame() in audioOut::sendStream(). s32Ret = " << s32Ret << endl;
@@ -227,22 +231,11 @@ int audioOut::sendStream(MI_AUDIO_Frame_t *pstAudioFrame)
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int audioOut::setVolume(int val)
+int audioOut::setVolume(int volumeDb)
 {
-	int valMin = -60;
-	int valMax = 30;
-	
-	if(val < valMin || val > valMax)
-	{
-		cerr << "Fail to call setVolume(), bad argument!" << endl;
-		cerr << "Volume range: [" << valMin << ", " << valMax << "]" << endl;
-	}
-
 	MI_S32 s32Ret = 0;
-	MI_AO_CHN AoChn;
-	MI_S32 s32VolumeDb;
-	MI_AO_GainFading_e eFading;
-	s32Ret = MI_AO_SetVolume(audioDev, AoChn, s32VolumeDb, eFading);
+	MI_AO_GainFading_e eFading = E_MI_AO_GAIN_FADING_OFF;
+	s32Ret = MI_AO_SetVolume(audioDev, audioChn, volumeDb, eFading);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_AO_SetVolume()." << endl;
