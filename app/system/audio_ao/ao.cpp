@@ -211,11 +211,12 @@ int AudioOut::sendStream(void *pDataBuf, const unsigned int dataLen)
 	stAudioFrame.apVirAddr[0] = pDataBuf;
 	stAudioFrame.u32Len[0] = dataLen;
 	stAudioFrame.apSrcPcmVirAddr[0] = pDataBuf;
-	stAudioFrame.u32SrcPcmLen[0] = 2 * 1024;
+	//stAudioFrame.u32SrcPcmLen[0] = 2 * 1024;
+	stAudioFrame.u32SrcPcmLen[0] = dataLen;
 	stAudioFrame.eBitwidth = eBitWidth;
 	stAudioFrame.eSoundmode = eSoundmode;
 	
-	s32Ret = MI_AO_SendFrame(audioDev, audioChn, &stAudioFrame, 200);
+	s32Ret = MI_AO_SendFrame(audioDev, audioChn, &stAudioFrame, 100);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_AO_SendFrame() in AudioOut::sendStream(). s32Ret = " << s32Ret << endl;

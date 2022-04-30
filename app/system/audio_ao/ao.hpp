@@ -40,7 +40,7 @@ private:
 	const MI_AUDIO_BitWidth_e eBitWidth = E_MI_AUDIO_BIT_WIDTH_16;		// 位宽
 	const MI_AUDIO_SampleRate_e eSample = E_MI_AUDIO_SAMPLE_RATE_16000;	// 采样率
 	const MI_AUDIO_SoundMode_e eSoundmode = E_MI_AUDIO_SOUND_MODE_MONO;	// 单声道和立体声。
-	const unsigned u32PtNumPerFrm = 128 * 4;	// 每帧的采样点个数。取值范围为：128, 128*2,…,128*n.
+	const unsigned u32PtNumPerFrm = 128 * 1;	// 每帧的采样点个数。取值范围为：128, 128*2,…,128*n.
 	const unsigned int defVol = 1;				// 默认音量。
 };
 

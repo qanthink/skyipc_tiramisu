@@ -25,7 +25,37 @@ private:
 	AudioPlayer(const AudioPlayer&);
 	AudioPlayer& operator=(const AudioPlayer&);
 
-	void *playRoute(const void *arg);
-	static void *thPlayRoute(const void *arg);
+	int playRoutePCM(const char *filePath);
+	static int thPlayRoutePCM(const char *filePath);
+	int playRouteWAV(const char *filePath);
+	static int thPlayRouteWAV(const char *filePath);
+
+	int getWavHeaderBytes(const char *filePath);
 };
+
+int readWavHead(const char *filePath);
+
+// 16 Bytes WAV FMT
+typedef struct
+{
+	signed short wFormatTag;
+	signed short wChannels;
+	unsigned int dwSamplesPerSec;
+	unsigned int dwAvgBytesPerSec;
+	signed short wBlockAlign;
+	signed short wBitsPerSample;
+}stWavFmt_t;
+
+// 36(44-8) Bytes File Header
+typedef struct
+{
+	char chRIFF[4];
+	unsigned int dwRIFFLen;
+	char chWAVE[4];
+	char chFMT[4];
+	unsigned int dwFMTLen;
+	stWavFmt_t wave;
+	//char chDATA[4];
+	//unsigned int dwDATALen;
+}stWavFileHeader_t;
 
