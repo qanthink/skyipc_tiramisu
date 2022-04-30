@@ -8,7 +8,7 @@ xxx版权所有。
 */
 
 #define RUNDE_LICENSE 0
-#define FREE_FRAME 999
+#define FREE_FRAME 100	// 100 -> 3s.
 
 #include "audio_player.h"
 
@@ -149,7 +149,7 @@ int AudioPlayer::thPlayRouteWAV(const char *filePath)
 
 /*
 	功能：	播放WAV 文件，内部实现。
-	返回：	0, 成功；-1, 参数无效；-2, 文明打开失败。
+	返回：	0, 成功；-1, 参数无效；-2, 文件打开失败；-3, 文件读取失败。
 	注意：	
 */
 int AudioPlayer::playRouteWAV(const char *filePath)
@@ -161,6 +161,7 @@ int AudioPlayer::playRouteWAV(const char *filePath)
 		return -1;
 	}
 
+	// 打开文件
 	ifstream ifs((const char *)filePath, ios::in);
 	if(ifs.fail())
 	{
@@ -169,37 +170,36 @@ int AudioPlayer::playRouteWAV(const char *filePath)
 	}
 	cout << "Success to open " << filePath << endl;
 
-	int readBytes = 0;
-	unsigned int dataBufMaxSize = 512 * 2;
-	char dataBuf[dataBufMaxSize] = {0};
-	//unsigned int wavHeaderBytes = 78;
-	//unsigned int wavHeaderBytes = 44;
+	// 获取WAV 头部字节数。
 	unsigned int wavHeaderBytes = 0;
-	
 	wavHeaderBytes = getWavHeaderBytes(filePath);
 	cout << "Wav file header Bytes = " << wavHeaderBytes << endl;
 	
-	if(!ifs.eof())
+	int readBytes = 0;
+	unsigned int dataBufMaxSize = 1024 * 1;
+	char dataBuf[dataBufMaxSize] = {0};
+	
+	ifs.read(dataBuf, wavHeaderBytes);
+	if(!ifs)
 	{
-		ifs.read(dataBuf, wavHeaderBytes);
-		if(!ifs)
-		{
-			cerr << "In AudioPlayer::playRouteWAV(): read fail." << endl;
-		}
+		cerr << "In AudioPlayer::playRouteWAV(): read fail." << endl;
+		ifs.close();
+		return -3;
 	}
 
+	// 跳过头部，循环读取音频正文。
 	int i = 0;
 	while(!ifs.eof())
 	{
-		//cout << "Ready to call read() in routeAo()." << endl;
 		ifs.read(dataBuf, dataBufMaxSize);
 		readBytes = ifs.gcount();
 		if(!ifs)
 		{
-			cout << "error: only " << readBytes << " could be read";
+			//cout << "error: only " << readBytes << " could be read";
+			cout << "read over." << endl;
 			break;
 		}
-		cout << "readBytes = " << readBytes << endl;
+		//cout << "readBytes = " << readBytes << endl;
 
 #if 0 == RUNDE_LICENSE
 		if(++i > FREE_FRAME)
@@ -208,10 +208,8 @@ int AudioPlayer::playRouteWAV(const char *filePath)
 		}
 #endif
 
-		//cout << "Send pcm stream" << endl;
 		AudioOut::getInstance()->sendStream(dataBuf, readBytes);
 	}
-
 
 	ifs.close();
 
