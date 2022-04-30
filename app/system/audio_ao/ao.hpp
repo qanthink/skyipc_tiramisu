@@ -24,7 +24,7 @@ public:
 
 	int setPubAttr();			// 设置公共属性
 	
-	int setVolume(int val);	// 设置音量
+	int setVolume(int volumeDb);	// 设置音量
 
 private:
 	// 单例模式需要将如下4个函数声明为private 的。
@@ -40,7 +40,7 @@ private:
 	const MI_AUDIO_BitWidth_e eBitWidth = E_MI_AUDIO_BIT_WIDTH_16;		// 位宽
 	const MI_AUDIO_SampleRate_e eSample = E_MI_AUDIO_SAMPLE_RATE_16000;	// 采样率
 	const MI_AUDIO_SoundMode_e eSoundmode = E_MI_AUDIO_SOUND_MODE_MONO;	// 单声道和立体声。
-	const unsigned u32PtNumPerFrm = 128 * 1;	// 每帧的采样点个数。取值范围为：128, 128*2,…,128*n.
-	const unsigned int defVol = 1;				// 默认音量。
+	const unsigned int u32PtNumPerFrm = 128 * 1;	// 每帧的采样点个数。取值范围为：128, 128*2,…,128*n.
+	const int defVol = 1;				// 默认音量。
 };
 

@@ -30,19 +30,18 @@ AudioIn::~AudioIn()
 
 int AudioIn::enable()
 {
-	setPubAttr(E_MI_AUDIO_BIT_WIDTH_16, E_MI_AUDIO_SAMPLE_RATE_16000);
+	setPubAttr();
 	enableDev();
 	enableChanel();
 	setChnOutputPortDepth(1, 3);
-	enableAed();
-	setVqeVolume(s32DefVol);
+	//enableAed();
+	setVolume(defVol);
 
 	return 0;
 }
 
 int AudioIn::disable()
 {
-	bRunning = false;
 	disableAed();
 	disableChanel();
 	disableDev();
@@ -77,36 +76,30 @@ MI_AUDIO_I2sConfig_t stI2sConfig;	设置I2S 工作属性
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int AudioIn::setPubAttr(MI_AUDIO_BitWidth_e eBitWidth, MI_AUDIO_SampleRate_e eSample)
+int AudioIn::setPubAttr()
 {
-	MI_AUDIO_Attr_t stAttr;
-	memset(&stAttr, 0, sizeof(MI_AUDIO_Attr_t));
+	MI_AUDIO_Attr_t stAiAttr;
+	memset(&stAiAttr, 0, sizeof(MI_AUDIO_Attr_t));
 
-	stAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;	// demo
-	//stAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_SLAVE;	// MI_API
-	stAttr.WorkModeSetting.stI2sConfig.eFmt = E_MI_AUDIO_I2S_FMT_I2S_MSB;
-	stAttr.WorkModeSetting.stI2sConfig.eMclk = E_MI_AUDIO_I2S_MCLK_0;
-	stAttr.eBitwidth = eBitWidth;
-	stAttr.u32ChnCnt = u32ChnCnt;
-	stAttr.eSamplerate = eSample;
-	//stAttr.u32PtNumPerFrm = u32PtNumPerFrm;			// for aec	// MI_API
-	//stAttr.u32PtNumPerFrm = stAttr.eSamplerate / 16;	// for aec	// demo
-	stAttr.u32PtNumPerFrm = 1024;	// for aec	// demo
-	if(1 == u32ChnCnt)
-	{
-		stAttr.eSoundmode = E_MI_AUDIO_SOUND_MODE_MONO;
-	}
-	else if(2 == u32ChnCnt)
-	{
-		stAttr.eSoundmode = E_MI_AUDIO_SOUND_MODE_STEREO;
-	}
+	stAiAttr.u32ChnCnt = 1;
+	stAiAttr.eBitwidth = eBitWidth;
+	stAiAttr.eSamplerate = eSample;
+	stAiAttr.eSoundmode = eSoundmode;
+	stAiAttr.u32PtNumPerFrm = u32PtNumPerFrm;				// demo
+	stAiAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;	// demo
+	//stAiAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_SLAVE; // MI_API DOC
+	//stAiAttr.u32PtNumPerFrm = stAiAttr.eSamplerate / 16;	// for aec
+		
+	//stAiAttr.WorkModeSetting.stI2sConfig.eFmt = E_MI_AUDIO_I2S_FMT_I2S_MSB;
+	//stAiAttr.WorkModeSetting.stI2sConfig.eMclk = E_MI_AUDIO_I2S_MCLK_0;
 
-	// MI_S32 MI_AI_SetPubAttr(MI_AUDIO_DEV AIDevId, MI_AUDIO_Attr_t *pstAttr);
+	// MI_S32 MI_AI_SetPubAttr(MI_AUDIO_DEV AIDevId, MI_AUDIO_Attr_t *pstAiAttr);
 	MI_S32 s32Ret = 0;
-	s32Ret = MI_AI_SetPubAttr(audioDev, &stAttr);
+	s32Ret = MI_AI_SetPubAttr(audioDev, &stAiAttr);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_AI_SetPubAttr(). s32Ret = 0x" << hex << s32Ret << endl;
+		return s32Ret;
 	}
 	cout << "Success to call MI_AI_SetPubAttr()." << endl;
 	
@@ -114,7 +107,7 @@ int AudioIn::setPubAttr(MI_AUDIO_BitWidth_e eBitWidth, MI_AUDIO_SampleRate_e eSa
 }
 
 /*-----------------------------------------------------------------------------
-描--述：设置MI 系统通道输出端口的深度。
+描--述：设置AI 通道输出端口的队列深度。
 参--数：
 返回值：
 注--意：
@@ -124,21 +117,21 @@ int AudioIn::setChnOutputPortDepth(MI_U32 u32UserFrameDepth, MI_U32 u32BufQueueD
 	MI_SYS_ChnPort_t stChnOutputPort;
 	memset(&stChnOutputPort, 0, sizeof(MI_SYS_ChnPort_t));
 
-	
 	stChnOutputPort.eModId = E_MI_MODULE_ID_AI;
 	stChnOutputPort.u32DevId = audioDev;
 	stChnOutputPort.u32ChnId = audioChn;
 	stChnOutputPort.u32PortId = 0;
 
 	MI_S32 s32Ret = 0;
-	// MI_S32 MI_SYS_SetChnOutputPortDepth(MI_SYS_ChnPort_t *pstChnPort , MI_U32 u32UserFrameDepth , MI_U32 u32BufQueueDepth);
-	MI_U16 u16SocId;
+	MI_U16 u16SocId = 0;		// default ID = 0; demo.
 	s32Ret = MI_SYS_SetChnOutputPortDepth(u16SocId, &stChnOutputPort, u32UserFrameDepth, u32BufQueueDepth);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_SYS_SetChnOutputPortDepth(). s32Ret = 0x" << hex << s32Ret << endl;
+		return s32Ret;
 	}
-	
+
+	cout << "Success to call AudioIn::setChnOutputPortDepth()." << endl;
 	return s32Ret;
 }
 
@@ -266,8 +259,7 @@ int AudioIn::enableAed()
 		cerr << "Fail to call MI_AI_EnableAed(). s32Ret = 0x" << hex << s32Ret << endl;
 		return s32Ret;
 	}
-	
-	enAed = true;
+
 	return s32Ret;
 }
 
@@ -279,8 +271,6 @@ int AudioIn::enableAed()
 -----------------------------------------------------------------------------*/
 int AudioIn::disableAed()
 {
-	enAed = false;
-
 	// MI_S32 MI_AI_DisableAed(MI_AUDIO_DEV AiDevId, MI_AI_CHN AiChn);
 	MI_S32 s32Ret = 0;
 	s32Ret = MI_AI_DisableAed(audioDev, audioChn);
@@ -313,6 +303,7 @@ int AudioIn::recvStream(stAIFrame_t *pstAIFrame)
 	memset(&stAudioFrame, 0, sizeof(MI_AUDIO_Frame_t));
 	memset(&stAecFrame, 0, sizeof(MI_AUDIO_AecFrame_t));
 	s32Ret = MI_AI_GetFrame(audioDev, audioChn, &stAudioFrame, &stAecFrame, -1);
+	//s32Ret = MI_AI_GetFrame(audioDev, audioChn, &stAudioFrame, &stAecFrame, 100);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_AI_GetFrame(). s32Ret = 0x" << hex << s32Ret << endl;
@@ -336,12 +327,10 @@ int AudioIn::recvStream(stAIFrame_t *pstAIFrame)
 
 	// 拷贝数据到用户层。
 	memset(pstAIFrame, 0, sizeof(stAIFrame_t));
-	pstAIFrame->eBitWidth = stAudioFrame.eBitwidth;
-	pstAIFrame->eSoundmode = stAudioFrame.eSoundmode;
 	pstAIFrame->u64TimeStamp = stAudioFrame.u64TimeStamp;
 	//pstAIFrame->u32Len = stAudioFrame.u32SrcPcmLen;
-	//memcpy(pstAIFrame->apFrameBuf, stAudioFrame.apSrcPcmVirAddr[0], stAudioFrame.u32SrcPcmLen);
 	pstAIFrame->u32Len = stAudioFrame.u32SrcPcmLen[0];
+	//memcpy(pstAIFrame->apFrameBuf, stAudioFrame.apSrcPcmVirAddr[0], stAudioFrame.u32SrcPcmLen);
 	memcpy(pstAIFrame->apFrameBuf, stAudioFrame.apSrcPcmVirAddr[0], stAudioFrame.u32SrcPcmLen[0]);
 	pstAIFrame->bAcousticEventDetected = stAedResult.bAcousticEventDetected;
 	pstAIFrame->bLoudSoundDetected = stAedResult.bLoudSoundDetected;
@@ -358,17 +347,15 @@ int AudioIn::recvStream(stAIFrame_t *pstAIFrame)
 
 /*-----------------------------------------------------------------------------
 描--述：设置音量。
-参--数：val, 音量值，取值范围[0, 21].
+参--数：volumeDb, 音量值，取值范围[0, 21].
 		针对Amic, 映射的增益值为[-6, 57]; 帧对Line in, 映射的增益值为[-6, 15]
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int AudioIn::setVqeVolume(int val)
-{	
-	// MI_S32 MI_AI_SetVqeVolume(MI_AUDIO_DEV AiDevId, MI_AI_CHN AiChn, MI_S32 s32VolumeDb);
+int AudioIn::setVolume(int volumeDb)
+{
 	MI_S32 s32Ret = 0;
-	
-	s32Ret = MI_AI_SetVqeVolume(audioDev, audioChn, val);
+	s32Ret = MI_AI_SetVqeVolume(audioDev, audioChn, volumeDb);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_AI_SetVqeVolume(). s32Ret = 0x" << hex << s32Ret << endl;
