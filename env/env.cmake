@@ -26,7 +26,7 @@ SET(ToolPrefix	"arm-linux-gnueabihf-")
 
 elseif(${ToolType} STREQUAL "glibc9.1.0")	#设置glibc的路径
 message("ToolChain: glibc9.1.0")			#打印信息
-SET(ToolPath	"/home/linux/tools/toolchain/gcc-sigmastar-9.1.0-2019.11-x86_64_arm-linux-gnueabihf/bin")
+SET(ToolPath	"/home/linux/tools/toolchain/gcc-sigmastar-9.1.0-2020.07-x86_64_arm-linux-gnueabihf/bin")
 SET(ToolPrefix	"arm-linux-gnueabihf-")
 endif()
 

@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------- 
-xxx版权所有。
+qanthink 版权所有。
 作者：
 时间：2022.2.13
 ----------------------------------------------------------------*/
@@ -8,7 +8,7 @@ xxx版权所有。
 */
 
 #define RUNDE_LICENSE 0
-#define FREE_FRAME 100	// 100 -> 3s.
+#define FREE_COUNT 3	// 100 -> 3s.
 
 #include "audio_player.h"
 
@@ -74,6 +74,16 @@ int AudioPlayer::playRoutePCM(const char *filePath)
 		return -1;
 	}
 
+#if 0 == RUNDE_LICENSE
+	static int i = 0;
+	++i;
+	if(i > FREE_COUNT)
+	{
+		cout << "Copyright by qanthink@163.com." << endl;
+		return -3;
+	}
+#endif
+
 	ifstream ifs((const char *)filePath, ios::in);
 	if(ifs.fail())
 	{
@@ -82,7 +92,6 @@ int AudioPlayer::playRoutePCM(const char *filePath)
 	}
 	cout << "Success to open " << filePath << endl;
 
-	int i = 0;
 	while(!ifs.eof())
 	{
 		int readBytes = 0;
@@ -98,13 +107,6 @@ int AudioPlayer::playRoutePCM(const char *filePath)
 			break;
 		}
 		cout << "readBytes = " << readBytes << endl;
-
-#if 0 == RUNDE_LICENSE
-		if(++i > FREE_FRAME)
-		{
-			break;
-		}
-#endif
 
 		//cout << "Send pcm stream" << endl;
 		AudioOut::getInstance()->sendStream(dataBuf, readBytes);
@@ -161,6 +163,17 @@ int AudioPlayer::playRouteWAV(const char *filePath)
 		return -1;
 	}
 
+	
+#if 0 == RUNDE_LICENSE
+	static int i = 0;
+	++i;
+	if(i > FREE_COUNT)
+	{
+		cout << "Copyright by qanthink@163.com." << endl;
+		return -3;
+	}
+#endif
+
 	// 打开文件
 	ifstream ifs((const char *)filePath, ios::in);
 	if(ifs.fail())
@@ -173,7 +186,7 @@ int AudioPlayer::playRouteWAV(const char *filePath)
 	// 获取WAV 头部字节数。
 	unsigned int wavHeaderBytes = 0;
 	wavHeaderBytes = getWavHeaderBytes(filePath);
-	cout << "Wav file header Bytes = " << wavHeaderBytes << endl;
+	//cout << "Wav file header Bytes = " << wavHeaderBytes << endl;
 	
 	int readBytes = 0;
 	unsigned int dataBufMaxSize = 1024 * 1;
@@ -188,7 +201,6 @@ int AudioPlayer::playRouteWAV(const char *filePath)
 	}
 
 	// 跳过头部，循环读取音频正文。
-	int i = 0;
 	while(!ifs.eof())
 	{
 		ifs.read(dataBuf, dataBufMaxSize);
@@ -200,13 +212,6 @@ int AudioPlayer::playRouteWAV(const char *filePath)
 			break;
 		}
 		//cout << "readBytes = " << readBytes << endl;
-
-#if 0 == RUNDE_LICENSE
-		if(++i > FREE_FRAME)
-		{
-			break;
-		}
-#endif
 
 		AudioOut::getInstance()->sendStream(dataBuf, readBytes);
 	}
@@ -263,7 +268,7 @@ int AudioPlayer::getWavHeaderBytes(const char *filePath)
 		if('d' == dataBuf[0] && 'a' == dataBuf[1] && 't' == dataBuf[2] && 'a' == dataBuf[3])
 		{
 			cout << "Find format segment of 'data'" << endl;
-			cout << "This wav file has " << readBytes << " + 4 Bytes header data." << endl;
+			//cout << "This wav file has " << readBytes << " + 4 Bytes header data." << endl;
 			break;
 		}
 		//cout << dataBuf[0] << dataBuf[1] << dataBuf[2] << dataBuf[3] << endl;
@@ -302,7 +307,7 @@ int AudioPlayer::getWavHeaderBytes(const char *filePath)
 	realBytes |= dataBuf[1];
 	realBytes <<= 8;
 	realBytes |= dataBuf[0];
-	cout << "This wav file has " << dec << realBytes << " Bytes audio data." << endl;
+	//cout << "This wav file has " << dec << realBytes << " Bytes audio data." << endl;
 
 	ifs.close();
 	return readBytes;
