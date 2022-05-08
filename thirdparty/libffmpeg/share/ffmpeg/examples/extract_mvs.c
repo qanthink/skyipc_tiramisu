@@ -22,7 +22,6 @@
  */
 
 #include <libavutil/motion_vector.h>
-#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 
 static AVFormatContext *fmt_ctx = NULL;
@@ -79,7 +78,7 @@ static int open_codec_context(AVFormatContext *fmt_ctx, enum AVMediaType type)
     int ret;
     AVStream *st;
     AVCodecContext *dec_ctx = NULL;
-    const AVCodec *dec = NULL;
+    AVCodec *dec = NULL;
     AVDictionary *opts = NULL;
 
     ret = av_find_best_stream(fmt_ctx, type, -1, -1, &dec, 0);
@@ -105,9 +104,7 @@ static int open_codec_context(AVFormatContext *fmt_ctx, enum AVMediaType type)
 
         /* Init the video decoder */
         av_dict_set(&opts, "flags2", "+export_mvs", 0);
-        ret = avcodec_open2(dec_ctx, dec, &opts);
-        av_dict_free(&opts);
-        if (ret < 0) {
+        if ((ret = avcodec_open2(dec_ctx, dec, &opts)) < 0) {
             fprintf(stderr, "Failed to open %s codec\n",
                     av_get_media_type_string(type));
             return ret;

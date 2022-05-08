@@ -1,0 +1,14 @@
+prefix=/home/linux/Workspace/skytools/ffmpeg/build_result/ffmpeg_g9.1.0
+exec_prefix=${prefix}
+libdir=/home/linux/Workspace/skytools/ffmpeg/build_result/ffmpeg_g9.1.0/lib
+includedir=/home/linux/Workspace/skytools/ffmpeg/build_result/ffmpeg_g9.1.0/include
+
+Name: libswresample
+Description: FFmpeg audio resampling library
+Version: 3.3.100
+Requires: libavutil >= 56.22.100
+Requires.private: 
+Conflicts:
+Libs: -L${libdir}  -lswresample -lm
+Libs.private: 
+Cflags: -I${includedir}

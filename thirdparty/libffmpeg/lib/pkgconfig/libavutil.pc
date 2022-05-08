@@ -1,14 +1,14 @@
-prefix=/home/linux/Public/ffmpeg
+prefix=/home/linux/Workspace/skytools/ffmpeg/build_result/ffmpeg_g9.1.0
 exec_prefix=${prefix}
-libdir=/home/linux/Public/ffmpeg/lib
-includedir=/home/linux/Public/ffmpeg/include
+libdir=/home/linux/Workspace/skytools/ffmpeg/build_result/ffmpeg_g9.1.0/lib
+includedir=/home/linux/Workspace/skytools/ffmpeg/build_result/ffmpeg_g9.1.0/include
 
 Name: libavutil
 Description: FFmpeg utility library
-Version: 57.3.100
+Version: 56.22.100
 Requires: 
 Requires.private: 
 Conflicts:
-Libs: -L${libdir}  -lavutil 
-Libs.private: -pthread -lm
+Libs: -L${libdir}  -lavutil -pthread -lm
+Libs.private: 
 Cflags: -I${includedir}

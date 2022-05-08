@@ -1,14 +1,14 @@
-prefix=/home/linux/Public/ffmpeg
+prefix=/home/linux/Workspace/skytools/ffmpeg/build_result/ffmpeg_g9.1.0
 exec_prefix=${prefix}
-libdir=/home/linux/Public/ffmpeg/lib
-includedir=/home/linux/Public/ffmpeg/include
+libdir=/home/linux/Workspace/skytools/ffmpeg/build_result/ffmpeg_g9.1.0/lib
+includedir=/home/linux/Workspace/skytools/ffmpeg/build_result/ffmpeg_g9.1.0/include
 
 Name: libavcodec
 Description: FFmpeg codec library
-Version: 59.3.102
-Requires: 
-Requires.private: libavutil >= 57.3.100
+Version: 58.35.100
+Requires: libswresample >= 3.3.100, libavutil >= 56.22.100
+Requires.private: 
 Conflicts:
-Libs: -L${libdir}  -lavcodec 
-Libs.private: -pthread -lm
+Libs: -L${libdir}  -lavcodec -pthread -lm
+Libs.private: 
 Cflags: -I${includedir}

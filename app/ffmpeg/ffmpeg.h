@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------- 
-xxx版权所有。
+qanthink 版权所有。
 作者：
 时间：2021.8.13
 ----------------------------------------------------------------*/
@@ -21,7 +21,6 @@ extern "C" {
 #include <mutex>
 #include <thread>
 #include <condition_variable>
-#include "venc.h"
 
 /*
 主要的函数介绍：
@@ -61,29 +60,29 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt);
 设置视频时长X秒，每存够X秒的视频，就新建下一个视频。
 */
 
-class Ffmpeg{
+class Mp4Container{
 public:
-	static Ffmpeg* getInstance();
+	static Mp4Container* getInstance();
 
 	int enable();
 	int disable();
 
-	int requestIDR();
 	int sendH26xFrame(const unsigned char*const dataBuff, const unsigned int dataSize);
 	
 	double setRecordSec(double _recordSec);
 	const char *setFileSavePath(const char *path);
-	int setCodecpar(unsigned int _width, unsigned int _height, unsigned int _outFPS);
+	int setCodecPar(unsigned int _width, unsigned int _height, unsigned int _outFPS);
 
+	int isRequestIDR();
 	bool isH265VPSFrame(const unsigned char *dataBuf, unsigned int dataSize);
 	bool isH265IDRFrame(const unsigned char *dataBuf, unsigned int dataSize);
 	//bool isH265SPSFrame(const unsigned char *dataBuf, unsigned int dataSize);
 	//bool isH265PPSFrame(const unsigned char *dataBuf, unsigned int dataSize);
 private:
-	Ffmpeg();
-	~Ffmpeg();
-	Ffmpeg(const Ffmpeg&);
-	Ffmpeg& operator=(const Ffmpeg&);
+	Mp4Container();
+	~Mp4Container();
+	Mp4Container(const Mp4Container&);
+	Mp4Container& operator=(const Mp4Container&);
 
 	bool bEnable = false;
 	bool bRunning = false;		// stream 线程的运行状态。
