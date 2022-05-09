@@ -629,12 +629,12 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	返回：	成功，返回头部信息的字节数；失败，返回0.
 	注意：	调用该函数统计头部信息字节数，从而可以跳过这些字节，读取音频正文数据。
 */
-int AudioPlayer::getWavHeaderBytes(const char *filePath)
+int AudioPlayer::getMP3HeaderBytes(const char *filePath)
 {
-	cout << "Call AudioPlayer::getWavHeaderBytes()." << endl;
+	cout << "Call AudioPlayer::getMP3HeaderBytes()." << endl;
 	if(NULL == filePath)
 	{
-		cerr << "Fail to call AudioPlayer::getWavHeaderBytes(), argument has null value!" << endl;
+		cerr << "Fail to call AudioPlayer::getMP3HeaderBytes(), argument has null value!" << endl;
 		return 0;
 	}
 	
@@ -677,7 +677,7 @@ int AudioPlayer::getWavHeaderBytes(const char *filePath)
 		
 		if(!ifs)
 		{
-			cerr << "Fail to call read() in AudioPlayer::getWavHeaderBytes()." << endl;
+			cerr << "Fail to call read() in AudioPlayer::getMP3HeaderBytes()." << endl;
 			ifs.close();
 			return 0;
 		}
@@ -691,7 +691,7 @@ int AudioPlayer::getWavHeaderBytes(const char *filePath)
 	ifs.read(dataBuf, dataLen);
 	if(!ifs)
 	{
-		cerr << "Fail to call read() in AudioPlayer::getWavHeaderBytes()." << endl;
+		cerr << "Fail to call read() in AudioPlayer::getMP3HeaderBytes()." << endl;
 		ifs.close();
 		return readBytes;
 	}

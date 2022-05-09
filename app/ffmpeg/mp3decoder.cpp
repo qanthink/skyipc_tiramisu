@@ -12,6 +12,7 @@ qanthink 版权所有。
 #include "mp3decoder.h"
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 
 using namespace std;
 
@@ -68,7 +69,7 @@ int Mp3Decoder::disable()
 	return 0;
 }
 
-#if 0
+#if 1
 /*
 	功能：	
 	返回：	
@@ -82,7 +83,7 @@ int Mp3Decoder::recvPcmFrame(unsigned char*const dataBuff, const unsigned int da
 	ifstream ifs((const char *)filePath, ios::in);
 	if(!ifs)
 	{
-		cerr << "Fail to opne mp3 file " << filePath << endl;
+		cerr << "Fail to open mp3 file " << filePath << endl;
 		return -1;
 	}
 	
@@ -213,12 +214,294 @@ int Mp3Decoder::recvPcmFrame(unsigned char*const dataBuff, const unsigned int da
 
 #endif
 
-int Mp3Decoder::test()
+int Mp3Decoder::getMp3Frame4Bytes(const char *filePath, unsigned char *p4BytesData)
 {
+	ifstream ifs(filePath, ios::in);
+	if(!ifs)
+	{
+		cerr << "Fail to open file in Mp3Decoder::analyzeMp3Frame()." << endl;
+		return -1;
+	}
+
+	const unsigned int dataSize = 4;
+	char readData[dataSize] = {0};
+	bool bIsMP3FrameData = false;
+	while(!bIsMP3FrameData)
+	{
+		ifs.read(readData + 0, 1);
+		if(!ifs)
+		{
+			cerr << "Fail to call read() in Mp3Decoder::analyzeMp3Frame()." << endl;
+			break;
+		}
+		
+		if(0xFF == readData[0])
+		{
+			ifs.read(readData + 1, 1);
+			if(!ifs)
+			{
+				cerr << "Fail to call read() in Mp3Decoder::analyzeMp3Frame()." << endl;
+				break;
+			}
+		}
+		
+		bIsMP3FrameData = (0xFF == readData[0] && 0xFB == readData[1]);
+	}
+
+	if(!bIsMP3FrameData)
+	{
+		cerr << "In Mp3Decoder::analyzeMp3Frame(). Fail to analyze MP3 file." << endl;
+		ifs.close();
+		return -2;
+	}
+
+	ifs.read(readData + 2, 2);
+	if(!ifs)
+	{
+		cerr << "Fail to call read() in Mp3Decoder::analyzeMp3Frame()." << endl;
+		ifs.close();
+		return -3;
+	}
+
+	ifs.close();
+	#if 1	// debug
+	cout << "In Mp3Decoder::getMp3Frame4Bytes: get 4 bytes: " << "0x" << hex << setfill('0') << 
+		setw(2) << (int)readData[0] << setw(2) << (int)readData[1] << 
+		setw(2) << (int)readData[2] << setw(2) << (int)readData[3] << endl;
+	#endif
+
+	if(NULL == p4BytesData)
+	{
+		cerr << "In Mp3Decoder::getMp3Frame4Bytes(). Argument has null value." << endl;
+	}
+	else
+	{
+		memcpy(p4BytesData, readData, 4);
+	}
+	
 	return 0;
 }
 
-#define LOGD printf
+static unsigned int bitRateArray[16][6]
+{
+	{0, 0, 0, 0, 0, 0,},				// 0000
+	{32, 32, 32, 32, 32, 32,},
+	{64, 48, 40, 64, 48, 16,},
+	{96, 56, 48, 96, 56, 24,},
+	{128, 64, 56, 128, 64, 32,},		// 0100
+	{160, 80, 64, 160, 80, 64,},
+	{192, 96, 80, 192, 96, 80,},
+	{224, 112, 96, 224, 112, 96,},
+	{256, 128, 116, 256, 128, 64,},		// 1000
+	{288, 160, 128, 288, 160, 128,},
+	{320, 192, 160, 320, 192, 160,},
+	{352, 224, 192, 352, 224, 112,},
+	{384, 256, 224, 384, 256, 128,},	// 1100
+	{416, 320, 256, 416, 320, 256,},
+	{448, 384, 320, 448, 384, 320,},
+	{0, 0, 0, 0, 0, 0,},				// 1111
+};
+
+static float sampleRateArray[4][4]
+{
+	{11.025, 12.0, 8.0, 0.0},
+	{0.0, 0.0, 0.0, 0.0},
+	{22.05, 24.0, 16.0, 0.0},
+	{44.1, 48.0, 32.0, 0.0},
+};
+
+int Mp3Decoder::analyzeMp3Frame(const char *filePath, long long int *pRate, long long int *pChLayout, AVSampleFormat *pAvSampleFmt)
+{
+	int ret = 0;
+	const unsigned int dataSize = 4;
+	unsigned char p4BytesData[dataSize] = {0};
+
+	ret = getMp3Frame4Bytes(filePath, p4BytesData);
+	if(0 != ret)
+	{
+		cerr << "Fail to call getMp3Frame4Bytes() in Mp3Decoder::analyzeMp3Frame()." << endl;
+		return -1;
+	}
+	#if 1	// debug
+	cout << "In Mp3Decoder::analyzeMp3Frame: get 4 bytes: " << "0x" << hex << setfill('0') << 
+		setw(2) << (int)p4BytesData[0] << setw(2) << (int)p4BytesData[1] << 
+		setw(2) << (int)p4BytesData[2] << setw(2) << (int)p4BytesData[3] << endl;
+	#endif
+
+	unsigned int version = 0;			// 版本
+	unsigned int layer = 0;				// 声道数
+	bool bCRC  = false;					// CRC校验
+	unsigned int bitRate = 0;			// 比特率
+	int bitRateIndex = 0;
+	float sampleRate = 0.0;				// 采样率
+	unsigned int sampleRateIndex = 0;
+	bool bFrameLenAdj = 0;				// 帧长调整
+	unsigned int soundChMode = 0;		// 声道模式
+
+	version = ((p4BytesData[1] & 0x18) >> 3);
+	layer = ((p4BytesData[1] & 0x06) >> 1);
+	bCRC = ((p4BytesData[1] & 0x01) >> 0);
+	bitRateIndex = ((p4BytesData[2] & 0xF0) >> 4);
+	sampleRateIndex = ((p4BytesData[2] & 0x0C) >> 2);
+	bFrameLenAdj = ((p4BytesData[2] & 0x02) >> 1);
+	soundChMode = ((p4BytesData[3] & 0x0C) >> 6);
+
+	switch(version)
+	{
+		case 0:
+		{
+			cout << "version: MPEG 2.5" << endl;
+			break;
+		}
+		case 1:
+		{
+			cout << "version: undefined" << endl;
+			break;
+		}
+		case 2:
+		{
+			cout << "version: MPEG 2" << endl;
+			break;
+		}
+		case 3:
+		{
+			cout << "version: MPEG 1" << endl;
+			break;
+		}
+	}
+
+	switch(layer)
+	{
+		case 0:
+		{
+			cout << "layer: undefined" << endl;
+			break;
+		}
+		case 1:
+		{
+			cout << "layer: 3" << endl;
+			break;
+		}
+		case 2:
+		{
+			cout << "layer: 2" << endl;
+			break;
+		}
+		case 3:
+		{
+			cout << "layer: 1" << endl;
+			break;
+		}
+	}
+
+	if(bCRC)
+	{
+		cout << "CRC: true" << endl;
+	}
+	else
+	{
+		cout << "CRC: false" << endl;
+	}
+
+	int index = 0;
+	if(3 == version && 3 == layer)
+	{
+		index = 0;
+	}
+	else if(3 == version && 2 == layer)
+	{
+		index = 1;
+	}
+	else if(3 == version && 1 == layer)
+	{
+		index = 2;
+	}
+	else if(2 == version && 3 == layer)
+	{
+		index = 3;
+	}
+	else if(2 == version && 2 == layer)
+	{
+		index = 4;
+	}
+	else if(2 == version && 1 == layer)
+	{
+		index = 5;
+	}
+	else
+	{
+		index = -1;
+	}
+
+	if(-1 != index)
+	{
+		bitRate = bitRateArray[bitRateIndex][index];
+	}
+	cout << "_index: " << dec << index << endl;
+	cout << "bitRateIndex: " << (unsigned int)bitRateIndex << endl;
+	cout << "bitRate: " << bitRate << "kbps" << endl;
+
+	sampleRate = sampleRateArray[version][sampleRateIndex];
+	cout << "sampleRate : " << sampleRate << "KHz" << endl;
+
+	if(bFrameLenAdj)
+	{
+		cout << "bFrameLenAdj: " << true << endl;
+	}
+	else
+	{
+		cout << "bFrameLenAdj: " << false << endl;
+	}
+
+	switch(soundChMode)
+	{
+		case 0:
+		{
+			cout << "soundChMode: stereo." << endl;
+			break;
+		}
+		case 1:
+		{
+			cout << "soundChMode: joint stereo." << endl;
+			break;
+		}
+		case 2:
+		{
+			cout << "soundChMode: dual track." << endl;
+			break;
+		}
+		case 3:
+		{
+			cout << "soundChMode: mono." << endl;
+			break;
+		}
+	}
+
+	if(NULL != pRate)
+	{
+		*pRate = bitRate;
+	}
+
+	if(NULL != pChLayout)
+	{
+		if(3 == soundChMode)
+		{
+			*pChLayout = 1;
+		}
+		else
+		{
+			*pChLayout = 2;
+		}
+	}
+
+	if(NULL != pAvSampleFmt)
+	{
+		*pAvSampleFmt = AV_SAMPLE_FMT_FLT;
+	}
+	
+	return 0;
+}
+
 int Mp3Decoder::pcmFileResample(const char *dstPcmPath, long long int dstRate, long long int dstChLayout, AVSampleFormat dstAvSampleFmt, \
 		const char *srcPcmPath, long long int srcRate, long long int srcChLayout, AVSampleFormat srcAvSampleFmt)
 {

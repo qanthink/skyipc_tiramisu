@@ -29,8 +29,11 @@ private:
 	static int thPlayRoutePCM(const char *filePath);
 	int playRouteWAV(const char *filePath);
 	static int thPlayRouteWAV(const char *filePath);
+	int playRouteMP3(const char *filePath);
+	static int thPlayRouteMP3(const char *filePath);
 
 	int getWavHeaderBytes(const char *filePath);
+	int getMP3HeaderBytes(const char *filePath);
 };
 
 int readWavHead(const char *filePath);
