@@ -11,6 +11,8 @@ qanthink 版权所有。
 #define FREE_COUNT 3	// 100 -> 3s.
 
 #include "audio_player.h"
+#include "ffmpeg.h"
+#include "mp3decoder.h"
 
 #include <thread>
 #include <unistd.h>
@@ -75,14 +77,15 @@ int AudioPlayer::playRoutePCM(const char *filePath)
 	}
 
 #if 0 == RUNDE_LICENSE
-	static int i = 0;
-	++i;
-	if(i > FREE_COUNT)
+	static int cnt = 0;
+	++cnt;
+	if(cnt > FREE_COUNT)
 	{
 		cout << "Copyright by qanthink@163.com." << endl;
 		return -3;
 	}
 #endif
+
 
 	ifstream ifs((const char *)filePath, ios::in);
 	if(ifs.fail())
@@ -165,9 +168,9 @@ int AudioPlayer::playRouteWAV(const char *filePath)
 
 	
 #if 0 == RUNDE_LICENSE
-	static int i = 0;
-	++i;
-	if(i > FREE_COUNT)
+	static int cnt = 0;
+	++cnt;
+	if(cnt > FREE_COUNT)
 	{
 		cout << "Copyright by qanthink@163.com." << endl;
 		return -3;
@@ -559,66 +562,155 @@ int AudioPlayer::thPlayRouteMP3(const char *filePath)
 int AudioPlayer::playRouteMP3(const char *filePath)
 {
 	cout << "Call AudioPlayer::playRouteMP3()." << endl;
-	if(NULL == filePath)
+	// 打开MP3 输入文件
+	int ret = 0;
+	AVFormatContext *avFmtCtx = NULL;
+	avFmtCtx = avformat_alloc_context();
+	ret = avformat_open_input(&avFmtCtx, filePath, NULL,NULL);
+	if(ret < 0)
 	{
-		cerr << "Fail to call AudioPlayer::playRouteMP3(), argument has null value!" << endl;
+		cerr << "In Mp3Decoder::mp3ToPcm(): Fail to open file " << filePath << endl;
 		return -1;
 	}
 
-	
-#if 0 == RUNDE_LICENSE
-	static int i = 0;
-	++i;
-	if(i > FREE_COUNT)
+	// 寻找音视频流
+	ret = avformat_find_stream_info(avFmtCtx, NULL);
+	if(ret < 0)
 	{
-		cout << "Copyright by qanthink@163.com." << endl;
-		return -3;
-	}
-#endif
-
-	// 打开文件
-	ifstream ifs((const char *)filePath, ios::in);
-	if(ifs.fail())
-	{
-		cerr << "Fail to open file: " << filePath << ". " << strerror(errno) << endl;
+		cerr << "In Mp3Decoder::mp3ToPcm(): Cannot find any stream in file." << endl;
 		return -2;
 	}
-	cout << "Success to open " << filePath << endl;
 
-	// 获取MP3 头部字节数。
-	unsigned int wavHeaderBytes = 0;
-	wavHeaderBytes = getWavHeaderBytes(filePath);
-	//cout << "Wav file header Bytes = " << wavHeaderBytes << endl;
-	
-	int readBytes = 0;
-	unsigned int dataBufMaxSize = 1024 * 1;
-	char dataBuf[dataBufMaxSize] = {0};
-	
-	ifs.read(dataBuf, wavHeaderBytes);
-	if(!ifs)
-	{
-		cerr << "In AudioPlayer::playRouteMP3(): read fail." << endl;
-		ifs.close();
-		return -3;
-	}
+	// dump 流信息。
+	av_dump_format(avFmtCtx, 0, filePath, 0);
 
-	// 跳过头部，循环读取音频正文。
-	while(!ifs.eof())
+	// 寻找音频流索引值
+	int i = 0;
+	int audioStreamIndex = -1;
+	for(i = 0; i < avFmtCtx->nb_streams; ++i)
 	{
-		ifs.read(dataBuf, dataBufMaxSize);
-		readBytes = ifs.gcount();
-		if(!ifs)
+		if(AVMEDIA_TYPE_AUDIO == avFmtCtx->streams[i]->codecpar->codec_type)
 		{
-			//cout << "error: only " << readBytes << " could be read";
-			cout << "read over." << endl;
+			audioStreamIndex = i;
 			break;
 		}
-		//cout << "readBytes = " << readBytes << endl;
-
-		AudioOut::getInstance()->sendStream(dataBuf, readBytes);
+	}
+	
+	if(-1 == audioStreamIndex)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find audio stream.\n" << endl;
+		return -2;
 	}
 
-	ifs.close();
+	// 根据音频流寻找解码器。
+	AVCodec *codec = NULL;
+	AVCodecParameters *aCodecPara = NULL;
+	
+	aCodecPara = avFmtCtx->streams[audioStreamIndex]->codecpar;
+	codec = avcodec_find_decoder(aCodecPara->codec_id);
+	if(!codec)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find any codec for audio." << endl;
+		return -2;
+	}
+
+	// 使用参数初始化解码器上下文。
+	AVCodecContext *avCodecCtx = NULL;
+	avCodecCtx = avcodec_alloc_context3(codec);
+	ret = avcodec_parameters_to_context(avCodecCtx, aCodecPara);
+	if(ret < 0)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot alloc codec context." << endl;
+		return -2;
+	}
+
+	// 打开解码器
+	avCodecCtx->pkt_timebase = avFmtCtx->streams[audioStreamIndex]->time_base;
+	ret = avcodec_open2(avCodecCtx, codec, NULL);
+	if(ret < 0)
+	{
+		printf("In  Mp3Decoder::mp3ToPcm(): Cannot open audio codec.\n");
+		return -2;
+	}
+
+	AVPacket *avPacket = NULL;
+	avPacket = av_packet_alloc();
+	AVFrame *avFrame = NULL;
+	avFrame = av_frame_alloc();
+
+	while(av_read_frame(avFmtCtx, avPacket) >= 0)
+	{
+		if(avPacket->stream_index != audioStreamIndex)
+		{
+			continue;
+		}
+		
+		ret = avcodec_send_packet(avCodecCtx, avPacket);
+		if(ret < 0)
+		{
+			continue;
+		}
+
+		while(avcodec_receive_frame(avCodecCtx, avFrame) >= 0)
+		{
+			/* Planar（平面），其数据格式排列方式为 (特别记住，该处是以点nb_samples采样点来交错，不是以字节交错）:
+			LLLLLLRRRRRRLLLLLLRRRRRRLLLLLLRRRRRRL...（每个LLLLLLRRRRRR为一个音频帧）
+			而不带P的数据格式（即交错排列）排列方式为：
+			LRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRL...（每个LR为一个音频样本）*/
+			if(av_sample_fmt_is_planar(avCodecCtx->sample_fmt))
+			{
+				const unsigned int pcmLen = 1024 * 8;
+				unsigned char pcmData[pcmLen] = {0};
+			
+				int i = 0;
+				int numBytes = 0;
+				//pcm播放时是LRLRLR格式，所以要交错保存数据
+				for(i = 0; i < avFrame->nb_samples; ++i)
+				{
+					//cout << "i = " << i << endl;
+					int ch = 0;
+					for(ch = 0; ch < avCodecCtx->channels; ++ch)
+					{
+						//cout << "ch = " << ch << endl;
+						numBytes = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
+						//(char*)avFrame->data[ch] + numBytes * i, numBytes;
+						//cout << "numBytes = " << numBytes << endl;
+
+						if(0 == ch)
+						{
+							memcpy(pcmData + numBytes * i, avFrame->data[ch] + numBytes * i, numBytes);
+						}
+					}
+				}
+
+				int pcmRealLen = numBytes * i;
+				cout << "realBytes = " << pcmRealLen << endl;
+				
+				#if 1
+				Mp3Decoder *pMp3Decoder = Mp3Decoder::getInstance();
+				const unsigned int dstPcmLen = 1024 * 8;
+				char dstPcmData[dstPcmLen] = {0};
+				unsigned int realLen = 0;
+				realLen = pMp3Decoder->pcmDataResample(dstPcmData, dstPcmLen, 16000, 1, AV_SAMPLE_FMT_S16, \
+					(char *)pcmData, pcmRealLen, 44100, 2, AV_SAMPLE_FMT_FLTP);
+				#endif
+				
+				AudioOut *pAudioPout = AudioOut::getInstance();
+				pAudioPout->sendStream(dstPcmData, realLen);
+			}
+			//cout << "numBytes = " << avFrame->data[0] << endl;
+			//cout << "numBytes = " << avFrame->linesize << endl;
+		}
+		//cout << "j  = " << j << endl;
+
+		av_packet_unref(avPacket);
+	}
+
+	av_frame_free(&avFrame);
+	av_packet_free(&avPacket);
+	avcodec_close(avCodecCtx);
+	avcodec_free_context(&avCodecCtx);
+	avformat_free_context(avFmtCtx);
 
 	cout << "Call AudioPlayer::playRouteMP3() end." << endl;
 	return 0;

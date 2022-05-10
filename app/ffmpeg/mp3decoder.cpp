@@ -69,7 +69,6 @@ int Mp3Decoder::disable()
 	return 0;
 }
 
-#if 1
 /*
 	功能：	
 	返回：	
@@ -79,140 +78,289 @@ int Mp3Decoder::recvPcmFrame(unsigned char*const dataBuff, const unsigned int da
 {
 	cout << "Call Mp3Decoder::recvPcmFrame()." << endl;
 
-	const char *filePath = "/mnt";
-	ifstream ifs((const char *)filePath, ios::in);
-	if(!ifs)
-	{
-		cerr << "Fail to open mp3 file " << filePath << endl;
-		return -1;
-	}
-	
-	// 注册解码器
-	//avcodec_register_all();
-	//av_register_all();
-	
-	// 首先为mp3文件分配一个AVFormatContext数据结构
-	AVFormatContext *mavFormatContext = avformat_alloc_context();
-
-	// 打开文件，并解析文件，然后填充AVFormatContext数据结构
-	// avformat_open_input(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options);
-	// 1. AVFormatContext数据结构 2. mp3文件名 3. 指定AVInputFormat，设置为NULL则自动检测 4.AVDictionary附加选项，一般设为NULL 
-	int result = avformat_open_input(&mavFormatContext, filePath, NULL, NULL);
-	if (result != 0) {
-		//LOGI("can't open file %s result %s", fileString, av_err2str(result));
-		return -1;
-	}
-	else
-	{
-		//LOGI("open file %s success and result is %s", fileString, av_err2str(result));
-	}
-
-	// avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options);
-	// 读取一部分视音频数据并且获得一些相关的信息
-	result = avformat_find_stream_info(mavFormatContext, NULL);
-	if (result < 0)
-	{
-		//LOGI("fail avformat avformat_find_stream_info %s result %s", filePath, av_err2str(result));
-		return -1;
-	}
-	else
-	{
-		//LOGI("avformat_find_stream_info success result is %s", filePath, av_err2str(result));
-	}
-
-	// 获取mp3文件中音频对应的stream_index
-	// 1. AVFormatContext 2. 指定为查找音频AVMEDIA_TYPE_AUDIO 3. wanted_stream_nb指定的stream号，-1为自动检测 4. related_stream找相关的stream 5. decoder_ret如果不为NULL，则返回选择的stream的decoder 6. 相关的flags 7. 返回值：返回相关的index
-	int mstream_index = av_find_best_stream(mavFormatContext, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
-	//LOGI("stream_index is %d", mstream_index);
-	if (mstream_index == -1)
-	{
-		//LOGI("no audio stream");
-		return -1;
-	}
-	AVStream* audioStream = mavFormatContext->streams[mstream_index];
-	AVCodecParameters *mavCodecContext = audioStream->codecpar;
-	//LOGI("avCodecContext->codec_id is %d AV_CODEC_ID_AAC is %d", mavCodecContext->codec_id, AV_CODEC_ID_AAC);
-	// 找音频流解码器
-	const AVCodec* avCodec = avcodec_find_decoder(mavCodecContext->codec_id);
-	if (avCodec == NULL)
-	{
-		//LOGI("Unsupported codec");
-		return -1;
-	}
-	// 打开音频流解码器
-	AVCodecContext *avCtx = NULL;
-	result = avcodec_open2(avCtx, avCodec, NULL);
-	if (result < 0)
-	{
-		//LOGI("avcodec_open2 fail avformat_find_stream_info result is %s", av_err2str(result));
-		return -1;
-	}
-	else
-	{
-		//LOGI("avcodec_open2 sucess avformat_find_stream_info result is %s", av_err2str(result));
-	}
-
-	// 读取流内容到packet中
-	while(av_read_frame(mavFormatContext, &mpacket) >= 0)
-	{
-		if (mpacket.stream_index == mstream_index)
-		{
-			// avcodec_decode_audio4(AVCodecContext * avctx, AVFrame * frame, int * got_frame_ptr, const AVPacket * avpkt)
-			// 1. 解码器 2. 输出数据frame 3. 是否获取到frame 4. 输入数据packet
-			int len = avcodec_decode_audio4(mavCodecContext, mpAudioFrame, &gotframe, &mpacket);
-			if (len < 0) {
-			LOGI("decode audio error, skip packet");
-			return -1;
-		}
-		if (gotframe)
-		{
-			// av_samples_get_buffer_size (int *linesize, int nb_channels, int nb_samples, enum AVSampleFormat sample_fmt, int align)
-			// 1. linesize 2. 通道数 3. 单个声道的样本数 4. 输出采样格式 5. 对齐
-			// 这个函数得到的结果是错的
-			// AV_CH_LAYOUT_STEREO是3声道，av_get_default_channel_layout(OUT_PUT_CHANNELS)为3
-			//int out_buffer_size=av_samples_get_buffer_size(NULL, AV_CH_LAYOUT_STEREO,
-			//        mpAudioFrame->nb_samples, out_sample_fmt, 1);
-			// 每一份frame的样本数 * 输出pcm的通道数 * 样本的采样格式（16bit）
-			int out_buffer_size=mpAudioFrame->nb_samples *
-			OUT_PUT_CHANNELS *
-			av_get_bytes_per_sample(out_sample_fmt);
-			LOGI("mpAudioFrame->nb_samples = %d", mpAudioFrame->nb_samples);
-			int numChannels = OUT_PUT_CHANNELS;
-			int numFrames = 0;
-			void* audioData;
-			// 重新采样
-			if (mswrContext)
-			{
-				// swr_convert (struct SwrContext *s, uint8_t **out, int out_count, const uint8_t **in, int in_count)
-				// 1. SwrContext上下文 2. 输出buffer 3. 输出的单通道的样本数 4. 输入数据 5. 输入的单通道的样本数
-				numFrames = swr_convert(mswrContext, &out_buffer,
-				mpAudioFrame->nb_samples,
-				(const uint8_t **)mpAudioFrame->data,
-				mpAudioFrame->nb_samples);
-				if (numFrames < 0) {
-				LOGI("fail resample audio");
-				ret = -1;
-				break;
-			}
-			LOGI("index:%5d\t pts:%lld\t packet size:%d out_buffer_size: %d\n",index,mpacket.pts,mpacket.size, out_buffer_size);
-			//Write PCM
-			// 写到pcm文件中
-			fwrite(out_buffer, 1, 4608, pcmFile);
-			index++;
-			av_packet_unref(&mpacket);
-		}
-		}
-		LOGI(" free");
-		}
-	}
-
-	ifs.close();
 
 	cout << "Call Mp3Decoder::recvPcmFrame() end." << endl;
 	return 0;
 }
 
-#endif
+int Mp3Decoder::mp3ToPcm(const char *mp3Path, const char *pcmPath)
+{
+	// 打开PCM 输出文件
+	ofstream ofs(pcmPath, ios::out);
+	if(!ofs)
+	{
+		cerr << "In Mp3Decoder::mp3ToPcm(): Fail to open file " << pcmPath << endl;
+		return -1;
+	}
+
+	// 打开MP3 输入文件
+	int ret = 0;
+	AVFormatContext *avFmtCtx = NULL;
+	avFmtCtx = avformat_alloc_context();
+	ret = avformat_open_input(&avFmtCtx, mp3Path, NULL,NULL);
+	if(ret < 0)
+	{
+		cerr << "In Mp3Decoder::mp3ToPcm(): Fail to open file " << mp3Path << endl;
+		return -1;
+	}
+
+	// 寻找音视频流
+	ret = avformat_find_stream_info(avFmtCtx, NULL);
+	if(ret < 0)
+	{
+		cerr << "In Mp3Decoder::mp3ToPcm(): Cannot find any stream in file." << endl;
+		return -2;
+	}
+
+	// dump 流信息。
+	av_dump_format(avFmtCtx, 0, mp3Path, 0);
+
+	// 寻找音频流索引值
+	int i = 0;
+	int audioStreamIndex = -1;
+	for(i = 0; i < avFmtCtx->nb_streams; ++i)
+	{
+		if(AVMEDIA_TYPE_AUDIO == avFmtCtx->streams[i]->codecpar->codec_type)
+		{
+			audioStreamIndex = i;
+			break;
+		}
+	}
+	
+	if(-1 == audioStreamIndex)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find audio stream.\n" << endl;
+		return -2;
+	}
+
+	// 根据音频流寻找解码器。
+	AVCodec *codec = NULL;
+	AVCodecParameters *aCodecPara = NULL;
+	
+	aCodecPara = avFmtCtx->streams[audioStreamIndex]->codecpar;
+	codec = avcodec_find_decoder(aCodecPara->codec_id);
+	if(!codec)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find any codec for audio." << endl;
+		return -2;
+	}
+
+	// 使用参数初始化解码器上下文。
+	AVCodecContext *avCodecCtx = NULL;
+	avCodecCtx = avcodec_alloc_context3(codec);
+	ret = avcodec_parameters_to_context(avCodecCtx, aCodecPara);
+	if(ret < 0)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot alloc codec context." << endl;
+		return -2;
+	}
+
+	// 打开解码器
+	avCodecCtx->pkt_timebase = avFmtCtx->streams[audioStreamIndex]->time_base;
+	ret = avcodec_open2(avCodecCtx, codec, NULL);
+	if(ret < 0)
+	{
+		printf("In  Mp3Decoder::mp3ToPcm(): Cannot open audio codec.\n");
+		return -2;
+	}
+
+	AVPacket *avPacket = NULL;
+	avPacket = av_packet_alloc();
+	AVFrame *avFrame = NULL;
+	avFrame = av_frame_alloc();
+
+	while(av_read_frame(avFmtCtx, avPacket) >= 0)
+	{
+		if(avPacket->stream_index != audioStreamIndex)
+		{
+			continue;
+		}
+		
+		ret = avcodec_send_packet(avCodecCtx, avPacket);
+		if(ret < 0)
+		{
+			continue;
+		}
+		
+		while(avcodec_receive_frame(avCodecCtx, avFrame) >= 0)
+		{
+			/* Planar（平面），其数据格式排列方式为 (特别记住，该处是以点nb_samples采样点来交错，不是以字节交错）:
+			LLLLLLRRRRRRLLLLLLRRRRRRLLLLLLRRRRRRL...（每个LLLLLLRRRRRR为一个音频帧）
+			而不带P的数据格式（即交错排列）排列方式为：
+			LRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRL...（每个LR为一个音频样本）*/
+			if(av_sample_fmt_is_planar(avCodecCtx->sample_fmt))
+			{
+				int i = 0;
+				int numBytes = 0;
+				//pcm播放时是LRLRLR格式，所以要交错保存数据
+				for(i = 0; i < avFrame->nb_samples; ++i)
+				{
+					int ch = 0;
+					for(ch = 0; ch < avCodecCtx->channels; ++ch)
+					{
+						numBytes = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
+						ofs.write((char*)avFrame->data[ch] + numBytes * i, numBytes);
+						if(!ofs)
+						{
+							cerr << "Fail to write file." << endl;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		av_packet_unref(avPacket);
+	}
+
+	av_frame_free(&avFrame);
+	av_packet_free(&avPacket);
+	avcodec_close(avCodecCtx);
+	avcodec_free_context(&avCodecCtx);
+	avformat_free_context(avFmtCtx);
+
+	return 0;
+}
+
+int Mp3Decoder::mp3Decoding(const char *mp3Path)
+{
+	// 打开MP3 输入文件
+	int ret = 0;
+	AVFormatContext *avFmtCtx = NULL;
+	avFmtCtx = avformat_alloc_context();
+	ret = avformat_open_input(&avFmtCtx, mp3Path, NULL,NULL);
+	if(ret < 0)
+	{
+		cerr << "In Mp3Decoder::mp3ToPcm(): Fail to open file " << mp3Path << endl;
+		return -1;
+	}
+
+	// 寻找音视频流
+	ret = avformat_find_stream_info(avFmtCtx, NULL);
+	if(ret < 0)
+	{
+		cerr << "In Mp3Decoder::mp3ToPcm(): Cannot find any stream in file." << endl;
+		return -2;
+	}
+
+	// dump 流信息。
+	av_dump_format(avFmtCtx, 0, mp3Path, 0);
+
+	// 寻找音频流索引值
+	int i = 0;
+	int audioStreamIndex = -1;
+	for(i = 0; i < avFmtCtx->nb_streams; ++i)
+	{
+		if(AVMEDIA_TYPE_AUDIO == avFmtCtx->streams[i]->codecpar->codec_type)
+		{
+			audioStreamIndex = i;
+			break;
+		}
+	}
+	
+	if(-1 == audioStreamIndex)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find audio stream.\n" << endl;
+		return -2;
+	}
+
+	// 根据音频流寻找解码器。
+	AVCodec *codec = NULL;
+	AVCodecParameters *aCodecPara = NULL;
+	
+	aCodecPara = avFmtCtx->streams[audioStreamIndex]->codecpar;
+	codec = avcodec_find_decoder(aCodecPara->codec_id);
+	if(!codec)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find any codec for audio." << endl;
+		return -2;
+	}
+
+	// 使用参数初始化解码器上下文。
+	AVCodecContext *avCodecCtx = NULL;
+	avCodecCtx = avcodec_alloc_context3(codec);
+	ret = avcodec_parameters_to_context(avCodecCtx, aCodecPara);
+	if(ret < 0)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot alloc codec context." << endl;
+		return -2;
+	}
+
+	// 打开解码器
+	avCodecCtx->pkt_timebase = avFmtCtx->streams[audioStreamIndex]->time_base;
+	ret = avcodec_open2(avCodecCtx, codec, NULL);
+	if(ret < 0)
+	{
+		printf("In  Mp3Decoder::mp3ToPcm(): Cannot open audio codec.\n");
+		return -2;
+	}
+
+	AVPacket *avPacket = NULL;
+	avPacket = av_packet_alloc();
+	AVFrame *avFrame = NULL;
+	avFrame = av_frame_alloc();
+
+	while(av_read_frame(avFmtCtx, avPacket) >= 0)
+	{
+		if(avPacket->stream_index != audioStreamIndex)
+		{
+			continue;
+		}
+		
+		ret = avcodec_send_packet(avCodecCtx, avPacket);
+		if(ret < 0)
+		{
+			continue;
+		}
+
+		while(avcodec_receive_frame(avCodecCtx, avFrame) >= 0)
+		{
+			/* Planar（平面），其数据格式排列方式为 (特别记住，该处是以点nb_samples采样点来交错，不是以字节交错）:
+			LLLLLLRRRRRRLLLLLLRRRRRRLLLLLLRRRRRRL...（每个LLLLLLRRRRRR为一个音频帧）
+			而不带P的数据格式（即交错排列）排列方式为：
+			LRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRL...（每个LR为一个音频样本）*/
+			if(av_sample_fmt_is_planar(avCodecCtx->sample_fmt))
+			{
+				const unsigned int pcmLen = 1024 * 8;
+				unsigned char pcmData[pcmLen] = {0};
+			
+				int i = 0;
+				int numBytes = 0;
+				//pcm播放时是LRLRLR格式，所以要交错保存数据
+				for(i = 0; i < avFrame->nb_samples; ++i)
+				{
+					//cout << "i = " << i << endl;
+					int ch = 0;
+					for(ch = 0; ch < avCodecCtx->channels; ++ch)
+					{
+						//cout << "ch = " << ch << endl;
+						numBytes = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
+						//(char*)avFrame->data[ch] + numBytes * i, numBytes;
+						//cout << "numBytes = " << numBytes << endl;
+						
+						memcpy(pcmData + numBytes * i, avFrame->data[ch] + numBytes * i, numBytes);
+					}
+				}
+
+				int pcmRealLen = numBytes * i;
+				cout << "realBytes = " << pcmRealLen << endl;
+			}
+			//cout << "numBytes = " << avFrame->data[0] << endl;
+			//cout << "numBytes = " << avFrame->linesize << endl;
+		}
+		//cout << "j  = " << j << endl;
+
+		av_packet_unref(avPacket);
+	}
+
+	av_frame_free(&avFrame);
+	av_packet_free(&avPacket);
+	avcodec_close(avCodecCtx);
+	avcodec_free_context(&avCodecCtx);
+	avformat_free_context(avFmtCtx);
+	
+	return 0;
+}
 
 int Mp3Decoder::getMp3Frame4Bytes(const char *filePath, unsigned char *p4BytesData)
 {
@@ -557,7 +705,7 @@ int Mp3Decoder::pcmFileResample(const char *dstPcmPath, long long int dstRate, l
 	inNbChannels = av_get_channel_layout_nb_channels(srcChLayout);
 	outNbChannels = av_get_channel_layout_nb_channels(dstChLayout);
 	
-	// 根据srcAvSampleFmt、srcNbSamples、inNbChannels 为inData 分配内存空间，和设置对应的的linesize 的值；返回分配的总内存的大小
+	// 根据srcAvSampleFmt、srcNbSamples、inNbChannels 为srcData 分配内存空间，和设置对应的的linesize 的值；返回分配的总内存的大小
 	int srcBufSize = 0;
 	int dstBufSize = 0;
 	
@@ -568,19 +716,19 @@ int Mp3Decoder::pcmFileResample(const char *dstPcmPath, long long int dstRate, l
 	long long int dstMaxNbSamples = 0;
 	const int srcNbSamples = 1024;
 	
-	unsigned char **inData = NULL;
-	unsigned char **outData = NULL;
+	unsigned char **srcData = NULL;
+	unsigned char **dstData = NULL;
 	
-	srcBufSize = av_samples_alloc_array_and_samples(&inData, &srcLineSize, inNbChannels, srcNbSamples, srcAvSampleFmt, 0);
+	srcBufSize = av_samples_alloc_array_and_samples(&srcData, &srcLineSize, inNbChannels, srcNbSamples, srcAvSampleFmt, 0);
 	// 根据srcNbSamples*dstRate/srcRate公式初步估算重采样后音频的nb_samples大小
 	dstNbSamples = av_rescale_rnd(srcNbSamples, dstRate, srcRate, AV_ROUND_UP);
 	dstMaxNbSamples = dstNbSamples;
-	dstBufSize = av_samples_alloc_array_and_samples(&outData, &dstLineSize, outNbChannels, dstNbSamples, dstAvSampleFmt, 0);
+	dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChannels, dstNbSamples, dstAvSampleFmt, 0);
 
 	while(ifs)
 	{
 		size_t readBytes = 0;
-		ifs.read((char *)inData[0], srcBufSize);
+		ifs.read((char *)srcData[0], srcBufSize);
 		if(!ifs)
 		{
 			readBytes = ifs.gcount();
@@ -608,15 +756,15 @@ int Mp3Decoder::pcmFileResample(const char *dstPcmPath, long long int dstRate, l
 		{
 			cerr << "In Mp3Decoder::pcmFileResample(): realloc memory." << endl;
 			// 先释放以前的内存，不管sample_fmt 是planner 还是packet 方式，av_samples_alloc_array_and_samples()函数都是分配的一整块连续的内存
-			av_freep(&outData[0]);
-			dstBufSize = av_samples_alloc_array_and_samples(&outData, &dstLineSize, outNbChannels, dstNbSamples, dstAvSampleFmt, 0);
+			av_freep(&dstData[0]);
+			dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChannels, dstNbSamples, dstAvSampleFmt, 0);
 			dstMaxNbSamples = dstNbSamples;
 		}
  
 		// 开始重采样，重采样后的数据将根据前面指定的存储方式写入ds_data 内存块中，返回每个声道实际的采样数。
 		/*	swr_convert() 返回的result 是实际转换的采样个数，该值小于或等于预计采样数dstNbSamples, 
 			所以写入文件的时候不能用dstNbSamples的  值，而应该用result值。*/
-		int result = swr_convert(swrCtx, outData, dstNbSamples, (const unsigned char **)inData, srcNbSamples);
+		int result = swr_convert(swrCtx, dstData, dstNbSamples, (const unsigned char **)srcData, srcNbSamples);
 		if(result < 0)
 		{
 			cerr << "In Mp3Decoder::pcmFileResample() swr_convert() fail. Result = " << result << endl;
@@ -640,7 +788,7 @@ int Mp3Decoder::pcmFileResample(const char *dstPcmPath, long long int dstRate, l
 				int j = 0;
 				for(j = 0; j < outNbChannels; ++j)
 				{
-					ofs.write((char *)outData[j] + i * perSampleBytes, perSampleBytes);
+					ofs.write((char *)dstData[j] + i * perSampleBytes, perSampleBytes);
 				}
 			}
 		}
@@ -648,21 +796,21 @@ int Mp3Decoder::pcmFileResample(const char *dstPcmPath, long long int dstRate, l
 		{
 			// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据 造成错误。
 			dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChannels, result, dstAvSampleFmt, 1);
-			ofs.write((char *)outData[0], dstBufSize);
+			ofs.write((char *)dstData[0], dstBufSize);
 		}
 	}
 
 	// 还有剩余的缓存数据没有转换，第三个传递NULL, 第四个传递0, 即可将缓存中的全部取出
 	do{
 		int realNbSamples = 0;
-		realNbSamples = swr_convert(swrCtx, outData, dstNbSamples, NULL, 0);
+		realNbSamples = swr_convert(swrCtx, dstData, dstNbSamples, NULL, 0);
 		if(realNbSamples <= 0)
 		{
 			break;
 		}
 		
 		cout << "In Mp3Decoder::pcmFileResample(), left " << realNbSamples << endl;
-		if(av_sample_fmt_is_planar(dstAvSampleFmt))
+		if(av_sample_fmt_is_planar(dstAvSampleFmt))
 		{
 			int perSampleBytes = 0;
 			perSampleBytes = av_get_bytes_per_sample(dstAvSampleFmt);
@@ -672,7 +820,7 @@ int Mp3Decoder::pcmFileResample(const char *dstPcmPath, long long int dstRate, l
 				int j = 0;
 				for(j = 0; j < outNbChannels; ++j)
 				{
-					ofs.write((char *)outData[j] + i * perSampleBytes, perSampleBytes);
+					ofs.write((char *)dstData[j] + i * perSampleBytes, perSampleBytes);
 				}
 			}
 		}
@@ -680,16 +828,176 @@ int Mp3Decoder::pcmFileResample(const char *dstPcmPath, long long int dstRate, l
 		{
 			int size = 0;
 			size = av_samples_get_buffer_size(NULL, outNbChannels, realNbSamples, dstAvSampleFmt, 1);
-			ofs.write((char *)outData[0], size);
+			ofs.write((char *)dstData[0], size);
 		}
 	}while(true);
 
 	// 释放资源
-	av_freep(&inData[0]);
-	av_freep(&outData[0]);
+	av_freep(&srcData[0]);
+	av_freep(&dstData[0]);
 	swr_free(&swrCtx);
 	ifs.close();
 	ofs.close();
+
+	return 0;
+}
+
+int Mp3Decoder::pcmDataResample(char *dstPcmData, unsigned int dstPcmLen, long long int dstRate, long long int dstChLayout, AVSampleFormat dstAvSampleFmt, \
+			const char *srcPcmData, unsigned int srcPcmLen, long long int srcRate, long long int srcChLayout, AVSampleFormat srcAvSampleFmt)
+{
+	if(NULL == srcPcmData || NULL == dstPcmData)
+	{
+		cerr << "Fail to call Mp3Decoder::pcmFileResample(). src or dst data has null value." << endl;
+		return -1;
+	}
+
+	// 1、创建上下文SwrContext
+	SwrContext *swrCtx = NULL;
+	swrCtx = swr_alloc();
+	if(NULL == swrCtx)
+	{
+		cerr << "In Mp3Decoder::pcmFileResample(): swr_allock() fail" << endl;
+		return -2;
+	}
+
+	// 2、设置重采样的相关参数 这些函数位于头文件 <libavutil/opt.h>
+	av_opt_set_int(swrCtx, "in_channel_layout", srcChLayout, 0);
+	av_opt_set_int(swrCtx, "in_sample_rate", srcRate, 0);
+	av_opt_set_sample_fmt(swrCtx, "in_sample_fmt", srcAvSampleFmt, 0);
+
+	av_opt_set_int(swrCtx, "out_channel_layout", dstChLayout, 0);
+	av_opt_set_int(swrCtx, "out_sample_rate", dstRate, 0);
+	av_opt_set_sample_fmt(swrCtx, "out_sample_fmt", dstAvSampleFmt, 0);
+
+	// 3、初始化上下文
+	int ret = 0;
+	ret = swr_init(swrCtx);
+	if(ret < 0) 
+	{
+		cerr << "In Mp3Decoder::pcmFileResample(): swr_init() fail" << endl;
+		return -3;
+	}
+
+	int inNbChannels = 0;		// 声道数
+	int outNbChannels = 0;
+	inNbChannels = av_get_channel_layout_nb_channels(srcChLayout);
+	outNbChannels = av_get_channel_layout_nb_channels(dstChLayout);
+	
+	// 根据srcAvSampleFmt、srcNbSamples、inNbChannels 为srcData 分配内存空间，和设置对应的的linesize 的值；返回分配的总内存的大小
+	int srcBufSize = 0;
+	int dstBufSize = 0;
+	
+	int srcLineSize = 0;
+	int dstLineSize = 0;
+	
+	long long int dstNbSamples = 0;
+	long long int dstMaxNbSamples = 0;
+	const int srcNbSamples = 1024;
+	
+	unsigned char **srcData = NULL;
+	unsigned char **dstData = NULL;
+	
+	srcBufSize = av_samples_alloc_array_and_samples(&srcData, &srcLineSize, inNbChannels, srcNbSamples, srcAvSampleFmt, 0);
+	// 根据srcNbSamples*dstRate/srcRate公式初步估算重采样后音频的nb_samples大小
+	dstNbSamples = av_rescale_rnd(srcNbSamples, dstRate, srcRate, AV_ROUND_UP);
+	dstMaxNbSamples = dstNbSamples;
+	dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChannels, dstNbSamples, dstAvSampleFmt, 0);
+	cout << "srcBufSize = " << srcBufSize << endl;
+
+
+	unsigned int minBytes = 0;
+	minBytes = ((srcBufSize < srcPcmLen) ? srcBufSize : srcPcmLen);
+	memcpy(srcData[0], srcPcmData, minBytes);
+
+	/*	因为转换需要缓存，所以要不停的调整转换后的内存的大小，估算重采样后的nb_samples 的大小。
+		这里swr_get_delay() 用于获取重采样的缓冲延迟。
+		dstNbSamples的值会经过多次调整后区域稳定 */
+	dstNbSamples = av_rescale_rnd(swr_get_delay(swrCtx, srcRate) + srcNbSamples, dstRate, srcRate, AV_ROUND_UP);
+	if(dstNbSamples > dstMaxNbSamples)
+	{
+		cerr << "In Mp3Decoder::pcmFileResample(): realloc memory." << endl;
+		// 先释放以前的内存，不管sample_fmt 是planner 还是packet 方式，av_samples_alloc_array_and_samples()函数都是分配的一整块连续的内存
+		av_freep(&dstData[0]);
+		dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChannels, dstNbSamples, dstAvSampleFmt, 0);
+		dstMaxNbSamples = dstNbSamples;
+	}
+
+	// 开始重采样，重采样后的数据将根据前面指定的存储方式写入ds_data 内存块中，返回每个声道实际的采样数。
+	/*	swr_convert() 返回的result 是实际转换的采样个数，该值小于或等于预计采样数dstNbSamples, 
+		所以写入文件的时候不能用dstNbSamples的  值，而应该用result值。*/
+	int result = swr_convert(swrCtx, dstData, dstNbSamples, (const unsigned char **)srcData, srcNbSamples);
+	if(result < 0)
+	{
+		cerr << "In Mp3Decoder::pcmFileResample() swr_convert() fail. Result = " << result << endl;
+		//break;
+	}
+
+#if 1	// debug
+		printf("readBytes %d, dstNbSamples %d, srcNbSamples %d, result %d.", minBytes, dstNbSamples, srcNbSamples, result);
+#endif
+		
+		// 将音频数据写入pcm文件
+		if(av_sample_fmt_is_planar(dstAvSampleFmt))
+		{
+			// planner方式。pcm文件写入时一般都是packet方式，所以这里要注意转换一下。
+			int perSampleBytes = 0;
+			perSampleBytes = av_get_bytes_per_sample(dstAvSampleFmt);
+			// 这里必须是result，而不能用dstNbSamples,因为result 才代表此次实际转换的采样数，它肯定小于或等于dstNbSamples.
+			int i = 0;
+			for(i = 0; i < result; ++i)
+			{
+				int j = 0;
+				for(j = 0; j < outNbChannels; ++j)
+				{
+					//ofs.write((char *)dstData[j] + i * perSampleBytes, perSampleBytes);
+				}
+			}
+		}
+		else
+		{
+			// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据 造成错误。
+			dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChannels, result, dstAvSampleFmt, 1);
+			//ofs.write((char *)dstData[0], dstBufSize);
+			memcpy(dstPcmData, dstData[0], dstBufSize);
+			return dstBufSize;
+		}
+
+	// 还有剩余的缓存数据没有转换，第三个传递NULL, 第四个传递0, 即可将缓存中的全部取出
+	do{
+		int realNbSamples = 0;
+		realNbSamples = swr_convert(swrCtx, dstData, dstNbSamples, NULL, 0);
+		if(realNbSamples <= 0)
+		{
+			break;
+		}
+		
+		cout << "In Mp3Decoder::pcmFileResample(), left " << realNbSamples << endl;
+		if(av_sample_fmt_is_planar(dstAvSampleFmt))
+		{
+			int perSampleBytes = 0;
+			perSampleBytes = av_get_bytes_per_sample(dstAvSampleFmt);
+			int i = 0;
+			for(i = 0; i < realNbSamples; ++i)
+			{
+				int j = 0;
+				for(j = 0; j < outNbChannels; ++j)
+				{
+					//ofs.write((char *)dstData[j] + i * perSampleBytes, perSampleBytes);
+				}
+			}
+		}
+		else
+		{
+			int size = 0;
+			size = av_samples_get_buffer_size(NULL, outNbChannels, realNbSamples, dstAvSampleFmt, 1);
+			//ofs.write((char *)dstData[0], size);
+		}
+	}while(true);
+
+	// 释放资源
+	av_freep(&srcData[0]);
+	av_freep(&dstData[0]);
+	swr_free(&swrCtx);
 
 	return 0;
 }
