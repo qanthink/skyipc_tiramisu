@@ -659,7 +659,7 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 			LRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRL...（每个LR为一个音频样本）*/
 			if(av_sample_fmt_is_planar(avCodecCtx->sample_fmt))
 			{
-				const unsigned int pcmLen = 1024 * 8;
+				const unsigned int pcmLen = 1024 * 16;
 				unsigned char pcmData[pcmLen] = {0};
 			
 				int i = 0;
@@ -667,34 +667,35 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 				//pcm播放时是LRLRLR格式，所以要交错保存数据
 				for(i = 0; i < avFrame->nb_samples; ++i)
 				{
-					//cout << "i = " << i << endl;
 					int ch = 0;
 					for(ch = 0; ch < avCodecCtx->channels; ++ch)
 					{
-						//cout << "ch = " << ch << endl;
+						// 获取每次采样得到的字节数。此处为4 字节。
 						numBytes = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
 						//(char*)avFrame->data[ch] + numBytes * i, numBytes;
 						//cout << "numBytes = " << numBytes << endl;
 
-						if(0 == ch)
+						//if(0 == ch)
 						{
-							memcpy(pcmData + numBytes * i, avFrame->data[ch] + numBytes * i, numBytes);
+							memcpy(pcmData + numBytes * i * 2 + numBytes * ch, avFrame->data[ch] + numBytes * i, numBytes);
 						}
 					}
 				}
 
-				int pcmRealLen = numBytes * i;
-				cout << "realBytes = " << pcmRealLen << endl;
+				int pcmRealLen = 0;
+				pcmRealLen = numBytes * i * 2;
+				cout << "avFrame->nb_samples, realBytes = " << avFrame->nb_samples << ", " << pcmRealLen << endl;
 				
 				#if 1
 				Mp3Decoder *pMp3Decoder = Mp3Decoder::getInstance();
-				const unsigned int dstPcmLen = 1024 * 8;
+				const unsigned int dstPcmLen = 1024 * 16;
 				char dstPcmData[dstPcmLen] = {0};
-				unsigned int realLen = 0;
-				realLen = pMp3Decoder->pcmDataResample(dstPcmData, dstPcmLen, 16000, 1, AV_SAMPLE_FMT_S16, \
-					(char *)pcmData, pcmRealLen, 44100, 2, AV_SAMPLE_FMT_FLTP);
+				int realLen = 0;
+				realLen = pMp3Decoder->pcmDataResample(dstPcmData, dstPcmLen, 16000, AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, \
+					(char *)pcmData, pcmRealLen, 44100, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT);
 				#endif
-				
+
+				cout << "realLen = " << realLen << endl;
 				AudioOut *pAudioPout = AudioOut::getInstance();
 				pAudioPout->sendStream(dstPcmData, realLen);
 			}

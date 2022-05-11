@@ -882,6 +882,10 @@ int Mp3Decoder::pcmDataResample(char *dstPcmData, unsigned int dstPcmLen, long l
 	int outNbChannels = 0;
 	inNbChannels = av_get_channel_layout_nb_channels(srcChLayout);
 	outNbChannels = av_get_channel_layout_nb_channels(dstChLayout);
+	#if 0
+	cout << "srcChLayout, dstChLayout = " << srcChLayout << ", " << dstChLayout << endl;
+	cout << "inNbChannels, outNbChannels = " << inNbChannels << ", " << outNbChannels << endl;
+	#endif
 	
 	// 根据srcAvSampleFmt、srcNbSamples、inNbChannels 为srcData 分配内存空间，和设置对应的的linesize 的值；返回分配的总内存的大小
 	int srcBufSize = 0;
@@ -892,22 +896,22 @@ int Mp3Decoder::pcmDataResample(char *dstPcmData, unsigned int dstPcmLen, long l
 	
 	long long int dstNbSamples = 0;
 	long long int dstMaxNbSamples = 0;
-	const int srcNbSamples = 1024;
+	const int srcNbSamples = 1152;
 	
 	unsigned char **srcData = NULL;
 	unsigned char **dstData = NULL;
 	
 	srcBufSize = av_samples_alloc_array_and_samples(&srcData, &srcLineSize, inNbChannels, srcNbSamples, srcAvSampleFmt, 0);
-	// 根据srcNbSamples*dstRate/srcRate公式初步估算重采样后音频的nb_samples大小
+	// 根据srcNbSamples*dstRate/srcRate公式初步估算重采样后音频的nb_samples 大小
 	dstNbSamples = av_rescale_rnd(srcNbSamples, dstRate, srcRate, AV_ROUND_UP);
 	dstMaxNbSamples = dstNbSamples;
 	dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChannels, dstNbSamples, dstAvSampleFmt, 0);
 	cout << "srcBufSize = " << srcBufSize << endl;
 
 
-	unsigned int minBytes = 0;
-	minBytes = ((srcBufSize < srcPcmLen) ? srcBufSize : srcPcmLen);
-	memcpy(srcData[0], srcPcmData, minBytes);
+	//unsigned int minBytes = 0;
+	//minBytes = ((srcBufSize < srcPcmLen) ? srcBufSize : srcPcmLen);
+	memcpy(srcData[0], srcPcmData, srcBufSize);
 
 	/*	因为转换需要缓存，所以要不停的调整转换后的内存的大小，估算重采样后的nb_samples 的大小。
 		这里swr_get_delay() 用于获取重采样的缓冲延迟。
@@ -933,12 +937,14 @@ int Mp3Decoder::pcmDataResample(char *dstPcmData, unsigned int dstPcmLen, long l
 	}
 
 #if 1	// debug
-		printf("readBytes %d, dstNbSamples %d, srcNbSamples %d, result %d.", minBytes, dstNbSamples, srcNbSamples, result);
+		//printf("readBytes %d, dstNbSamples %d, srcNbSamples %d, result %d.\n", minBytes, dstNbSamples, srcNbSamples, result);
+		printf("readBytes %d, dstNbSamples %d, srcNbSamples %d, result %d.\n", 0, dstNbSamples, srcNbSamples, result);
 #endif
 		
 		// 将音频数据写入pcm文件
 		if(av_sample_fmt_is_planar(dstAvSampleFmt))
 		{
+			cout << "is" << endl;
 			// planner方式。pcm文件写入时一般都是packet方式，所以这里要注意转换一下。
 			int perSampleBytes = 0;
 			perSampleBytes = av_get_bytes_per_sample(dstAvSampleFmt);
@@ -956,8 +962,8 @@ int Mp3Decoder::pcmDataResample(char *dstPcmData, unsigned int dstPcmLen, long l
 		else
 		{
 			// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据 造成错误。
-			dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChannels, result, dstAvSampleFmt, 1);
-			//ofs.write((char *)dstData[0], dstBufSize);
+			//dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChannels, result, dstAvSampleFmt, 1);
+			dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChannels, result, dstAvSampleFmt, 0);
 			memcpy(dstPcmData, dstData[0], dstBufSize);
 			return dstBufSize;
 		}
