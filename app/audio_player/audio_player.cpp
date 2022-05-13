@@ -7,7 +7,7 @@ qanthink 版权所有。
 /*
 */
 
-#define RUNDE_LICENSE 0
+#define RUNDE_LICENSE 1
 #define FREE_COUNT 3	// 100 -> 3s.
 
 #include "audio_player.h"
@@ -583,6 +583,7 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 
 	// dump 流信息。
 	av_dump_format(avFmtCtx, 0, filePath, 0);
+	//cout << avFmtCtx->streams[0]->codecpar->sample_rate << endl;
 
 	// 寻找音频流索引值
 	int i = 0;
@@ -640,6 +641,15 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 
 	while(av_read_frame(avFmtCtx, avPacket) >= 0)
 	{
+#if 0 == RUNDE_LICENSE
+	static int cnt = 0;
+	++cnt;
+	if(cnt > 50)
+	{
+		cout << "Copyright by qanthink@163.com." << endl;
+		return -3;
+	}
+#endif
 		if(avPacket->stream_index != audioStreamIndex)
 		{
 			continue;
@@ -659,11 +669,11 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 			LRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRL...（每个LR为一个音频样本）*/
 			if(av_sample_fmt_is_planar(avCodecCtx->sample_fmt))
 			{
-				const unsigned int pcmLen = 1024 * 16;
-				unsigned char pcmData[pcmLen] = {0};
-			
 				int i = 0;
 				int numBytes = 0;
+				const unsigned int pcmLen = 1024 * 16;
+				unsigned char pcmData[pcmLen] = {0};
+				
 				//pcm播放时是LRLRLR格式，所以要交错保存数据
 				for(i = 0; i < avFrame->nb_samples; ++i)
 				{
@@ -671,38 +681,42 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 					for(ch = 0; ch < avCodecCtx->channels; ++ch)
 					{
 						// 获取每次采样得到的字节数。此处为4 字节。
+						//数据：(char*)avFrame->data[ch] + numBytes * i; 长度：numBytes;
 						numBytes = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
-						//(char*)avFrame->data[ch] + numBytes * i, numBytes;
-						//cout << "numBytes = " << numBytes << endl;
-
-						//if(0 == ch)
+						#if 1	// stero
+						memcpy(pcmData + numBytes * i * 2 + numBytes * ch, avFrame->data[ch] + numBytes * i, numBytes);
+						#else	// MONO
+						if(0 == ch)
 						{
-							memcpy(pcmData + numBytes * i * 2 + numBytes * ch, avFrame->data[ch] + numBytes * i, numBytes);
+							memcpy(pcmData + numBytes * i * 1 + numBytes * ch, avFrame->data[ch] + numBytes * i, numBytes);
 						}
+						#endif
 					}
 				}
 
 				int pcmRealLen = 0;
+				#if 1	//stero
+				//cout << "i = " << i << endl;
 				pcmRealLen = numBytes * i * 2;
-				cout << "avFrame->nb_samples, realBytes = " << avFrame->nb_samples << ", " << pcmRealLen << endl;
+				#else	// mono
+				pcmRealLen = numBytes * i * 1;
+				#endif
+				//cout << "avFrame->nb_samples, realBytes = " << avFrame->nb_samples << ", " << pcmRealLen << endl;
 				
 				#if 1
 				Mp3Decoder *pMp3Decoder = Mp3Decoder::getInstance();
 				const unsigned int dstPcmLen = 1024 * 16;
 				char dstPcmData[dstPcmLen] = {0};
 				int realLen = 0;
+				int srcSamples = avFmtCtx->streams[audioStreamIndex]->codecpar->sample_rate;
 				realLen = pMp3Decoder->pcmDataResample(dstPcmData, dstPcmLen, 16000, AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, \
-					(char *)pcmData, pcmRealLen, 44100, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT);
+					(char *)pcmData, pcmRealLen, srcSamples, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, avFrame->nb_samples);
 				#endif
 
-				cout << "realLen = " << realLen << endl;
 				AudioOut *pAudioPout = AudioOut::getInstance();
 				pAudioPout->sendStream(dstPcmData, realLen);
 			}
-			//cout << "numBytes = " << avFrame->data[0] << endl;
-			//cout << "numBytes = " << avFrame->linesize << endl;
 		}
-		//cout << "j  = " << j << endl;
 
 		av_packet_unref(avPacket);
 	}
