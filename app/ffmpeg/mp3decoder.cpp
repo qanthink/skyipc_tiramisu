@@ -71,20 +71,43 @@ int Mp3Decoder::disable()
 
 /*
 	功能：	解码MP3 文件
+	返回：	
+	注意：	与recvPcmFrame 配对使用。
+*/
+int Mp3Decoder::mp3Decoding(const char *filePath)
+{
+
+	cout << "Call AudioPlayer::mp3Decoding()." << endl;
+	thread th(thRouteMp3Decoding, this, filePath);
+	th.detach();
+	cout << "Call AudioPlayer::mp3Decoding() end." << endl;
+	return 0;
+}
+
+int Mp3Decoder::thRouteMp3Decoding(void *arg, const char *filePath)
+{
+	Mp3Decoder *pThis = (Mp3Decoder *)arg;
+	return pThis->routeMp3Decoding(filePath);
+}
+
+/*
+	功能：	解码MP3 文件。线程函数，内部实现。
 	返回：	成功，返回0；
 			-1, 文件无法打开。
-	注意：	
+			-2, 音频解码器初始化失败。
+	注意：	与recvPcmFrame 配对使用。
 */
-int Mp3Decoder::mp3Decoding(const char *mp3Path)
+int Mp3Decoder::routeMp3Decoding(const char *filePath)
 {
 	// 打开MP3 输入文件
-	int ret = 0;
 	AVFormatContext *avFmtCtx = NULL;
 	avFmtCtx = avformat_alloc_context();
-	ret = avformat_open_input(&avFmtCtx, mp3Path, NULL,NULL);
+	
+	int ret = 0;
+	ret = avformat_open_input(&avFmtCtx, filePath, NULL,NULL);
 	if(ret < 0)
 	{
-		cerr << "In Mp3Decoder::mp3ToPcm(): Fail to open file " << mp3Path << endl;
+		cerr << "In Mp3Decoder::mp3Decoding(): Fail to open file " << filePath << endl;
 		return -1;
 	}
 
@@ -92,28 +115,28 @@ int Mp3Decoder::mp3Decoding(const char *mp3Path)
 	ret = avformat_find_stream_info(avFmtCtx, NULL);
 	if(ret < 0)
 	{
-		cerr << "In Mp3Decoder::mp3ToPcm(): Cannot find any stream in file." << endl;
+		cerr << "In Mp3Decoder::mp3Decoding(): Cannot find any stream in file." << endl;
 		return -2;
 	}
 
 	// dump 流信息。
-	av_dump_format(avFmtCtx, 0, mp3Path, 0);
+	av_dump_format(avFmtCtx, 0, filePath, 0);
 
 	// 寻找音频流索引值
 	int i = 0;
-	int audioStreamIndex = -1;
+	int ASIndex = -1;
 	for(i = 0; i < avFmtCtx->nb_streams; ++i)
 	{
 		if(AVMEDIA_TYPE_AUDIO == avFmtCtx->streams[i]->codecpar->codec_type)
 		{
-			audioStreamIndex = i;
+			ASIndex = i;
 			break;
 		}
 	}
 	
-	if(-1 == audioStreamIndex)
+	if(-1 == ASIndex)
 	{
-		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find audio stream.\n" << endl;
+		cerr << "In  Mp3Decoder::mp3Decoding(): Cannot find audio stream.\n" << endl;
 		return -2;
 	}
 
@@ -121,11 +144,11 @@ int Mp3Decoder::mp3Decoding(const char *mp3Path)
 	AVCodec *codec = NULL;
 	AVCodecParameters *aCodecPara = NULL;
 	
-	aCodecPara = avFmtCtx->streams[audioStreamIndex]->codecpar;
+	aCodecPara = avFmtCtx->streams[ASIndex]->codecpar;
 	codec = avcodec_find_decoder(aCodecPara->codec_id);
 	if(!codec)
 	{
-		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find any codec for audio." << endl;
+		cerr << "In  Mp3Decoder::mp3Decoding(): Cannot find any codec for audio." << endl;
 		return -2;
 	}
 
@@ -135,16 +158,16 @@ int Mp3Decoder::mp3Decoding(const char *mp3Path)
 	ret = avcodec_parameters_to_context(avCodecCtx, aCodecPara);
 	if(ret < 0)
 	{
-		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot alloc codec context." << endl;
+		cerr << "In  Mp3Decoder::mp3Decoding(): Cannot alloc codec context." << endl;
 		return -2;
 	}
 
 	// 打开解码器
-	avCodecCtx->pkt_timebase = avFmtCtx->streams[audioStreamIndex]->time_base;
+	avCodecCtx->pkt_timebase = avFmtCtx->streams[ASIndex]->time_base;
 	ret = avcodec_open2(avCodecCtx, codec, NULL);
 	if(ret < 0)
 	{
-		printf("In  Mp3Decoder::mp3ToPcm(): Cannot open audio codec.\n");
+		printf("In  Mp3Decoder::mp3Decoding(): Cannot open audio codec.\n");
 		return -2;
 	}
 
@@ -155,7 +178,7 @@ int Mp3Decoder::mp3Decoding(const char *mp3Path)
 
 	while(av_read_frame(avFmtCtx, avPacket) >= 0)
 	{
-		if(avPacket->stream_index != audioStreamIndex)
+		if(avPacket->stream_index != ASIndex)
 		{
 			continue;
 		}
@@ -174,23 +197,30 @@ int Mp3Decoder::mp3Decoding(const char *mp3Path)
 			LRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRL...（每个LR为一个音频样本）*/
 			if(av_sample_fmt_is_planar(avCodecCtx->sample_fmt))
 			{
-				const unsigned int pcmLen = 1024 * 8;
-				unsigned char pcmData[pcmLen] = {0};
-			
 				int i = 0;
 				int numBytes = 0;
+				const unsigned int pcmLen = 1024 * 16;
+				unsigned char pcmData[pcmLen] = {0};
+				numBytes = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
+				
 				//pcm播放时是LRLRLR格式，所以要交错保存数据
 				for(i = 0; i < avFrame->nb_samples; ++i)
 				{
 					int ch = 0;
 					for(ch = 0; ch < avCodecCtx->channels; ++ch)
 					{
-						numBytes = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
-						memcpy(pcmData + numBytes * i, avFrame->data[ch] + numBytes * i, numBytes);
+						memcpy(pcmData + numBytes * (i * avCodecCtx->channels + ch), avFrame->data[ch] + numBytes * i, numBytes);
 					}
 				}
-
-				int pcmRealLen = numBytes * i;
+				
+				unique_lock<std::mutex> lock(mutex);
+				while(0 != mDataSize)			// mData 不为0, 表示ffmpeg 依然有未处理完的数据。
+				{
+					cvProduce.wait(lock);
+				}
+				mDataBuf = pcmData;
+				mDataSize = numBytes * i * avCodecCtx->channels;
+				cvConsume.notify_one();
 			}
 		}
 
@@ -202,23 +232,44 @@ int Mp3Decoder::mp3Decoding(const char *mp3Path)
 	avcodec_close(avCodecCtx);
 	avcodec_free_context(&avCodecCtx);
 	avformat_free_context(avFmtCtx);
-	
+
 	return 0;
 }
-
 
 /*
 	功能：	
 	返回：	
 	注意：	
 */
-int Mp3Decoder::recvPcmFrame(unsigned char*const dataBuff, const unsigned int dataSize)
+int Mp3Decoder::recvPcmFrame(unsigned char *const dataBuff, const unsigned int dataSize)
 {
-	cout << "Call Mp3Decoder::recvPcmFrame()." << endl;
+	//cout << "Call Mp3Decoder::recvPcmFrame()." << endl;
 
+	unique_lock<std::mutex> lock(mutex);
+	while(0 == mDataSize)		// mDataSize 为0 表示已经没有要处理的数据，通知生产者传递数据。
+	{
+		cvConsume.wait(lock);
+	}
 
-	cout << "Call Mp3Decoder::recvPcmFrame() end." << endl;
-	return 0;
+	//cout << "received." << endl;
+	int realSize = 0;
+	if(dataSize < mDataSize)
+	{
+		cerr << "In Mp3Decoder::recvPcmFrame(). Truncation. Data buffer space is not enough." << endl;
+		realSize = dataSize;
+	}
+	else
+	{
+		realSize = mDataSize;
+	}
+
+	memcpy(dataBuff, mDataBuf, realSize);
+
+	mDataSize = 0;
+	cvProduce.notify_one();
+
+	//cout << "Call Mp3Decoder::recvPcmFrame() end." << endl;
+	return realSize;
 }
 
 int Mp3Decoder::mp3ToPcm(const char *mp3Path, const char *pcmPath)
@@ -232,9 +283,10 @@ int Mp3Decoder::mp3ToPcm(const char *mp3Path, const char *pcmPath)
 	}
 
 	// 打开MP3 输入文件
-	int ret = 0;
 	AVFormatContext *avFmtCtx = NULL;
 	avFmtCtx = avformat_alloc_context();
+	
+	int ret = 0;
 	ret = avformat_open_input(&avFmtCtx, mp3Path, NULL,NULL);
 	if(ret < 0)
 	{
@@ -600,6 +652,10 @@ int Mp3Decoder::analyzeMp3Frame(const char *filePath, long long int *pSampleRate
 
 	sampleRate = sampleRateArray[version][sampleRateIndex];
 	cout << "sampleRate : " << sampleRate << "KHz" << endl;
+	if(NULL != pSampleRate)
+	{
+		*pSampleRate = sampleRate * 1000;
+	}
 
 	if(bFrameLenAdj)
 	{
@@ -632,11 +688,6 @@ int Mp3Decoder::analyzeMp3Frame(const char *filePath, long long int *pSampleRate
 			cout << "soundChMode: mono." << endl;
 			break;
 		}
-	}
-
-	if(NULL != pSampleRate)
-	{
-		*pSampleRate = bitRate;
 	}
 
 	if(NULL != pChLayout)
