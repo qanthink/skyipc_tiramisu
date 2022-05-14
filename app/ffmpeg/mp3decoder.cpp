@@ -70,6 +70,144 @@ int Mp3Decoder::disable()
 }
 
 /*
+	功能：	解码MP3 文件
+	返回：	成功，返回0；
+			-1, 文件无法打开。
+	注意：	
+*/
+int Mp3Decoder::mp3Decoding(const char *mp3Path)
+{
+	// 打开MP3 输入文件
+	int ret = 0;
+	AVFormatContext *avFmtCtx = NULL;
+	avFmtCtx = avformat_alloc_context();
+	ret = avformat_open_input(&avFmtCtx, mp3Path, NULL,NULL);
+	if(ret < 0)
+	{
+		cerr << "In Mp3Decoder::mp3ToPcm(): Fail to open file " << mp3Path << endl;
+		return -1;
+	}
+
+	// 寻找音视频流
+	ret = avformat_find_stream_info(avFmtCtx, NULL);
+	if(ret < 0)
+	{
+		cerr << "In Mp3Decoder::mp3ToPcm(): Cannot find any stream in file." << endl;
+		return -2;
+	}
+
+	// dump 流信息。
+	av_dump_format(avFmtCtx, 0, mp3Path, 0);
+
+	// 寻找音频流索引值
+	int i = 0;
+	int audioStreamIndex = -1;
+	for(i = 0; i < avFmtCtx->nb_streams; ++i)
+	{
+		if(AVMEDIA_TYPE_AUDIO == avFmtCtx->streams[i]->codecpar->codec_type)
+		{
+			audioStreamIndex = i;
+			break;
+		}
+	}
+	
+	if(-1 == audioStreamIndex)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find audio stream.\n" << endl;
+		return -2;
+	}
+
+	// 根据音频流寻找解码器。
+	AVCodec *codec = NULL;
+	AVCodecParameters *aCodecPara = NULL;
+	
+	aCodecPara = avFmtCtx->streams[audioStreamIndex]->codecpar;
+	codec = avcodec_find_decoder(aCodecPara->codec_id);
+	if(!codec)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find any codec for audio." << endl;
+		return -2;
+	}
+
+	// 使用参数初始化解码器上下文。
+	AVCodecContext *avCodecCtx = NULL;
+	avCodecCtx = avcodec_alloc_context3(codec);
+	ret = avcodec_parameters_to_context(avCodecCtx, aCodecPara);
+	if(ret < 0)
+	{
+		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot alloc codec context." << endl;
+		return -2;
+	}
+
+	// 打开解码器
+	avCodecCtx->pkt_timebase = avFmtCtx->streams[audioStreamIndex]->time_base;
+	ret = avcodec_open2(avCodecCtx, codec, NULL);
+	if(ret < 0)
+	{
+		printf("In  Mp3Decoder::mp3ToPcm(): Cannot open audio codec.\n");
+		return -2;
+	}
+
+	AVPacket *avPacket = NULL;
+	avPacket = av_packet_alloc();
+	AVFrame *avFrame = NULL;
+	avFrame = av_frame_alloc();
+
+	while(av_read_frame(avFmtCtx, avPacket) >= 0)
+	{
+		if(avPacket->stream_index != audioStreamIndex)
+		{
+			continue;
+		}
+		
+		ret = avcodec_send_packet(avCodecCtx, avPacket);
+		if(ret < 0)
+		{
+			continue;
+		}
+
+		while(avcodec_receive_frame(avCodecCtx, avFrame) >= 0)
+		{
+			/* Planar（平面），其数据格式排列方式为 (特别记住，该处是以点nb_samples采样点来交错，不是以字节交错）:
+			LLLLLLRRRRRRLLLLLLRRRRRRLLLLLLRRRRRRL...（每个LLLLLLRRRRRR为一个音频帧）
+			而不带P的数据格式（即交错排列）排列方式为：
+			LRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRL...（每个LR为一个音频样本）*/
+			if(av_sample_fmt_is_planar(avCodecCtx->sample_fmt))
+			{
+				const unsigned int pcmLen = 1024 * 8;
+				unsigned char pcmData[pcmLen] = {0};
+			
+				int i = 0;
+				int numBytes = 0;
+				//pcm播放时是LRLRLR格式，所以要交错保存数据
+				for(i = 0; i < avFrame->nb_samples; ++i)
+				{
+					int ch = 0;
+					for(ch = 0; ch < avCodecCtx->channels; ++ch)
+					{
+						numBytes = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
+						memcpy(pcmData + numBytes * i, avFrame->data[ch] + numBytes * i, numBytes);
+					}
+				}
+
+				int pcmRealLen = numBytes * i;
+			}
+		}
+
+		av_packet_unref(avPacket);
+	}
+
+	av_frame_free(&avFrame);
+	av_packet_free(&avPacket);
+	avcodec_close(avCodecCtx);
+	avcodec_free_context(&avCodecCtx);
+	avformat_free_context(avFmtCtx);
+	
+	return 0;
+}
+
+
+/*
 	功能：	
 	返回：	
 	注意：	
@@ -223,152 +361,6 @@ int Mp3Decoder::mp3ToPcm(const char *mp3Path, const char *pcmPath)
 }
 
 /*
-	功能：	
-	返回：	成功，返回0；
-			-1, 文件无法打开。
-	注意：	
-*/
-int Mp3Decoder::mp3Decoding(const char *mp3Path)
-{
-	// 打开MP3 输入文件
-	int ret = 0;
-	AVFormatContext *avFmtCtx = NULL;
-	avFmtCtx = avformat_alloc_context();
-	ret = avformat_open_input(&avFmtCtx, mp3Path, NULL,NULL);
-	if(ret < 0)
-	{
-		cerr << "In Mp3Decoder::mp3ToPcm(): Fail to open file " << mp3Path << endl;
-		return -1;
-	}
-
-	// 寻找音视频流
-	ret = avformat_find_stream_info(avFmtCtx, NULL);
-	if(ret < 0)
-	{
-		cerr << "In Mp3Decoder::mp3ToPcm(): Cannot find any stream in file." << endl;
-		return -2;
-	}
-
-	// dump 流信息。
-	av_dump_format(avFmtCtx, 0, mp3Path, 0);
-
-	// 寻找音频流索引值
-	int i = 0;
-	int audioStreamIndex = -1;
-	for(i = 0; i < avFmtCtx->nb_streams; ++i)
-	{
-		if(AVMEDIA_TYPE_AUDIO == avFmtCtx->streams[i]->codecpar->codec_type)
-		{
-			audioStreamIndex = i;
-			break;
-		}
-	}
-	
-	if(-1 == audioStreamIndex)
-	{
-		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find audio stream.\n" << endl;
-		return -2;
-	}
-
-	// 根据音频流寻找解码器。
-	AVCodec *codec = NULL;
-	AVCodecParameters *aCodecPara = NULL;
-	
-	aCodecPara = avFmtCtx->streams[audioStreamIndex]->codecpar;
-	codec = avcodec_find_decoder(aCodecPara->codec_id);
-	if(!codec)
-	{
-		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find any codec for audio." << endl;
-		return -2;
-	}
-
-	// 使用参数初始化解码器上下文。
-	AVCodecContext *avCodecCtx = NULL;
-	avCodecCtx = avcodec_alloc_context3(codec);
-	ret = avcodec_parameters_to_context(avCodecCtx, aCodecPara);
-	if(ret < 0)
-	{
-		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot alloc codec context." << endl;
-		return -2;
-	}
-
-	// 打开解码器
-	avCodecCtx->pkt_timebase = avFmtCtx->streams[audioStreamIndex]->time_base;
-	ret = avcodec_open2(avCodecCtx, codec, NULL);
-	if(ret < 0)
-	{
-		printf("In  Mp3Decoder::mp3ToPcm(): Cannot open audio codec.\n");
-		return -2;
-	}
-
-	AVPacket *avPacket = NULL;
-	avPacket = av_packet_alloc();
-	AVFrame *avFrame = NULL;
-	avFrame = av_frame_alloc();
-
-	while(av_read_frame(avFmtCtx, avPacket) >= 0)
-	{
-		if(avPacket->stream_index != audioStreamIndex)
-		{
-			continue;
-		}
-		
-		ret = avcodec_send_packet(avCodecCtx, avPacket);
-		if(ret < 0)
-		{
-			continue;
-		}
-
-		while(avcodec_receive_frame(avCodecCtx, avFrame) >= 0)
-		{
-			/* Planar（平面），其数据格式排列方式为 (特别记住，该处是以点nb_samples采样点来交错，不是以字节交错）:
-			LLLLLLRRRRRRLLLLLLRRRRRRLLLLLLRRRRRRL...（每个LLLLLLRRRRRR为一个音频帧）
-			而不带P的数据格式（即交错排列）排列方式为：
-			LRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRLRL...（每个LR为一个音频样本）*/
-			if(av_sample_fmt_is_planar(avCodecCtx->sample_fmt))
-			{
-				const unsigned int pcmLen = 1024 * 8;
-				unsigned char pcmData[pcmLen] = {0};
-			
-				int i = 0;
-				int numBytes = 0;
-				//pcm播放时是LRLRLR格式，所以要交错保存数据
-				for(i = 0; i < avFrame->nb_samples; ++i)
-				{
-					//cout << "i = " << i << endl;
-					int ch = 0;
-					for(ch = 0; ch < avCodecCtx->channels; ++ch)
-					{
-						//cout << "ch = " << ch << endl;
-						numBytes = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
-						//(char*)avFrame->data[ch] + numBytes * i, numBytes;
-						//cout << "numBytes = " << numBytes << endl;
-						
-						memcpy(pcmData + numBytes * i, avFrame->data[ch] + numBytes * i, numBytes);
-					}
-				}
-
-				int pcmRealLen = numBytes * i;
-				cout << "realBytes = " << pcmRealLen << endl;
-			}
-			//cout << "numBytes = " << avFrame->data[0] << endl;
-			//cout << "numBytes = " << avFrame->linesize << endl;
-		}
-		//cout << "j  = " << j << endl;
-
-		av_packet_unref(avPacket);
-	}
-
-	av_frame_free(&avFrame);
-	av_packet_free(&avPacket);
-	avcodec_close(avCodecCtx);
-	avcodec_free_context(&avCodecCtx);
-	avformat_free_context(avFmtCtx);
-	
-	return 0;
-}
-
-/*
 	功能：	获取MP3 音频帧数据标志对应的4个字节内容。
 	返回：	成功，返回0；
 			-1, 文件无法打开。
@@ -379,7 +371,7 @@ int Mp3Decoder::getMp3FrameFlag4Bytes(const char *filePath, unsigned char *p4Byt
 	ifstream ifs(filePath, ios::in);
 	if(!ifs)
 	{
-		cerr << "Fail to open file in Mp3Decoder::analyzeMp3Frame()." << endl;
+		cerr << "Fail to open file in Mp3Decoder::getMp3FrameFlag4Bytes()." << endl;
 		return -1;
 	}
 
@@ -391,7 +383,7 @@ int Mp3Decoder::getMp3FrameFlag4Bytes(const char *filePath, unsigned char *p4Byt
 		ifs.read(readData + 0, 1);
 		if(!ifs)
 		{
-			cerr << "Fail to call read() in Mp3Decoder::analyzeMp3Frame()." << endl;
+			cerr << "Fail to call read() in Mp3Decoder::getMp3FrameFlag4Bytes()." << endl;
 			break;
 		}
 		
@@ -400,7 +392,7 @@ int Mp3Decoder::getMp3FrameFlag4Bytes(const char *filePath, unsigned char *p4Byt
 			ifs.read(readData + 1, 1);
 			if(!ifs)
 			{
-				cerr << "Fail to call read() in Mp3Decoder::analyzeMp3Frame()." << endl;
+				cerr << "Fail to call read() in Mp3Decoder::getMp3FrameFlag4Bytes()." << endl;
 				break;
 			}
 		}
@@ -410,7 +402,7 @@ int Mp3Decoder::getMp3FrameFlag4Bytes(const char *filePath, unsigned char *p4Byt
 
 	if(!bIsMP3FrameData)
 	{
-		cerr << "In Mp3Decoder::analyzeMp3Frame(). Fail to analyze MP3 file." << endl;
+		cerr << "In Mp3Decoder::getMp3FrameFlag4Bytes(). Maybe this is not MP3 file." << endl;
 		ifs.close();
 		return -2;
 	}
@@ -418,21 +410,21 @@ int Mp3Decoder::getMp3FrameFlag4Bytes(const char *filePath, unsigned char *p4Byt
 	ifs.read(readData + 2, 2);
 	if(!ifs)
 	{
-		cerr << "Fail to call read() in Mp3Decoder::analyzeMp3Frame()." << endl;
+		cerr << "Fail to call read 4 bytes in Mp3Decoder::getMp3FrameFlag4Bytes()." << endl;
 		ifs.close();
 		return -3;
 	}
 
 	ifs.close();
 	#if 1	// debug
-	cout << "In Mp3Decoder::getMp3Frame4Bytes: get 4 bytes: " << "0x" << hex << setfill('0') << 
+	cout << "In Mp3Decoder::getMp3FrameFlag4Bytes: get 4 bytes: " << "0x" << hex << setfill('0') << 
 		setw(2) << (int)readData[0] << setw(2) << (int)readData[1] << 
 		setw(2) << (int)readData[2] << setw(2) << (int)readData[3] << endl;
 	#endif
 
 	if(NULL == p4BytesData)
 	{
-		cerr << "In Mp3Decoder::getMp3Frame4Bytes(). Argument has null value." << endl;
+		cerr << "In Mp3Decoder::getMp3FrameFlag4Bytes(). Argument has null value." << endl;
 	}
 	else
 	{
@@ -481,10 +473,10 @@ int Mp3Decoder::analyzeMp3Frame(const char *filePath, long long int *pSampleRate
 	const unsigned int dataSize = 4;
 	unsigned char p4BytesData[dataSize] = {0};
 
-	ret = getMp3Frame4Bytes(filePath, p4BytesData);
+	ret = getMp3FrameFlag4Bytes(filePath, p4BytesData);
 	if(0 != ret)
 	{
-		cerr << "Fail to call getMp3Frame4Bytes() in Mp3Decoder::analyzeMp3Frame()." << endl;
+		cerr << "Fail to call getMp3FrameFlag4Bytes() in Mp3Decoder::getMp3FrameFlag4Bytes()." << endl;
 		return -1;
 	}
 	#if 1	// debug

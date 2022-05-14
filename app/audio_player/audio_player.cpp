@@ -557,7 +557,7 @@ int AudioPlayer::thPlayRouteMP3(const char *filePath)
 /*
 	功能：	播放MP3 文件，内部实现。
 	返回：	0, 成功；-1, 参数无效；-2, 文件打开失败；-3, 文件读取失败。
-	注意：	
+	注意：	目前只实现了立体声转单声道，暂不支持立体声转立体声。
 */
 int AudioPlayer::playRouteMP3(const char *filePath)
 {
@@ -583,21 +583,20 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 
 	// dump 流信息。
 	av_dump_format(avFmtCtx, 0, filePath, 0);
-	//cout << avFmtCtx->streams[0]->codecpar->sample_rate << endl;
 
 	// 寻找音频流索引值
 	int i = 0;
-	int audioStreamIndex = -1;
+	int ASIndex = -1;
 	for(i = 0; i < avFmtCtx->nb_streams; ++i)
 	{
 		if(AVMEDIA_TYPE_AUDIO == avFmtCtx->streams[i]->codecpar->codec_type)
 		{
-			audioStreamIndex = i;
+			ASIndex = i;
 			break;
 		}
 	}
 	
-	if(-1 == audioStreamIndex)
+	if(-1 == ASIndex)
 	{
 		cerr << "In  Mp3Decoder::mp3ToPcm(): Cannot find audio stream.\n" << endl;
 		return -2;
@@ -607,7 +606,7 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	AVCodec *codec = NULL;
 	AVCodecParameters *aCodecPara = NULL;
 	
-	aCodecPara = avFmtCtx->streams[audioStreamIndex]->codecpar;
+	aCodecPara = avFmtCtx->streams[ASIndex]->codecpar;
 	codec = avcodec_find_decoder(aCodecPara->codec_id);
 	if(!codec)
 	{
@@ -626,7 +625,7 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	}
 
 	// 打开解码器
-	avCodecCtx->pkt_timebase = avFmtCtx->streams[audioStreamIndex]->time_base;
+	avCodecCtx->pkt_timebase = avFmtCtx->streams[ASIndex]->time_base;
 	ret = avcodec_open2(avCodecCtx, codec, NULL);
 	if(ret < 0)
 	{
@@ -650,7 +649,7 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 		return -3;
 	}
 #endif
-		if(avPacket->stream_index != audioStreamIndex)
+		if(avPacket->stream_index != ASIndex)
 		{
 			continue;
 		}
@@ -673,6 +672,7 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 				int numBytes = 0;
 				const unsigned int pcmLen = 1024 * 16;
 				unsigned char pcmData[pcmLen] = {0};
+				numBytes = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
 				
 				//pcm播放时是LRLRLR格式，所以要交错保存数据
 				for(i = 0; i < avFrame->nb_samples; ++i)
@@ -680,41 +680,41 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 					int ch = 0;
 					for(ch = 0; ch < avCodecCtx->channels; ++ch)
 					{
-						// 获取每次采样得到的字节数。此处为4 字节。
-						//数据：(char*)avFrame->data[ch] + numBytes * i; 长度：numBytes;
-						numBytes = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
-						#if 1	// stero
-						memcpy(pcmData + numBytes * i * 2 + numBytes * ch, avFrame->data[ch] + numBytes * i, numBytes);
-						#else	// MONO
-						if(0 == ch)
-						{
-							memcpy(pcmData + numBytes * i * 1 + numBytes * ch, avFrame->data[ch] + numBytes * i, numBytes);
-						}
-						#endif
+						memcpy(pcmData + numBytes * (i * avCodecCtx->channels + ch), avFrame->data[ch] + numBytes * i, numBytes);
 					}
 				}
 
+
 				int pcmRealLen = 0;
-				#if 1	//stero
-				//cout << "i = " << i << endl;
-				pcmRealLen = numBytes * i * 2;
-				#else	// mono
-				pcmRealLen = numBytes * i * 1;
-				#endif
-				//cout << "avFrame->nb_samples, realBytes = " << avFrame->nb_samples << ", " << pcmRealLen << endl;
-				
-				#if 1
-				Mp3Decoder *pMp3Decoder = Mp3Decoder::getInstance();
 				const unsigned int dstPcmLen = 1024 * 16;
 				char dstPcmData[dstPcmLen] = {0};
 				int realLen = 0;
-				int srcSamples = avFmtCtx->streams[audioStreamIndex]->codecpar->sample_rate;
-				realLen = pMp3Decoder->pcmDataResample(dstPcmData, dstPcmLen, 16000, AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, \
-					(char *)pcmData, pcmRealLen, srcSamples, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, avFrame->nb_samples);
-				#endif
+				int srcSamples = avFmtCtx->streams[ASIndex]->codecpar->sample_rate;
+				
+				long long int srcChLayout = 0;
+				if(1 == avCodecCtx->channels)
+				{
+					pcmRealLen = numBytes * i * 2;
+					srcChLayout = AV_CH_LAYOUT_MONO;
+				}
+				else if(2 == avCodecCtx->channels)
+				{
+					pcmRealLen = numBytes * i * 2;
+					srcChLayout = AV_CH_LAYOUT_STEREO;
+				}
+				else
+				{
+					pcmRealLen = numBytes * i * 1;
+					srcChLayout = AV_CH_LAYOUT_MONO;
+				}
 
+				Mp3Decoder *pMp3Decoder = Mp3Decoder::getInstance();
+				realLen = pMp3Decoder->pcmDataResample(dstPcmData, dstPcmLen, 16000, AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, 
+					(char *)pcmData, pcmRealLen, srcSamples, srcChLayout, AV_SAMPLE_FMT_FLT, avFrame->nb_samples);
+				
 				AudioOut *pAudioPout = AudioOut::getInstance();
 				pAudioPout->sendStream(dstPcmData, realLen);
+
 			}
 		}
 

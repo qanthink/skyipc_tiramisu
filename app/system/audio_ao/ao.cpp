@@ -104,7 +104,7 @@ int AudioOut::setPubAttr()
 	{
 		cerr << "Fail to call MI_AO_SetPubAttr(). s32Ret = 0x" << hex << s32Ret << endl;
 	}
-	cout << "Success to call MI_AO_SetPubAttr()." << endl;
+	//cout << "Success to call MI_AO_SetPubAttr()." << endl;
 	
 	return s32Ret;
 }
@@ -124,7 +124,7 @@ int AudioOut::enableDev()
 	{
 		cerr << "Fail to call MI_AO_Enable(). s32Ret = 0x" << hex << s32Ret << endl;
 	}
-	cout << "Success to call MI_AO_Enable()." << endl;
+	//cout << "Success to call MI_AO_Enable()." << endl;
 	
 	return s32Ret;
 }
@@ -165,7 +165,7 @@ int AudioOut::enableChanel()
 	{
 		cerr << "Fail to call MI_AO_EnableChn(). s32Ret = 0x" << hex << s32Ret << endl;
 	}
-	cout << "Success to call MI_AO_EnableChn()." << endl;
+	//cout << "Success to call MI_AO_EnableChn()." << endl;
 
 	return s32Ret;
 }
