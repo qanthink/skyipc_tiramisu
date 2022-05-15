@@ -564,15 +564,18 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	
 	Mp3Decoder *pMp3Decoder = Mp3Decoder::getInstance();
 	pMp3Decoder->mp3Decoding(filePath);
+	//this_thread::sleep_for(chrono::milliseconds(100));
 
-	long long int srcSampleRate = 0;
+	int srcNbSamples = 0;
 	long long int srcChLayout = 0;
+	long long int srcSampleRate = 0;
 	AVSampleFormat srcAvSampleFmt = AV_SAMPLE_FMT_NONE;
 
-	pMp3Decoder->analyzeMp3Frame(filePath, &srcSampleRate, &srcChLayout, &srcAvSampleFmt);
+	pMp3Decoder->getMp3Attr(filePath, &srcSampleRate, &srcChLayout, &srcAvSampleFmt, &srcNbSamples);
 	#if 1	// debug
-	cout << "In AudioPlayer::playRouteMP3(). " << "srcSampleRate = " << srcSampleRate 
-			<< ", srcChLayout = " << srcChLayout << ", srcAvSampleFmt = " << srcAvSampleFmt << endl;
+	cout << "In AudioPlayer::playRouteMP3(). Mp3 attr: " 
+		<< "srcSampleRate = " << srcSampleRate << ", srcChLayout = " << srcChLayout 
+		<< ", srcAvSampleFmt = " << srcAvSampleFmt << ",  srcNbSamples = " << srcNbSamples << endl;
 	#endif
 
 	while(1)
@@ -581,7 +584,6 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 		const unsigned int srcDataSize = 1024 * 16;
 		unsigned char srcDataBuff[srcDataSize] = {0};
 		srcRealSize = pMp3Decoder->recvPcmFrame(srcDataBuff, srcDataSize);
-		cout << "srcRealsize = " << srcRealSize << endl;
 
 		/*	void *dstPcmData, unsigned int dstPcmLen, long long int dstSampleRate, long long int dstChLayout, AVSampleFormat dstAvSampleFmt, 
 			const void *srcPcmData, unsigned int srcPcmLen, long long int srcSampleRate, long long int srcChLayout, AVSampleFormat srcAvSampleFmt, int srcNbSamples */
@@ -595,10 +597,15 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 
 		dstRealSize = pMp3Decoder->pcmDataResample(
 						dstDataBuff, dstDataSize, dstSampleRate, dstChLayout, dstAvSampleFmt, 
-						srcDataBuff, srcRealSize, 44100, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT);
-		cout << "dstRealSize = " << dstRealSize << endl;
+						srcDataBuff, srcDataSize, srcSampleRate, srcChLayout, srcAvSampleFmt, srcNbSamples);
+		
 		AudioOut *pAudioOut = AudioOut::getInstance();
 		pAudioOut->sendStream(dstDataBuff, dstRealSize);
+
+		#if 0	// debug
+		cout << "srcRealSize = " << srcRealSize << endl;
+		cout << "dstRealSize = " << dstRealSize << endl;
+		#endif
 	}
 
 	cout << "Call AudioPlayer::playRouteMP3() end." << endl;
