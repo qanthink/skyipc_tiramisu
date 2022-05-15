@@ -651,6 +651,7 @@ int Mp3Decoder::analyzeMp3Frame(const char *filePath, long long int *pSampleRate
 	cout << "bitRate: " << bitRate << "kbps" << endl;
 
 	sampleRate = sampleRateArray[version][sampleRateIndex];
+	cout << "sampleRateIndex : " << sampleRateIndex << endl;
 	cout << "sampleRate : " << sampleRate << "KHz" << endl;
 	if(NULL != pSampleRate)
 	{

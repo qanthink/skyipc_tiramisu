@@ -594,8 +594,8 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 		const AVSampleFormat dstAvSampleFmt = AV_SAMPLE_FMT_S16;
 
 		dstRealSize = pMp3Decoder->pcmDataResample(
-						dstDataBuff, dstDataSize, 16000, AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, 
-						srcDataBuff, srcRealSize, 44100, AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_FLT);
+						dstDataBuff, dstDataSize, dstSampleRate, dstChLayout, dstAvSampleFmt, 
+						srcDataBuff, srcRealSize, 44100, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT);
 		cout << "dstRealSize = " << dstRealSize << endl;
 		AudioOut *pAudioOut = AudioOut::getInstance();
 		pAudioOut->sendStream(dstDataBuff, dstRealSize);
