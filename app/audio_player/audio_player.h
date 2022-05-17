@@ -27,6 +27,8 @@ private:
 	AudioPlayer(const AudioPlayer&);
 	AudioPlayer& operator=(const AudioPlayer&);
 
+	bool bPlaying = false;
+
 	int playRoutePCM(const char *filePath);
 	static int thPlayRoutePCM(const char *filePath);
 	

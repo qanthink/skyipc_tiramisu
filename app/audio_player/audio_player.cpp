@@ -7,7 +7,7 @@ qanthink 版权所有。
 /*
 */
 
-#define RUNDE_LICENSE 0
+#define RUNDE_LICENSE 1
 #define FREE_COUNT 5	// 100 -> 3s.
 
 #include "audio_player.h"
@@ -27,12 +27,14 @@ AudioPlayer* AudioPlayer::getInstance()
 
 AudioPlayer::AudioPlayer()
 {
+	cout << "Call AudioPlayer::AudioPlayer()." << endl;
+	cout << "Call AudioPlayer::AudioPlayer() end." << endl;
 }
 
 AudioPlayer::~AudioPlayer()
 {
 	cout << "Call AudioPlayer::~AudioPlayer()." << endl;
-	
+	bPlaying = false;
 	cout << "Call AudioPlayer::~AudioPlayer() end." << endl;
 }
 
@@ -57,6 +59,8 @@ int AudioPlayer::playPCM(const char *filePath)
 */
 int AudioPlayer::thPlayRoutePCM(const char *filePath)
 {
+	cout << "Call AudioPlayer::thPlayRoutePCM()." << endl;
+
 	AudioPlayer *pThis = (AudioPlayer *)filePath;
 	return pThis->playRoutePCM(filePath);
 }
@@ -147,6 +151,7 @@ int AudioPlayer::playWAV(const char *filePath)
 */
 int AudioPlayer::thPlayRouteWAV(const char *filePath)
 {
+	cout << "Call AudioPlayer::thPlayRouteWAV()." << endl;
 	AudioPlayer *pThis = (AudioPlayer *)filePath;
 	return pThis->playRouteWAV(filePath);
 }
@@ -311,6 +316,8 @@ int AudioPlayer::getWavHeaderBytes(const char *filePath)
 	//cout << "This wav file has " << dec << realBytes << " Bytes audio data." << endl;
 
 	ifs.close();
+	
+	cout << "Call AudioPlayer::getWavHeaderBytes() end." << endl;
 	return readBytes;
 }
 
@@ -548,6 +555,7 @@ int AudioPlayer::playMP3(const char *filePath)
 */
 int AudioPlayer::thPlayRouteMP3(const char *filePath)
 {
+	cout << "Call AudioPlayer::thPlayRouteMP3()." << endl;
 	AudioPlayer *pThis = (AudioPlayer *)filePath;
 	return pThis->playRouteMP3(filePath);
 }
@@ -559,24 +567,31 @@ int AudioPlayer::thPlayRouteMP3(const char *filePath)
 */
 int AudioPlayer::playRouteMP3(const char *filePath)
 {
-	//cout << "Call AudioPlayer::playRouteMP3()." << endl;
-	
-	Mp3Decoder *pMp3Decoder = Mp3Decoder::getInstance();
-	pMp3Decoder->mp3Decoding(filePath);
+	cout << "Call AudioPlayer::playRouteMP3()." << endl;
 
+	// 1. 获取MP3 属性：声道数、采样率等。
 	int srcNbSamples = 0;
 	long long int srcChLayout = 0;
 	long long int srcSampleRate = 0;
 	AVSampleFormat srcAvSampleFmt = AV_SAMPLE_FMT_NONE;
 
+	Mp3Decoder *pMp3Decoder = Mp3Decoder::getInstance();
 	pMp3Decoder->getMp3Attr(filePath, &srcSampleRate, &srcChLayout, &srcAvSampleFmt, &srcNbSamples);
-	#if 1	// debug
+	#if 0	// debug
 	cout << "In AudioPlayer::playRouteMP3(). Mp3 attr: " 
 		<< "srcSampleRate = " << srcSampleRate << ", srcChLayout = " << srcChLayout 
 		<< ", srcAvSampleFmt = " << srcAvSampleFmt << ",  srcNbSamples = " << srcNbSamples << endl;
 	#endif
-
-	while(1)
+	
+	// 2. 开始解码MP3 文件。
+	pMp3Decoder->mp3Decoding(filePath);
+	
+	// 3. 获取解码数据
+	// 源音频数据
+	unsigned int srcRealSize = 0;
+	const unsigned int srcDataSize = 1024 * 16;
+	unsigned char srcDataBuff[srcDataSize] = {0};
+	while((srcRealSize = pMp3Decoder->recvPcmFrame(srcDataBuff, srcDataSize)) > 0 && bPlaying)
 	{
 #if 0 == RUNDE_LICENSE
 		static int cnt = 0;
@@ -587,26 +602,24 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 			return -3;
 		}
 #endif
+		//cout << "srcRealSize = " << srcRealSize << endl;
 
-		unsigned int srcRealSize = 0;
-		const unsigned int srcDataSize = 1024 * 16;
-		unsigned char srcDataBuff[srcDataSize] = {0};
-		srcRealSize = pMp3Decoder->recvPcmFrame(srcDataBuff, srcDataSize);
-
-		/*	void *dstPcmData, unsigned int dstPcmLen, long long int dstSampleRate, long long int dstChLayout, AVSampleFormat dstAvSampleFmt, 
-			const void *srcPcmData, unsigned int srcPcmLen, long long int srcSampleRate, long long int srcChLayout, AVSampleFormat srcAvSampleFmt, int srcNbSamples */
+		// 目标音频数据
 		unsigned int dstRealSize = 0;
 		const unsigned int dstDataSize = 1024 * 16;
 		unsigned char dstDataBuff[dstDataSize] = {0};
-		
+
+		// 目标音频格式
 		const long long int dstSampleRate = 16000;
 		const long long int dstChLayout = AV_CH_LAYOUT_MONO;
 		const AVSampleFormat dstAvSampleFmt = AV_SAMPLE_FMT_S16;
 
+		// 4. 重采样。
 		dstRealSize = pMp3Decoder->pcmDataResample(
 						dstDataBuff, dstDataSize, dstSampleRate, dstChLayout, dstAvSampleFmt, 
 						srcDataBuff, srcDataSize, srcSampleRate, srcChLayout, srcAvSampleFmt, srcNbSamples);
-		
+
+		// 5. AO 播放。
 		AudioOut *pAudioOut = AudioOut::getInstance();
 		pAudioOut->sendStream(dstDataBuff, dstRealSize);
 
@@ -615,6 +628,8 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 		cout << "dstRealSize = " << dstRealSize << endl;
 		#endif
 	}
+
+	bPlaying = false;
 
 	cout << "Call AudioPlayer::playRouteMP3() end." << endl;
 	return 0;

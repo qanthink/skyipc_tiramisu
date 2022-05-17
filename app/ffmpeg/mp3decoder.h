@@ -54,12 +54,13 @@ private:
 
 	bool bEnable = false;
 	bool bRunning = false;		// stream 线程的运行状态。
+	bool bIsDecoding = false;
 
 	std::mutex mutex;
 	std::condition_variable cvProduce;
 	std::condition_variable cvConsume;
 	unsigned int mDataSize = 0;
-	const unsigned char*mDataBuf = NULL;
+	unsigned char *mDataBuf = NULL;
 	
 	int routeMp3Decoding(const char *filePath);
 	static int thRouteMp3Decoding(void *arg, const char *filePath);

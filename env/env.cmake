@@ -33,3 +33,4 @@ endif()
 SET(CMAKE_C_COMPILER  	${ToolPath}/${ToolPrefix}gcc)
 SET(CMAKE_CXX_COMPILER 	${ToolPath}/${ToolPrefix}g++)
 SET(CMAKE_STRIP 		${ToolPath}/${ToolPrefix}strip)
+
