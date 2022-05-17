@@ -79,6 +79,12 @@ int Mp3Decoder::disable()
 		mDataBuf = NULL;
 	}
 	#endif
+
+	if(NULL != pTh)
+	{
+		pTh->join();
+		pTh = NULL;
+	}
 	
 	cout << "Call Mp3Decoder::disable() end." << endl;
 	return 0;
@@ -93,14 +99,14 @@ int Mp3Decoder::mp3Decoding(const char *filePath)
 {
 	cout << "Call Mp3Decoder::mp3Decoding()." << endl;
 	bIsDecoding = true;
-	thread th(thRouteMp3Decoding, this, filePath);
-	th.detach();
+	pTh = make_shared<thread>(thRouteMp3Decoding, this, filePath);
 	cout << "Call Mp3Decoder::mp3Decoding() end." << endl;
 	return 0;
 }
 
 int Mp3Decoder::thRouteMp3Decoding(void *arg, const char *filePath)
 {
+	cout << "Call Mp3Decoder::thRouteMp3Decoding()." << endl;
 	Mp3Decoder *pThis = (Mp3Decoder *)arg;
 	return pThis->routeMp3Decoding(filePath);
 }
@@ -211,8 +217,6 @@ int Mp3Decoder::routeMp3Decoding(const char *filePath)
 			continue;
 		}
 		
-		bIsDecoding = true;
-		
 		ret = avcodec_send_packet(avCodecCtx, avPacket);
 		if(ret < 0)
 		{
@@ -222,30 +226,46 @@ int Mp3Decoder::routeMp3Decoding(const char *filePath)
 		while(0 == (ret = avcodec_receive_frame(avCodecCtx, avFrame)))
 		{
 			const unsigned int bytesPerSample = av_get_bytes_per_sample(avCodecCtx->sample_fmt);
-			const unsigned int pcmSize =  bytesPerSample * avFrame->nb_samples * avCodecCtx->channels;
-
-			if(NULL == mDataBuf)
-			{
-				mDataBuf = (unsigned char *)malloc(pcmSize);
-			}
+			const unsigned int pcmSize = bytesPerSample * avFrame->nb_samples * avCodecCtx->channels;
+			const unsigned int channels = avCodecCtx->channels;
+			#if 0
+			cout << "bytesPerSample = " << bytesPerSample << ", pcmSize = " << pcmSize 
+				<< ", avFrame->nb_samples = " << avFrame->nb_samples << ", channels = " << channels << endl;
+			#endif
 
 			unique_lock<std::mutex> lock(mutex);
 			while(0 != mDataSize && bRunning)			// mData 不为0, 表示ffmpeg 依然有未处理完的数据。
 			{
 				cvProduce.wait(lock);
 			}
+			
+			if(NULL == mDataBuf)
+			{
+				mDataBuf = (unsigned char *)malloc(pcmSize);
+			}
 			memset(mDataBuf, 0, pcmSize);
 			
+			#if 0	// packet
 			int i = 0;
 			for(i = 0; i < avFrame->nb_samples; ++i)
 			{
+				//cout << "i = " << i << endl;
 				int ch = 0;
-				for(ch = 0; ch < avCodecCtx->channels; ++ch)
+				for(ch = 0; ch < channels; ++ch)
 				{
+					//cout << "ch = " << ch << endl;
 					//ofs.write((char *)avFrame->data[ch] + bytesPerSample*i, bytesPerSample);
-					memcpy(mDataBuf + (i * avCodecCtx->channels + ch) * bytesPerSample, avFrame->data[ch] + bytesPerSample * i, bytesPerSample);
+					memcpy(mDataBuf + (i * channels + ch) * bytesPerSample, avFrame->data[ch] + bytesPerSample * i, bytesPerSample);
+					//memcpy(mDataBuf + channels * ch, avFrame->data[ch], pcmSize / channels);
 				}
 			}
+			#else	// planer
+			int ch = 0;
+			for(ch = 0; ch < channels; ++ch)
+			{
+				memcpy(mDataBuf + pcmSize / channels * ch, avFrame->data[ch], pcmSize / channels);
+			}
+			#endif
 
 			mDataSize = pcmSize;
 			cvConsume.notify_one();
@@ -295,6 +315,8 @@ int Mp3Decoder::recvPcmFrame(unsigned char *const dataBuff, const unsigned int d
 	}
 
 	memcpy(dataBuff, mDataBuf, realSize);
+	free(mDataBuf);
+	mDataBuf = NULL;
 	mDataSize = 0;
 	cvProduce.notify_one();
 	

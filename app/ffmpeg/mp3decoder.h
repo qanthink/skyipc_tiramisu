@@ -61,6 +61,8 @@ private:
 	std::condition_variable cvConsume;
 	unsigned int mDataSize = 0;
 	unsigned char *mDataBuf = NULL;
+
+	std::shared_ptr<std::thread> pTh = NULL;
 	
 	int routeMp3Decoding(const char *filePath);
 	static int thRouteMp3Decoding(void *arg, const char *filePath);

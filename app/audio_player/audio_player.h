@@ -10,6 +10,7 @@ qanthink 版权所有。
 #pragma once
 
 #include "ao.hpp"
+#include <thread>
 
 class AudioPlayer{
 public:
@@ -28,6 +29,7 @@ private:
 	AudioPlayer& operator=(const AudioPlayer&);
 
 	bool bPlaying = false;
+	std::shared_ptr<std::thread> pTh = NULL;
 
 	int playRoutePCM(const char *filePath);
 	static int thPlayRoutePCM(const char *filePath);

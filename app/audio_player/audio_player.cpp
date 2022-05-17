@@ -13,7 +13,6 @@ qanthink 版权所有。
 #include "audio_player.h"
 #include "mp3decoder.h"
 
-#include <thread>
 #include <fstream>
 #include <iostream>
 
@@ -35,6 +34,11 @@ AudioPlayer::~AudioPlayer()
 {
 	cout << "Call AudioPlayer::~AudioPlayer()." << endl;
 	bPlaying = false;
+	if(NULL != pTh)
+	{
+		pTh->join();
+		pTh = NULL;
+	}
 	cout << "Call AudioPlayer::~AudioPlayer() end." << endl;
 }
 
@@ -542,8 +546,8 @@ int AudioPlayer::readWavHead(const char *filePath)
 int AudioPlayer::playMP3(const char *filePath)
 {
 	cout << "Call AudioPlayer::playMP3()." << endl;
-	thread th(thPlayRouteMP3, filePath);
-	th.detach();
+	pTh = make_shared<thread>(thPlayRouteMP3, filePath);
+	//th.detach();
 	cout << "Call AudioPlayer::playMP3() end." << endl;
 	return 0;
 }
@@ -577,7 +581,7 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 
 	Mp3Decoder *pMp3Decoder = Mp3Decoder::getInstance();
 	pMp3Decoder->getMp3Attr(filePath, &srcSampleRate, &srcChLayout, &srcAvSampleFmt, &srcNbSamples);
-	#if 0	// debug
+	#if 1	// debug
 	cout << "In AudioPlayer::playRouteMP3(). Mp3 attr: " 
 		<< "srcSampleRate = " << srcSampleRate << ", srcChLayout = " << srcChLayout 
 		<< ", srcAvSampleFmt = " << srcAvSampleFmt << ",  srcNbSamples = " << srcNbSamples << endl;
@@ -605,7 +609,7 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 		//cout << "srcRealSize = " << srcRealSize << endl;
 
 		// 目标音频数据
-		unsigned int dstRealSize = 0;
+		int dstRealSize = 0;
 		const unsigned int dstDataSize = 1024 * 16;
 		unsigned char dstDataBuff[dstDataSize] = {0};
 
@@ -617,11 +621,14 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 		// 4. 重采样。
 		dstRealSize = pMp3Decoder->pcmDataResample(
 						dstDataBuff, dstDataSize, dstSampleRate, dstChLayout, dstAvSampleFmt, 
-						srcDataBuff, srcDataSize, srcSampleRate, srcChLayout, srcAvSampleFmt, srcNbSamples);
+						srcDataBuff, srcRealSize, srcSampleRate, srcChLayout, srcAvSampleFmt, srcNbSamples);
 
 		// 5. AO 播放。
-		AudioOut *pAudioOut = AudioOut::getInstance();
-		pAudioOut->sendStream(dstDataBuff, dstRealSize);
+		if(dstRealSize > 0)
+		{
+			AudioOut *pAudioOut = AudioOut::getInstance();
+			pAudioOut->sendStream(dstDataBuff, dstRealSize);
+		}
 
 		#if 0	// debug
 		cout << "srcRealSize = " << srcRealSize << endl;
