@@ -12,7 +12,6 @@ qanthink 版权所有。
 #include "mp3decoder.h"
 #include <fstream>
 #include <iostream>
-#include <iomanip>
 
 using namespace std;
 
@@ -48,6 +47,7 @@ int Mp3Decoder::enable()
 	}
 
 	bEnable = true;
+	bRunning = true;
 
 	cout << "Call Mp3Decoder::enable() end." << endl;
 	return 0;
@@ -64,6 +64,10 @@ int Mp3Decoder::disable()
 	cout << "Call Mp3Decoder::disable()." << endl;
 
 	bEnable = false;
+	bRunning = false;
+	mutex.unlock();
+	cvProduce.notify_all();
+	cvConsume.notify_all();
 	
 	cout << "Call Mp3Decoder::disable() end." << endl;
 	return 0;
@@ -77,10 +81,10 @@ int Mp3Decoder::disable()
 int Mp3Decoder::mp3Decoding(const char *filePath)
 {
 
-	cout << "Call AudioPlayer::mp3Decoding()." << endl;
+	cout << "Call Mp3Decoder::mp3Decoding()." << endl;
 	thread th(thRouteMp3Decoding, this, filePath);
 	th.detach();
-	cout << "Call AudioPlayer::mp3Decoding() end." << endl;
+	cout << "Call Mp3Decoder::mp3Decoding() end." << endl;
 	return 0;
 }
 
@@ -105,7 +109,7 @@ int Mp3Decoder::routeMp3Decoding(const char *filePath)
 	avFmtCtx = avformat_alloc_context();
 	
 	int ret = 0;
-	ret = avformat_open_input(&avFmtCtx, filePath, NULL,NULL);
+	ret = avformat_open_input(&avFmtCtx, filePath, NULL, NULL);
 	if(ret < 0)
 	{
 		cerr << "In Mp3Decoder::mp3Decoding(): Fail to open file " << filePath << endl;
@@ -143,10 +147,10 @@ int Mp3Decoder::routeMp3Decoding(const char *filePath)
 
 	// 根据音频流寻找解码器。
 	AVCodec *avCodec = NULL;
-	AVCodecParameters *avCodecpar = NULL;
+	AVCodecParameters *avCodecPar = NULL;
 
-	avCodecpar = avFmtCtx->streams[ASIndex]->codecpar;
-	avCodec = avcodec_find_decoder(avCodecpar->codec_id);
+	avCodecPar = avFmtCtx->streams[ASIndex]->codecpar;
+	avCodec = avcodec_find_decoder(avCodecPar->codec_id);
 	if(!avCodec)
 	{
 		cerr << "In Mp3Decoder::mp3Decoding(): Cannot find any avCodec for audio." << endl;
@@ -156,7 +160,7 @@ int Mp3Decoder::routeMp3Decoding(const char *filePath)
 	// 使用参数初始化解码器上下文。
 	AVCodecContext *avCodecCtx = NULL;
 	avCodecCtx = avcodec_alloc_context3(avCodec);
-	ret = avcodec_parameters_to_context(avCodecCtx, avCodecpar);
+	ret = avcodec_parameters_to_context(avCodecCtx, avCodecPar);
 	if(ret < 0)
 	{
 		cerr << "In Mp3Decoder::mp3Decoding(): Cannot alloc avCodec context." << endl;
@@ -177,7 +181,7 @@ int Mp3Decoder::routeMp3Decoding(const char *filePath)
 	AVFrame *avFrame = NULL;
 	avFrame = av_frame_alloc();
 
-	while(av_read_frame(avFmtCtx, avPacket) >= 0)
+	while(av_read_frame(avFmtCtx, avPacket) >= 0 && bRunning)
 	{
 		if(avPacket->stream_index != ASIndex)
 		{
@@ -194,18 +198,18 @@ int Mp3Decoder::routeMp3Decoding(const char *filePath)
 		{
 			// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据造成错误。
 			const unsigned int pcmSize = av_samples_get_buffer_size(NULL, 
-				avCodecpar->channels, avFrame->nb_samples, (AVSampleFormat)avCodecpar->format, 1);
+				avCodecPar->channels, avFrame->nb_samples, (AVSampleFormat)avCodecPar->format, 1);
 			unsigned char pcmData[pcmSize] = {0};
 
 			int ch = 0;
-			for(ch = 0; ch < avCodecpar->channels; ++ch)
+			for(ch = 0; ch < avCodecPar->channels; ++ch)
 			{
-				unsigned int bytesPerChannel = pcmSize / avCodecpar->channels;
+				unsigned int bytesPerChannel = pcmSize / avCodecPar->channels;
 				memcpy(pcmData + bytesPerChannel * ch, avFrame->data[ch], bytesPerChannel);
 			}
 			
 			unique_lock<std::mutex> lock(mutex);
-			while(0 != mDataSize)			// mData 不为0, 表示ffmpeg 依然有未处理完的数据。
+			while(0 != mDataSize && bRunning)			// mData 不为0, 表示ffmpeg 依然有未处理完的数据。
 			{
 				cvProduce.wait(lock);
 			}
@@ -228,9 +232,9 @@ int Mp3Decoder::routeMp3Decoding(const char *filePath)
 }
 
 /*
-	功能：	
-	返回：	
-	注意：	
+	功能：	接收PCM 数据。
+	返回：	返回PCM 数据的长度。
+	注意：	前序调用为mp3Decoding().
 */
 int Mp3Decoder::recvPcmFrame(unsigned char *const dataBuff, const unsigned int dataSize)
 {
@@ -263,6 +267,11 @@ int Mp3Decoder::recvPcmFrame(unsigned char *const dataBuff, const unsigned int d
 	return realSize;
 }
 
+/*
+	功能：	将MP3 转为PCM 格式。
+	返回：	
+	注意：	
+*/
 int Mp3Decoder::mp3ToPcm(const char *mp3Path, const char *pcmPath)
 {
 	// 打开PCM 输出文件
@@ -316,10 +325,10 @@ int Mp3Decoder::mp3ToPcm(const char *mp3Path, const char *pcmPath)
 
 	// 根据音频流寻找解码器。
 	AVCodec *avCodec = NULL;
-	AVCodecParameters *avCodecpar = NULL;
+	AVCodecParameters *avCodecPar = NULL;
 	
-	avCodecpar = avFmtCtx->streams[audioStreamIndex]->codecpar;
-	avCodec = avcodec_find_decoder(avCodecpar->codec_id);
+	avCodecPar = avFmtCtx->streams[audioStreamIndex]->codecpar;
+	avCodec = avcodec_find_decoder(avCodecPar->codec_id);
 	if(!avCodec)
 	{
 		cerr << "In Mp3Decoder::mp3ToPcm(): Cannot find any avCodec for audio." << endl;
@@ -329,7 +338,7 @@ int Mp3Decoder::mp3ToPcm(const char *mp3Path, const char *pcmPath)
 	// 使用参数初始化解码器上下文。
 	AVCodecContext *avCodecCtx = NULL;
 	avCodecCtx = avcodec_alloc_context3(avCodec);
-	ret = avcodec_parameters_to_context(avCodecCtx, avCodecpar);
+	ret = avcodec_parameters_to_context(avCodecCtx, avCodecPar);
 	if(ret < 0)
 	{
 		cerr << "In Mp3Decoder::mp3ToPcm(): Cannot alloc avCodec context." << endl;
@@ -400,305 +409,6 @@ int Mp3Decoder::mp3ToPcm(const char *mp3Path, const char *pcmPath)
 	avcodec_free_context(&avCodecCtx);
 	avformat_free_context(avFmtCtx);
 
-	return 0;
-}
-
-/*
-	功能：	获取MP3 音频帧数据标志对应的4个字节内容。
-	返回：	成功，返回0;
-			-1, 文件无法打开。
-	注意：	p4BytesData 必须为4 字节空间。
-*/
-int Mp3Decoder::getMp3FrameFlag4Bytes(const char *filePath, unsigned char *p4BytesData)
-{
-	ifstream ifs(filePath, ios::in);
-	if(!ifs)
-	{
-		cerr << "Fail to open file in Mp3Decoder::getMp3FrameFlag4Bytes()." << endl;
-		return -1;
-	}
-
-	const unsigned int dataSize = 4;
-	char readData[dataSize] = {0};
-	bool bIsMP3FrameData = false;
-	while(!bIsMP3FrameData)
-	{
-		ifs.read(readData + 0, 1);
-		if(!ifs)
-		{
-			cerr << "Fail to call read() in Mp3Decoder::getMp3FrameFlag4Bytes()." << endl;
-			break;
-		}
-		
-		if(0xFF == readData[0])
-		{
-			ifs.read(readData + 1, 1);
-			if(!ifs)
-			{
-				cerr << "Fail to call read() in Mp3Decoder::getMp3FrameFlag4Bytes()." << endl;
-				break;
-			}
-		}
-		
-		bIsMP3FrameData = (0xFF == readData[0] && 0xFB == readData[1]);
-	}
-
-	if(!bIsMP3FrameData)
-	{
-		cerr << "In Mp3Decoder::getMp3FrameFlag4Bytes(). Maybe this is not MP3 file." << endl;
-		ifs.close();
-		return -2;
-	}
-
-	ifs.read(readData + 2, 2);
-	if(!ifs)
-	{
-		cerr << "Fail to call read 4 bytes in Mp3Decoder::getMp3FrameFlag4Bytes()." << endl;
-		ifs.close();
-		return -3;
-	}
-
-	ifs.close();
-	#if 1	// debug
-	cout << "In Mp3Decoder::getMp3FrameFlag4Bytes: get 4 bytes: " << "0x" << hex << setfill('0') << 
-		setw(2) << (int)readData[0] << setw(2) << (int)readData[1] << 
-		setw(2) << (int)readData[2] << setw(2) << (int)readData[3] << endl;
-	#endif
-
-	if(NULL == p4BytesData)
-	{
-		cerr << "In Mp3Decoder::getMp3FrameFlag4Bytes(). Argument has null value." << endl;
-	}
-	else
-	{
-		memcpy(p4BytesData, readData, 4);
-	}
-	
-	return 0;
-}
-
-static unsigned int bitRateArray[16][6]
-{
-	{0, 0, 0, 0, 0, 0,},				// 0000
-	{32, 32, 32, 32, 32, 32,},
-	{64, 48, 40, 64, 48, 16,},
-	{96, 56, 48, 96, 56, 24,},
-	{128, 64, 56, 128, 64, 32,},		// 0100
-	{160, 80, 64, 160, 80, 64,},
-	{192, 96, 80, 192, 96, 80,},
-	{224, 112, 96, 224, 112, 96,},
-	{256, 128, 116, 256, 128, 64,},		// 1000
-	{288, 160, 128, 288, 160, 128,},
-	{320, 192, 160, 320, 192, 160,},
-	{352, 224, 192, 352, 224, 112,},
-	{384, 256, 224, 384, 256, 128,},	// 1100
-	{416, 320, 256, 416, 320, 256,},
-	{448, 384, 320, 448, 384, 320,},
-	{0, 0, 0, 0, 0, 0,},				// 1111
-};
-
-static float sampleRateArray[4][4]
-{
-	{11.025, 12.0, 8.0, 0.0},
-	{0.0, 0.0, 0.0, 0.0},
-	{22.05, 24.0, 16.0, 0.0},
-	{44.1, 48.0, 32.0, 0.0},
-};
-
-/*
-	功能：	解析MP3 音频帧。
-	返回：	成功，返回0;
-	注意：	
-*/
-int Mp3Decoder::analyzeMp3Frame(const char *filePath, long long int *pSampleRate, long long int *pChLayout, AVSampleFormat *pAvSampleFmt)
-{
-	int ret = 0;
-	const unsigned int dataSize = 4;
-	unsigned char p4BytesData[dataSize] = {0};
-
-	ret = getMp3FrameFlag4Bytes(filePath, p4BytesData);
-	if(0 != ret)
-	{
-		cerr << "Fail to call getMp3FrameFlag4Bytes() in Mp3Decoder::getMp3FrameFlag4Bytes()." << endl;
-		return -1;
-	}
-	#if 1	// debug
-	cout << "In Mp3Decoder::analyzeMp3Frame: get 4 bytes: " << "0x" << hex << setfill('0') << 
-		setw(2) << (int)p4BytesData[0] << setw(2) << (int)p4BytesData[1] << 
-		setw(2) << (int)p4BytesData[2] << setw(2) << (int)p4BytesData[3] << endl;
-	#endif
-
-	unsigned int version = 0;			// 版本
-	unsigned int layer = 0;				// 声道数
-	bool bCRC  = false;					// CRC校验
-	unsigned int bitRate = 0;			// 比特率
-	int bitRateIndex = 0;
-	float sampleRate = 0.0;				// 采样率
-	unsigned int sampleRateIndex = 0;
-	bool bFrameLenAdj = 0;				// 帧长调整
-	unsigned int soundChMode = 0;		// 声道模式
-
-	version = ((p4BytesData[1] & 0x18) >> 3);
-	layer = ((p4BytesData[1] & 0x06) >> 1);
-	bCRC = ((p4BytesData[1] & 0x01) >> 0);
-	bitRateIndex = ((p4BytesData[2] & 0xF0) >> 4);
-	sampleRateIndex = ((p4BytesData[2] & 0x0C) >> 2);
-	bFrameLenAdj = ((p4BytesData[2] & 0x02) >> 1);
-	soundChMode = ((p4BytesData[3] & 0x0C) >> 6);
-
-	switch(version)
-	{
-		case 0:
-		{
-			cout << "version: MPEG 2.5" << endl;
-			break;
-		}
-		case 1:
-		{
-			cout << "version: undefined" << endl;
-			break;
-		}
-		case 2:
-		{
-			cout << "version: MPEG 2" << endl;
-			break;
-		}
-		case 3:
-		{
-			cout << "version: MPEG 1" << endl;
-			break;
-		}
-	}
-
-	switch(layer)
-	{
-		case 0:
-		{
-			cout << "layer: undefined" << endl;
-			break;
-		}
-		case 1:
-		{
-			cout << "layer: 3" << endl;
-			break;
-		}
-		case 2:
-		{
-			cout << "layer: 2" << endl;
-			break;
-		}
-		case 3:
-		{
-			cout << "layer: 1" << endl;
-			break;
-		}
-	}
-
-	if(bCRC)
-	{
-		cout << "CRC: true" << endl;
-	}
-	else
-	{
-		cout << "CRC: false" << endl;
-	}
-
-	int index = 0;
-	if(3 == version && 3 == layer)
-	{
-		index = 0;
-	}
-	else if(3 == version && 2 == layer)
-	{
-		index = 1;
-	}
-	else if(3 == version && 1 == layer)
-	{
-		index = 2;
-	}
-	else if(2 == version && 3 == layer)
-	{
-		index = 3;
-	}
-	else if(2 == version && 2 == layer)
-	{
-		index = 4;
-	}
-	else if(2 == version && 1 == layer)
-	{
-		index = 5;
-	}
-	else
-	{
-		index = -1;
-	}
-
-	if(-1 != index)
-	{
-		bitRate = bitRateArray[bitRateIndex][index];
-	}
-	cout << "_index: " << dec << index << endl;
-	cout << "bitRateIndex: " << (unsigned int)bitRateIndex << endl;
-	cout << "bitRate: " << bitRate << "kbps" << endl;
-
-	sampleRate = sampleRateArray[version][sampleRateIndex];
-	cout << "sampleRateIndex : " << sampleRateIndex << endl;
-	cout << "sampleRate : " << sampleRate << "KHz" << endl;
-	if(NULL != pSampleRate)
-	{
-		*pSampleRate = sampleRate * 1000;
-	}
-
-	if(bFrameLenAdj)
-	{
-		cout << "bFrameLenAdj: " << true << endl;
-	}
-	else
-	{
-		cout << "bFrameLenAdj: " << false << endl;
-	}
-
-	switch(soundChMode)
-	{
-		case 0:
-		{
-			cout << "soundChMode: stereo." << endl;
-			break;
-		}
-		case 1:
-		{
-			cout << "soundChMode: joint stereo." << endl;
-			break;
-		}
-		case 2:
-		{
-			cout << "soundChMode: dual track." << endl;
-			break;
-		}
-		case 3:
-		{
-			cout << "soundChMode: mono." << endl;
-			break;
-		}
-	}
-
-	if(NULL != pChLayout)
-	{
-		if(3 == soundChMode)
-		{
-			*pChLayout = 1;
-		}
-		else
-		{
-			*pChLayout = 2;
-		}
-	}
-
-	if(NULL != pAvSampleFmt)
-	{
-		*pAvSampleFmt = AV_SAMPLE_FMT_FLT;
-	}
-	
 	return 0;
 }
 
@@ -827,29 +537,9 @@ int Mp3Decoder::pcmFileResample(const char *dstPcmPath, long long int dstSampleR
 			break;
 		}
 
-		// 将音频数据写入pcm文件
-		if(av_sample_fmt_is_planar(dstAvSampleFmt))
-		{
-			// planner方式。pcm文件写入时一般都是packet方式，所以这里要注意转换一下。
-			int perSampleBytes = 0;
-			perSampleBytes = av_get_bytes_per_sample(dstAvSampleFmt);
-			// 这里必须是outNbSmples，而不能用dstNbSamples,因为outNbSmples 才代表此次实际转换的采样数，它肯定小于或等于dstNbSamples.
-			int i = 0;
-			for(i = 0; i < outNbSmples; ++i)
-			{
-				int ch = 0;
-				for(ch = 0; ch < outNbChs; ++ch)
-				{
-					ofs.write((char *)dstData[ch] + i * perSampleBytes, perSampleBytes);
-				}
-			}
-		}
-		else
-		{
-			// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据造成错误。
-			dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChs, outNbSmples, dstAvSampleFmt, 1);
-			ofs.write((char *)dstData[0], dstBufSize);
-		}
+		// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据造成错误。
+		dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChs, outNbSmples, dstAvSampleFmt, 1);
+		ofs.write((char *)dstData[0], dstBufSize);
 	}
 
 	// 还有剩余的缓存数据没有转换，第三个传递NULL, 第四个传递0, 即可将缓存中的全部取出
@@ -948,7 +638,7 @@ int Mp3Decoder::pcmDataResample(void *dstPcmData, unsigned int dstPcmLen,
 		return -2;
 	}
 
-	// 根据声道布局计算声道数。
+	// 4、根据声道布局计算声道数。
 	int inNbChs = 0;		// 声道数
 	int outNbChs = 0;
 	inNbChs = av_get_channel_layout_nb_channels(srcChLayout);
@@ -1008,43 +698,15 @@ int Mp3Decoder::pcmDataResample(void *dstPcmData, unsigned int dstPcmLen,
 		cerr << "In Mp3Decoder::pcmDataResample() swr_convert() fail. outNbSmples = " << outNbSmples << endl;
 	}
 
-	// planner方式。pcm文件写入时一般都是packet方式，所以这里要注意转换一下。
-	if(av_sample_fmt_is_planar(dstAvSampleFmt))
+	// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据造成错误。
+	dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChs, outNbSmples, dstAvSampleFmt, 1);
+	if(dstPcmLen < dstBufSize)
 	{
-		int i = 0;
-		int perSampleBytes = 0;
-		
-		perSampleBytes = av_get_bytes_per_sample(dstAvSampleFmt);
-		// 这里必须是outNbSmples，而不能用dstNbSamples,因为outNbSmples 才代表此次实际转换的采样数，它肯定小于或等于dstNbSamples.
-		for(i = 0; i < outNbSmples; ++i)
-		{
-			int ch = 0;
-			for(ch = 0; ch < outNbChs; ++ch)
-			{
-				if(perSampleBytes * (i + ch) < dstPcmLen)
-				{
-					memcpy(dstPcmData + perSampleBytes * (i + ch), dstData[ch] + i * perSampleBytes, perSampleBytes);
-				}
-				else
-				{
-					bOOM = true;
-					break;
-				}
-			}
-		}
+		cerr << "In Mp3Decoder::pcmDataResample(): space is not enough. dstPcmData is less than need." << endl;
+		dstBufSize = dstPcmLen;
+		bOOM = true;
 	}
-	else
-	{
-		// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据造成错误。
-		dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChs, outNbSmples, dstAvSampleFmt, 1);
-		if(dstPcmLen < dstBufSize)
-		{
-			cerr << "In Mp3Decoder::pcmDataResample(): space is not enough. dstPcmData is less than need." << endl;
-			dstBufSize = dstPcmLen;
-			bOOM = true;
-		}
-		memcpy(dstPcmData, dstData[0], dstBufSize);
-	}
+	memcpy(dstPcmData, dstData[0], dstBufSize);
 
 	// 释放资源
 	int ch = 0;
@@ -1116,10 +778,10 @@ int Mp3Decoder::getMp3Attr(const char *filePath, long long int *pSampleRate, lon
 
 	// 根据音频流寻找解码器
 	AVCodec *avCodec = NULL;
-	AVCodecParameters *avCodecpar = NULL;
+	AVCodecParameters *avCodecPar = NULL;
 
-	avCodecpar = avFmtCtx->streams[ASIndex]->codecpar;
-	avCodec = avcodec_find_decoder(avCodecpar->codec_id);
+	avCodecPar = avFmtCtx->streams[ASIndex]->codecpar;
+	avCodec = avcodec_find_decoder(avCodecPar->codec_id);
 	if(!avCodec)
 	{
 		cerr << "In Mp3Decoder::getMp3Attr(): Cannot find any avCodec for audio." << endl;
@@ -1128,26 +790,26 @@ int Mp3Decoder::getMp3Attr(const char *filePath, long long int *pSampleRate, lon
 
 	if(NULL != pSampleRate)
 	{
-		*pSampleRate = avCodecpar->sample_rate;
+		*pSampleRate = avCodecPar->sample_rate;
 		cout << "*pSampleRate = " << *pSampleRate << endl;
 	}
 
 	if(NULL != pAvSampleFmt)
 	{
-		*pAvSampleFmt = (AVSampleFormat)(avCodecpar->format);
+		*pAvSampleFmt = (AVSampleFormat)(avCodecPar->format);
 		cout << "*pAvSampleFmt = " << *pAvSampleFmt << endl;
 	}
 
 	if(NULL != pChLayout)
 	{
-		*pChLayout = avCodecpar->channel_layout;
+		*pChLayout = avCodecPar->channel_layout;
 		cout << "*pChLayout = " << *pChLayout << endl;
 	}
 
 	// 使用参数初始化解码器上下文。
 	AVCodecContext *avCodecCtx = NULL;
 	avCodecCtx = avcodec_alloc_context3(avCodec);
-	ret = avcodec_parameters_to_context(avCodecCtx, avCodecpar);
+	ret = avcodec_parameters_to_context(avCodecCtx, avCodecPar);
 	if(ret < 0)
 	{
 		cerr << "In Mp3Decoder::mp3Decoding(): Cannot alloc avCodec context." << endl;

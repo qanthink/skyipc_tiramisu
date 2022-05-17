@@ -7,17 +7,14 @@ qanthink 版权所有。
 /*
 */
 
-#define RUNDE_LICENSE 1
-#define FREE_COUNT 3	// 100 -> 3s.
+#define RUNDE_LICENSE 0
+#define FREE_COUNT 5	// 100 -> 3s.
 
 #include "audio_player.h"
 #include "mp3decoder.h"
 
 #include <thread>
-#include <unistd.h>
 #include <fstream>
-#include <iomanip>
-#include <string.h>
 #include <iostream>
 
 using namespace std;
@@ -34,6 +31,9 @@ AudioPlayer::AudioPlayer()
 
 AudioPlayer::~AudioPlayer()
 {
+	cout << "Call AudioPlayer::~AudioPlayer()." << endl;
+	
+	cout << "Call AudioPlayer::~AudioPlayer() end." << endl;
 }
 
 /*
@@ -63,7 +63,7 @@ int AudioPlayer::thPlayRoutePCM(const char *filePath)
 
 /*
 	功能：	播放PCM 文件，内部实现。
-	返回：	0, 成功；-1, 参数无效；-2, 文明打开失败。
+	返回：	0, 成功；-1, 参数无效；-2, 文件打开失败。
 	注意：	
 */
 int AudioPlayer::playRoutePCM(const char *filePath)
@@ -84,7 +84,6 @@ int AudioPlayer::playRoutePCM(const char *filePath)
 		return -3;
 	}
 #endif
-
 
 	ifstream ifs((const char *)filePath, ios::in);
 	if(ifs.fail())
@@ -108,12 +107,13 @@ int AudioPlayer::playRoutePCM(const char *filePath)
 			cout << "error: only " << readBytes << " could be read";
 			break;
 		}
-		//cout << "readBytes = " << readBytes << endl;
 
-		//cout << "Send pcm stream" << endl;
+		#if 0	// debug
+		cout << "readBytes = " << readBytes << endl;
+		cout << "Send pcm stream" << endl;
+		#endif
 		AudioOut::getInstance()->sendStream(dataBuf, readBytes);
 	}
-
 
 	ifs.close();
 
@@ -165,7 +165,6 @@ int AudioPlayer::playRouteWAV(const char *filePath)
 		return -1;
 	}
 
-	
 #if 0 == RUNDE_LICENSE
 	static int cnt = 0;
 	++cnt;
@@ -315,10 +314,10 @@ int AudioPlayer::getWavHeaderBytes(const char *filePath)
 	return readBytes;
 }
 
-int readWavHead(const char *filePath)
+int AudioPlayer::readWavHead(const char *filePath)
 {
-	int i = 0; //用作循环计数
-	unsigned char ch[100]; //用来存储wav文件的头信息
+	int i = 0;				//用作循环计数
+	unsigned char ch[100];	//用来存储wav文件的头信息
 
 	FILE *fp;
 	fp=fopen(filePath,"rb");//为读，打开一个wav文件
@@ -347,7 +346,7 @@ int readWavHead(const char *filePath)
 	}
 	//输出size大小
 	printf("\nsize:ox");
-	for(i=7;i>=4;i--) //低字节表示数值低位，高字节表示数值高位
+	for(i=7;i>=4;i--)		//低字节表示数值低位，高字节表示数值高位
 	{
 		if(ch[i]<16)
 		printf("0%x",ch[i]);
@@ -564,7 +563,6 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	
 	Mp3Decoder *pMp3Decoder = Mp3Decoder::getInstance();
 	pMp3Decoder->mp3Decoding(filePath);
-	//this_thread::sleep_for(chrono::milliseconds(100));
 
 	int srcNbSamples = 0;
 	long long int srcChLayout = 0;
@@ -580,6 +578,16 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 
 	while(1)
 	{
+#if 0 == RUNDE_LICENSE
+		static int cnt = 0;
+		++cnt;
+		if(cnt > FREE_COUNT + 200)
+		{
+			cout << "Copyright by qanthink@163.com." << endl;
+			return -3;
+		}
+#endif
+
 		unsigned int srcRealSize = 0;
 		const unsigned int srcDataSize = 1024 * 16;
 		unsigned char srcDataBuff[srcDataSize] = {0};
@@ -609,97 +617,6 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	}
 
 	cout << "Call AudioPlayer::playRouteMP3() end." << endl;
+	return 0;
 }
-
-/*
-	功能：	获取MP3 头部信息字节数。
-	返回：	成功，返回头部信息的字节数；失败，返回0.
-	注意：	调用该函数统计头部信息字节数，从而可以跳过这些字节，读取音频正文数据。
-*/
-int AudioPlayer::getMP3HeaderBytes(const char *filePath)
-{
-	cout << "Call AudioPlayer::getMP3HeaderBytes()." << endl;
-	if(NULL == filePath)
-	{
-		cerr << "Fail to call AudioPlayer::getMP3HeaderBytes(), argument has null value!" << endl;
-		return 0;
-	}
-	
-	ifstream ifs((const char *)filePath, ios::in);
-	if(ifs.fail())
-	{
-		cerr << "Fail to open file: " << filePath << ". " << strerror(errno) << endl;
-		return 0;
-	}
-
-	int headerBytes = 0;
-	unsigned readBytes = 0;
-	char dataBuf[sizeof(stWavFileHeader_t)] = {0};
-
-	// 读取MP3 头部信息。不包含'd', 'a', 't', 'a' 字段。
-	ifs.read(dataBuf, sizeof(stWavFileHeader_t));
-	readBytes = ifs.gcount();
-	if(!ifs)
-	{
-		cerr << "Fail to analyze wav file." << endl;
-		ifs.close();
-		return 0;
-	}
-
-	// 寻找'd', 'a', 't', 'a' 字段，每次偏移2 字节，读取4 字节。
-	const unsigned int dataLen = 4;
-	while(!ifs.eof())
-	{
-		memset(dataBuf, 0, dataLen);
-
-		readBytes += 4;
-		ifs.read(dataBuf, dataLen);
-		if('d' == dataBuf[0] && 'a' == dataBuf[1] && 't' == dataBuf[2] && 'a' == dataBuf[3])
-		{
-			cout << "Find format segment of 'data'" << endl;
-			//cout << "This wav file has " << readBytes << " + 4 Bytes header data." << endl;
-			break;
-		}
-		//cout << dataBuf[0] << dataBuf[1] << dataBuf[2] << dataBuf[3] << endl;
-		
-		if(!ifs)
-		{
-			cerr << "Fail to call read() in AudioPlayer::getMP3HeaderBytes()." << endl;
-			ifs.close();
-			return 0;
-		}
-
-		readBytes -= 2;
-		ifs.seekg(-2, ios::cur);
-	}
-
-	// 获取MP3 文件音频数据正文的长度。
-	readBytes += 4;
-	ifs.read(dataBuf, dataLen);
-	if(!ifs)
-	{
-		cerr << "Fail to call read() in AudioPlayer::getMP3HeaderBytes()." << endl;
-		ifs.close();
-		return readBytes;
-	}
-	#if 0	// debug
-	cout << hex << setfill('0') << setw(2) << (int)dataBuf[0] << setw(2) << (int)dataBuf[1] 
-		<< setw(2) << (int)dataBuf[2] << setw(2) << (int)dataBuf[3] << endl;
-	cout << dec;
-	#endif
-
-	unsigned int realBytes = 0;
-	realBytes |= dataBuf[3];
-	realBytes <<= 8;
-	realBytes |= dataBuf[2];
-	realBytes <<= 8;
-	realBytes |= dataBuf[1];
-	realBytes <<= 8;
-	realBytes |= dataBuf[0];
-	//cout << "This wav file has " << dec << realBytes << " Bytes audio data." << endl;
-
-	ifs.close();
-	return readBytes;
-}
-
 

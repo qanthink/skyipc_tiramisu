@@ -18,6 +18,8 @@ public:
 	int playPCM(const char *filePath);
 	int playWAV(const char *filePath);
 	int playMP3(const char *filePath);
+	
+	int readWavHead(const char *filePath);
 
 private:
 	AudioPlayer();
@@ -27,16 +29,16 @@ private:
 
 	int playRoutePCM(const char *filePath);
 	static int thPlayRoutePCM(const char *filePath);
+	
 	int playRouteWAV(const char *filePath);
 	static int thPlayRouteWAV(const char *filePath);
+	
 	int playRouteMP3(const char *filePath);
 	static int thPlayRouteMP3(const char *filePath);
 
 	int getWavHeaderBytes(const char *filePath);
-	int getMP3HeaderBytes(const char *filePath);
 };
 
-int readWavHead(const char *filePath);
 
 // 16 Bytes WAV FMT
 typedef struct
