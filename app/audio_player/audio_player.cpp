@@ -7,9 +7,6 @@ qanthink 版权所有。
 /*
 */
 
-#define RUNDE_LICENSE 1
-#define FREE_COUNT 5	// 100 -> 3s.
-
 #include "audio_player.h"
 #include "mp3decoder.h"
 
@@ -82,16 +79,6 @@ int AudioPlayer::playRoutePCM(const char *filePath)
 		cerr << "Fail to call AudioPlayer::playRoutePMC(), argument has null value!" << endl;
 		return -1;
 	}
-
-#if 0 == RUNDE_LICENSE
-	static int cnt = 0;
-	++cnt;
-	if(cnt > FREE_COUNT)
-	{
-		cout << "Copyright by qanthink@163.com." << endl;
-		return -3;
-	}
-#endif
 
 	ifstream ifs((const char *)filePath, ios::in);
 	if(ifs.fail())
@@ -173,16 +160,6 @@ int AudioPlayer::playRouteWAV(const char *filePath)
 		cerr << "Fail to call AudioPlayer::playRouteWAV(), argument has null value!" << endl;
 		return -1;
 	}
-
-#if 0 == RUNDE_LICENSE
-	static int cnt = 0;
-	++cnt;
-	if(cnt > FREE_COUNT)
-	{
-		cout << "Copyright by qanthink@163.com." << endl;
-		return -3;
-	}
-#endif
 
 	// 打开文件
 	ifstream ifs((const char *)filePath, ios::in);
@@ -597,15 +574,6 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	unsigned char srcDataBuff[srcDataSize] = {0};
 	while((srcRealSize = pMp3Decoder->recvPcmFrame(srcDataBuff, srcDataSize)) > 0 && bPlaying)
 	{
-#if 0 == RUNDE_LICENSE
-		static int cnt = 0;
-		++cnt;
-		if(cnt > FREE_COUNT + 200)
-		{
-			cout << "Copyright by qanthink@163.com." << endl;
-			return -3;
-		}
-#endif
 		//cout << "srcRealSize = " << srcRealSize << endl;
 
 		// 目标音频数据
