@@ -9,7 +9,7 @@ qanthink 版权所有。
 本程序基于ffmpeg 开源代码进行开发，请遵守ffmpeg 开源规则。
 */
 
-#include "ffmpeg.h"
+#include "mp4container.h"
 #include <iostream>
 
 using namespace std;

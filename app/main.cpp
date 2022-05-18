@@ -20,7 +20,6 @@ sigma star版权所有。
 #include "avtp.h"
 #include "ircut.h"
 #include "live555rtsp.h"
-#include "ffmpeg.h"
 #include "queue.h"
 #include "spipanel.h"
 #include "ethernet.h"
