@@ -14,31 +14,38 @@ qanthink 版权所有。
 
 class AudioPlayer{
 public:
+	#if 0
 	static AudioPlayer* getInstance();
+	#else
+	AudioPlayer();
+	~AudioPlayer();
+	#endif
 
-	int playPCM(const char *filePath);
-	int playWAV(const char *filePath);
-	int playMP3(const char *filePath);
+	int playPCM(const char *filePath, bool bBlock);
+	int playWAV(const char *filePath, bool bBlock);
+	int playMP3(const char *filePath, bool bBlock);
 	
 	int readWavHead(const char *filePath);
 
 private:
+	#if 0
 	AudioPlayer();
 	~AudioPlayer();
 	AudioPlayer(const AudioPlayer&);
 	AudioPlayer& operator=(const AudioPlayer&);
+	#endif
 
 	bool bPlaying = false;
 	std::shared_ptr<std::thread> pTh = NULL;
 
 	int playRoutePCM(const char *filePath);
-	static int thPlayRoutePCM(const char *filePath);
+	static int thPlayRoutePCM(AudioPlayer* pThis, const char *filePath);
 	
 	int playRouteWAV(const char *filePath);
-	static int thPlayRouteWAV(const char *filePath);
+	static int thPlayRouteWAV(AudioPlayer* pThis, const char *filePath);
 	
 	int playRouteMP3(const char *filePath);
-	static int thPlayRouteMP3(const char *filePath);
+	static int thPlayRouteMP3(AudioPlayer* pThis, const char *filePath);
 
 	int getWavHeaderBytes(const char *filePath);
 };

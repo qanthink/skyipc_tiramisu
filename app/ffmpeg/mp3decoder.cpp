@@ -15,11 +15,13 @@ qanthink 版权所有。
 
 using namespace std;
 
+#if 0
 Mp3Decoder* Mp3Decoder::getInstance()
 {
 	static Mp3Decoder ffmpeg;
 	return &ffmpeg;
 }
+#endif
 
 Mp3Decoder::Mp3Decoder()
 {
