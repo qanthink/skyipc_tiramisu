@@ -15,14 +15,6 @@ qanthink 版权所有。
 
 using namespace std;
 
-#if 0
-AudioPlayer* AudioPlayer::getInstance()
-{
-	static AudioPlayer audioPlayer;
-	return &audioPlayer;
-}
-#endif
-
 AudioPlayer::AudioPlayer()
 {
 	cout << "Call AudioPlayer::AudioPlayer()." << endl;
@@ -573,13 +565,8 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	long long int srcSampleRate = 0;
 	AVSampleFormat srcAvSampleFmt = AV_SAMPLE_FMT_NONE;
 
-	#if 0
-	Mp3Decoder *pMp3Decoder = Mp3Decoder::getInstance();
-	pMp3Decoder->getMp3Attr(filePath, &srcSampleRate, &srcChLayout, &srcAvSampleFmt, &srcNbSamples);
-	#else
 	Mp3Decoder mp3Decoder;
 	mp3Decoder.getMp3Attr(filePath, &srcSampleRate, &srcChLayout, &srcAvSampleFmt, &srcNbSamples);
-	#endif
 	#if 1	// debug
 	cout << "In AudioPlayer::playRouteMP3(). Mp3 attr: " 
 		<< "srcSampleRate = " << srcSampleRate << ", srcChLayout = " << srcChLayout 
@@ -587,11 +574,7 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	#endif
 	
 	// 2. 开始解码MP3 文件。
-	#if 0
-	pMp3Decoder->mp3Decoding(filePath);
-	#else
 	mp3Decoder.mp3Decoding(filePath);
-	#endif
 	
 	// 3. 获取解码数据
 	// 源音频数据
@@ -599,11 +582,7 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	const unsigned int srcDataSize = 1024 * 16;
 	unsigned char srcDataBuff[srcDataSize] = {0};
 	bPlaying = true;
-	#if 0
-	while((srcRealSize = pMp3Decoder->recvPcmFrame(srcDataBuff, srcDataSize)) > 0 && bPlaying)
-	#else
 	while((srcRealSize = mp3Decoder.recvPcmFrame(srcDataBuff, srcDataSize)) > 0 && bPlaying)
-	#endif
 	{
 		//cout << "srcRealSize = " << srcRealSize << endl;
 

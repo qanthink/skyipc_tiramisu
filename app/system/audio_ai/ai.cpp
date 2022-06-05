@@ -328,10 +328,13 @@ int AudioIn::recvStream(stAIFrame_t *pstAIFrame)
 	// 拷贝数据到用户层。
 	memset(pstAIFrame, 0, sizeof(stAIFrame_t));
 	pstAIFrame->u64TimeStamp = stAudioFrame.u64TimeStamp;
-	//pstAIFrame->u32Len = stAudioFrame.u32SrcPcmLen;
-	pstAIFrame->u32Len = stAudioFrame.u32SrcPcmLen[0];
-	//memcpy(pstAIFrame->apFrameBuf, stAudioFrame.apSrcPcmVirAddr[0], stAudioFrame.u32SrcPcmLen);
+	#if 0	// ispahan, pudding
+	pstAIFrame->u32Len = stAudioFrame.u32SrcPcmLen;
+	memcpy(pstAIFrame->apFrameBuf, stAudioFrame.apSrcPcmVirAddr[0], stAudioFrame.u32SrcPcmLen);
+	#else	// tiramisu
+	pstAIFrame->u32Len = stAudioFrame.u32SrcPcmLen[0];	
 	memcpy(pstAIFrame->apFrameBuf, stAudioFrame.apSrcPcmVirAddr[0], stAudioFrame.u32SrcPcmLen[0]);
+	#endif
 	pstAIFrame->bAcousticEventDetected = stAedResult.bAcousticEventDetected;
 	pstAIFrame->bLoudSoundDetected = stAedResult.bLoudSoundDetected;
 

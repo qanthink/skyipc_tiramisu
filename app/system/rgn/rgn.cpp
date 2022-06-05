@@ -415,7 +415,7 @@ MI_U32 Rgn::osdCreate_N(MI_U32 u32OsdUsedNum)
 	cout << "Call Rgn::osdCreate_N()." << endl;
 
 	const MI_U16 u16Sx = 100;			// 若干个OSD 的起点坐标
-	const MI_U16 u16Sy = 100;
+	const MI_U16 u16Sy = 400;
 	const MI_U16 u16Width = 500;		// 每个OSD 的宽高
 	const MI_U16 u16Height = 40;
 	const MI_U16 u16IntervalX = 0;		// OSD 之间的间隔

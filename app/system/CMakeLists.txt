@@ -1,6 +1,7 @@
 add_subdirectory(sensor)
 add_subdirectory(vif)
 add_subdirectory(vpe)
+#add_subdirectory(divp)
 add_subdirectory(venc)
 add_subdirectory(sys)
 add_subdirectory(audio_ai)

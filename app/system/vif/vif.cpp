@@ -222,10 +222,14 @@ MI_S32 Vif::setChnPortAttr(MI_VIF_PORT u32ChnPort)
 {
 	cout << "Call Vif::setChnPortAttr()." << endl;
 
+	//MI_S32 MI_VIF_SetChnPortAttr(MI_VIF_CHN u32VifChn, MI_VIF_PORT u32ChnPort, MI_VIF_ChnPortAttr_t *pstAttr);
 	MI_S32 s32Ret = 0;
+
+	// step1: 获取sensor 模块plane 信息。
 	MI_SNR_PlaneInfo_t stPlaneInfo;
-	Sensor *pSensor = Sensor::getInstance();
 	memset(&stPlaneInfo, 0, sizeof(MI_SNR_PlaneInfo_t));
+	
+	Sensor *pSensor = Sensor::getInstance();
 	s32Ret = pSensor->getPlaneInfo(0, &stPlaneInfo);
 	if(0 != s32Ret)
 	{

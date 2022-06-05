@@ -80,7 +80,8 @@ int Sensor::enable()
 	#endif
 
 	// 设置配置
-	s32Ret = MI_SNR_SetRes(ePADId, 0);	// 单sensor 方案中，一般使用0 配置。
+	cout << "In Sensor::enable(), u8SnrResIndex = " << (int)u8SnrResIndex << endl;
+	s32Ret = MI_SNR_SetRes(ePADId, u8SnrResIndex);	// 单sensor 方案中，一般使用0 配置。
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_SNR_SetPlaneMode(), errno = " << s32Ret << endl;
@@ -200,7 +201,6 @@ int Sensor::getPadInfo(MI_SNR_PADID ePADId, MI_SNR_PADInfo_t *pstPadInfo)
 	cout << "Call Sensor::getPadInfo() end." << endl;
 	return s32Ret;	
 }
-
 
 /*-----------------------------------------------------------------------------
 描--述：

@@ -25,12 +25,8 @@ extern "C" {
 
 class Mp3Decoder{
 public:
-	#if 0
-	static Mp3Decoder* getInstance();
-	#else
 	Mp3Decoder();
 	~Mp3Decoder();
-	#endif
 
 	int enable();
 	int disable();
@@ -52,13 +48,6 @@ public:
 			long long int srcChLayout, AVSampleFormat srcAvSampleFmt, int srcNbSamples);
 
 private:
-	#if 0
-	Mp3Decoder();
-	~Mp3Decoder();
-	Mp3Decoder(const Mp3Decoder&);
-	Mp3Decoder& operator=(const Mp3Decoder&);
-	#endif
-
 	bool bEnable = false;
 	bool bRunning = false;		// stream 线程的运行状态。
 	bool bIsDecoding = false;

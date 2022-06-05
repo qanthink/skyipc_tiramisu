@@ -209,10 +209,14 @@ int AudioOut::sendStream(void *pDataBuf, const unsigned int dataLen)
 	memset(&stAudioFrame, 0, sizeof(MI_AUDIO_Frame_t));
 
 	stAudioFrame.apVirAddr[0] = pDataBuf;
+	#if 0	// ispahan, pudding
+	stAudioFrame.u32Len = dataLen;
+	stAudioFrame.u32SrcPcmLen = dataLen;
+	#else	// tiramisu
 	stAudioFrame.u32Len[0] = dataLen;
-	stAudioFrame.apSrcPcmVirAddr[0] = pDataBuf;
-	//stAudioFrame.u32SrcPcmLen[0] = 2 * 1024;
 	stAudioFrame.u32SrcPcmLen[0] = dataLen;
+	#endif
+	stAudioFrame.apSrcPcmVirAddr[0] = pDataBuf;
 	stAudioFrame.eBitwidth = eBitWidth;
 	stAudioFrame.eSoundmode = eSoundmode;
 	

@@ -8,6 +8,7 @@ xxx版权所有。
 
 #include "mi_ai.h"
 
+// Do not use typedef
 struct stAIFrame_t
 {
 	const static unsigned int uFrameBufSize = 2 * 1024; // N * 1024 = N KB

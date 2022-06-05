@@ -156,7 +156,7 @@ MI_S32 Venc::setChnAttr(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 	cout << "Call Venc::setChnAttr()." << endl;
 	if(NULL == pstChnAttr)
 	{
-		cerr << "Fail to call Venc::setChnAttr(). Argument has null valu.e" << endl;
+		cerr << "Fail to call Venc::setChnAttr(). Argument has null value." << endl;
 		return -1;
 	}
 
@@ -169,33 +169,6 @@ MI_S32 Venc::setChnAttr(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 	}
 
 	cout << "Call Venc::setChnAttr() end." << endl;
-	return s32Ret;
-}
-
-/*-----------------------------------------------------------------------------
-描--述：设置通道属性。
-参--数：vencChn VENC通道；pstChnAttr 指向通道属性的结构体指针。
-返回值：成功，返回0; 失败，返回错误码。
-注--意：
------------------------------------------------------------------------------*/
-MI_S32 Venc::setCrop(MI_VENC_CHN vencChn, MI_U32 x, MI_U32 y, MI_U32 w, MI_U32 h)
-{
-	cout << "Call Venc::setCrop() end." << endl;
-	MI_S32 s32Ret = 0;
-	MI_VENC_CropCfg_t stCropCfg;
-
-	stCropCfg.bEnable = true;
-	stCropCfg.stRect.u32Left = x;
-	stCropCfg.stRect.u32Top = y;
-	stCropCfg.stRect.u32Width = w;
-	stCropCfg.stRect.u32Height = h;
-	s32Ret = MI_VENC_SetCrop(vencDev, vencChn, &stCropCfg);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call MI_VENC_SetCrop(), errno = " << s32Ret << endl;
-	}
-
-	cout << "Call Venc::setCrop() end." << endl;
 	return s32Ret;
 }
 
@@ -228,6 +201,33 @@ MI_S32 Venc::changeBitrate(MI_VENC_CHN vencChn, MI_U32 u32BitrateKb)
 	}
 
 	cout << "Call Venc::changeBitrate() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：设置通道属性。
+参--数：vencChn VENC通道；pstChnAttr 指向通道属性的结构体指针。
+返回值：成功，返回0; 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+MI_S32 Venc::setCrop(MI_VENC_CHN vencChn, MI_U32 x, MI_U32 y, MI_U32 w, MI_U32 h)
+{
+	cout << "Call Venc::setCrop() end." << endl;
+	MI_S32 s32Ret = 0;
+	MI_VENC_CropCfg_t stCropCfg;
+
+	stCropCfg.bEnable = true;
+	stCropCfg.stRect.u32Left = x;
+	stCropCfg.stRect.u32Top = y;
+	stCropCfg.stRect.u32Width = w;
+	stCropCfg.stRect.u32Height = h;
+	s32Ret = MI_VENC_SetCrop(vencDev, vencChn, &stCropCfg);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_SetCrop(), errno = " << s32Ret << endl;
+	}
+
+	cout << "Call Venc::setCrop() end." << endl;
 	return s32Ret;
 }
 
@@ -548,12 +548,12 @@ MI_S32 Venc::setH265SliceSplit(MI_VENC_CHN vencChn, MI_VENC_ParamH265SliceSplit_
 返回值：返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::requestIdr(MI_VENC_CHN veChn, MI_BOOL bInstant)
+MI_S32 Venc::requestIdr(MI_VENC_CHN vencChn, MI_BOOL bInstant)
 {
 	//cout << "Call Venc::requestIdr()." << endl;
 
 	MI_S32 s32Ret = 0;
-	s32Ret = MI_VENC_RequestIdr(vencDev, veChn, bInstant);
+	s32Ret = MI_VENC_RequestIdr(vencDev, vencChn, bInstant);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call Venc::requestIdr(), s32Ret = " << s32Ret << endl;
@@ -575,37 +575,64 @@ MI_S32 Venc::createMainStream(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr
 	cout << "Call Venc::createMainStream() end." << endl;
 
 	MI_VENC_ChnAttr_t stChnAttr;
-	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
 	if(NULL == pstChnAttr)
 	{
 		cerr << "Call Venc::createMainStream() with null pointer. Use default argument!" << endl;
 		pstChnAttr = &stChnAttr;
 		memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
 
-		switch(emMainResol)
+		switch(emMainResIn)
 		{
-			case emResolFHD:
+			case emResol2MP_1920_1080:
 			{
-				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 1920;
-				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 1080;
 				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 1920;
 				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 1080;
 				break;
 			}
-			case emResol4MP:
+			case emResol4MP_2560_1440:
+			{
+				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 2560;
+				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 1440;
+				break;
+			}
+			case emResol8MP_3840_2160:
+			{
+				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 3840;
+				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 2160;
+				break;
+			}
+			default:
+			{
+				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 3840;
+				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 2160;
+				break;
+			}
+		}
+
+		switch(emMainResOut)
+		{
+			case emResol2MP_1920_1080:
+			{
+				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 1920;
+				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 1080;
+				break;
+			}
+			case emResol4MP_2560_1440:
 			{
 				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 2560;
 				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 1440;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 2560;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 1440;
+				break;
+			}
+			case emResol8MP_3840_2160:
+			{
+				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 3840;
+				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 2160;
 				break;
 			}
 			default:
 			{
 				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 1920;
 				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 1080;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 2560;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 1440;
 				break;
 			}
 		}
@@ -623,7 +650,7 @@ MI_S32 Venc::createMainStream(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr
 		stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_H265E;
 		stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_H265CBR;
 		stChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = mainBitRateKb * 1024;
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateNum = 30;	// FPS = 分母Num / 分子Den
+		stChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateNum = mainFrmRate;	// FPS = 分母Num / 分子Den
 		stChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateDen = 1;
 		stChnAttr.stRcAttr.stAttrH265Cbr.u32Gop = mainGop;
 		stChnAttr.stRcAttr.stAttrH265Cbr.u32FluctuateLevel = 0;	// 暂不支持
@@ -676,9 +703,9 @@ MI_S32 Venc::createSubStream(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 		pstChnAttr = &stChnAttr;
 		memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
 
-		switch(emSubResol)
+		switch(emSubResIn)
 		{
-			case emResolHD:
+			case emResol1MP_1280_720:
 			{
 				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 1280;
 				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 720;
@@ -686,7 +713,7 @@ MI_S32 Venc::createSubStream(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 720;
 				break;
 			}
-			case emResol4MP:
+			case emResol4MP_2560_1440:
 			{
 				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 1920;
 				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 1080;

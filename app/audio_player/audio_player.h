@@ -14,12 +14,8 @@ qanthink 版权所有。
 
 class AudioPlayer{
 public:
-	#if 0
-	static AudioPlayer* getInstance();
-	#else
 	AudioPlayer();
 	~AudioPlayer();
-	#endif
 
 	int playPCM(const char *filePath, bool bBlock);
 	int playWAV(const char *filePath, bool bBlock);
@@ -28,13 +24,6 @@ public:
 	int readWavHead(const char *filePath);
 
 private:
-	#if 0
-	AudioPlayer();
-	~AudioPlayer();
-	AudioPlayer(const AudioPlayer&);
-	AudioPlayer& operator=(const AudioPlayer&);
-	#endif
-
 	bool bPlaying = false;
 	std::shared_ptr<std::thread> pTh = NULL;
 

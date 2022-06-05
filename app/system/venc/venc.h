@@ -6,6 +6,8 @@ xxx版权所有。
 
 /*	注意：
 	虽然VENC 支持图像缩放，但是建议在VPE 模块来做。
+	
+	2022.6.5: 没有看到任何文档表明VENC 可以做sacle.
 */
 
 #pragma once
@@ -13,14 +15,23 @@ xxx版权所有。
 #include "mi_venc.h"
 
 typedef enum{
-	emResolInvalid = 0x0000,
+	emResolInvalid = 0x00,
+	
+	emResol1MP_1280_720 = 0x10,
 
-	emResolHD = 0x0020,
+	emResol2MP_1920_1080 = 0x20,
 	
-	emResolFHD = 0x0030,
-	emResol4MP,
+	emResol3MP = 0x30,
 	
-	emResolUHD = 0x0040,
+	emResol4MP_2560_1440 = 0x40,
+	
+	emResol5MP_3072_1728 = 0x50,
+	
+	emResol6MP = 0x60,
+	
+	emResol7MP = 0x70,
+	
+	emResol8MP_3840_2160 = 0x80,
 }emResol_t;
 
 // 1080P 的YUV 约2.97MB, 经过H.265 编码协议压缩后，I帧约30KB, P帧约7KB
@@ -82,18 +93,26 @@ private:
 	Venc& operator=(const Venc&);
 
 	bool bEnable;
-	
-	emResol_t emMainResol = emResolFHD;
-	//emResol_t emMainResol = emResol4MP;
-	//emResol_t emMainResol = emResolInvalid;
-	unsigned int mainBitRateKb = 4 * 1024;
-	unsigned int mainGop = 60;
 
-	emResol_t emSubResol = emResolFHD;
+	// 主码流输入分辨率
+	//emResol_t emMainResIn = emResolInvalid;
+	//emResol_t emMainResIn = emResol2MP_1920_1080;
+	emResol_t emMainResIn = emResol4MP_2560_1440;
+	//emResol_t emMainResIn = emResol8MP_3840_2160;
+
+	// 主码流输出分辨率
+	emResol_t emMainResOut = emResol2MP_1920_1080;
+	//emResol_t emMainResOut = emResol4MP_2560_1440;
+
+	// 主码流码率、GOP、FPS
+	unsigned int mainBitRateKb = 8 * 1024;
+	unsigned int mainGop = 15;
+	unsigned int mainFrmRate = 20;
+
+	// 子码流输入、输出分辨率、GOP
+	emResol_t emSubResIn = emResol2MP_1920_1080;
+	emResol_t emSubResOut = emResol2MP_1920_1080;
 	unsigned int subBitRateKb = 1 * 1024;
 	unsigned int subGop = 15;
-
-	//emResol_t emJpegResol = emResolFHD;
-	//unsigned int jpegBitRateKb = 0.5 * 1024;
 };
 
