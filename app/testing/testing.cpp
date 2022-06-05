@@ -22,6 +22,7 @@ xxx版权所有。
 #include "aad.h"
 #include "rgn.h"
 #include "avtp.h"
+//#include "wifi.h"
 #include "mp4container.h"
 #include "live555rtsp.h"
 #include "spipanel.h"
@@ -417,7 +418,14 @@ void *routeVideo(void *arg)
 	#endif
 
 	#if (1 == (USE_AVTP_VIDEO))
-	AvtpVideoClient avtpVideClient("192.168.0.100", "192.168.0.5");
+	const unsigned int ipSize = 16;
+	char ipAddress[ipSize] = {0};
+	Ethernet *pEthernet = Ethernet::getInstance();
+	//pEthernet->getInterfaceIP("eth0", ipAddress, ipSize);
+	pEthernet->getInterfaceIP("wlan0", ipAddress, ipSize);
+	cout << "Call pEthernet->getInterfaceIP();" << endl;
+	cout << "ipAddress = " << ipAddress << endl;
+	AvtpVideoClient avtpVideClient(ipAddress, "192.168.0.200");
 	#endif
 	
 	while(g_bRunning)
@@ -442,13 +450,12 @@ void *routeVideo(void *arg)
 			}
 
 			#if 0	// debug
-			//pVenc->printStreamInfo(&stStream);
-			cout << "stStream.pstPack[i].u32Len = " << stStream.pstPack[i].u32Len << endl;
+			pVenc->printStreamInfo(&stStream);
 			#endif
 			
 			#if (1 == (USE_FFMPEG_SAVE_MP4))
-			Ffmpeg *pFfmpeg = Ffmpeg::getInstance();
-			s32Ret = pFfmpeg->sendH26xFrame(stStream.pstPack[i].pu8Addr, stStream.pstPack[i].u32Len);
+			Mp4Container *pMp4Container = Mp4Container::getInstance();
+			s32Ret = pMp4Container->sendH26xFrame(stStream.pstPack[i].pu8Addr, stStream.pstPack[i].u32Len);
 			if(0 != s32Ret)
 			{
 				cerr << "Fail to call pFfmpeg->sendH26xFrame(). s32Ret = " << s32Ret << endl;
@@ -710,3 +717,4 @@ int testEthernet()
 	
 	return -1;
 }
+

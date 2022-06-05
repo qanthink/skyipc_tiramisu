@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------- 
-sigma star版权所有。
+xxx 版权所有。
 作者：
 时间：2020.7.10
 ----------------------------------------------------------------*/
@@ -11,19 +11,23 @@ sigma star版权所有。
 #include "sensor.hpp"
 #include "vif.h"
 #include "vpe.h"
+//#include "divp.h"
 #include "venc.h"
 #include "ai.hpp"
 #include "ao.hpp"
+#include "rgn.h"
+//#include "wifi.h"
+
 #include "aac.h"
 #include "aad.h"
-#include "rgn.h"
 #include "avtp.h"
 #include "ircut.h"
-#include "live555rtsp.h"
 #include "queue.h"
 #include "spipanel.h"
 #include "ethernet.h"
-#include "udpsocket.h"
+#include "live555rtsp.h"
+#include "mp4container.h"
+
 #include "testing.h"
 
 using namespace std;
@@ -41,7 +45,7 @@ int main(int argc, const char *argv[])
 
 	signal(SIGINT, sigHandler);
 
-#if 0
+#if 1
 	IrCut::getInstance()->resetFilter();	// ircut滤波片复位
 	IrCut::getInstance()->closeFilter();
 
@@ -53,10 +57,10 @@ int main(int argc, const char *argv[])
 	Vif *pVif = Vif::getInstance();			// VIF 初始化
 	Vpe *pVpe = Vpe::getInstance();			// VPE 初始化
 	pVpe->createMainPort(Vpe::vpeMainPort);	// 创建VPE 主码流
-	pVpe->setPortCropScale(Vpe::vpeMainPort, 0, 0, 0, 0, 1920, 1080);
+	//pVpe->setPortCropScale(Vpe::vpeMainPort, 0, 0, 0, 0, 1920, 1080);
 	//pVpe->createSubPort(Vpe::vpeSubPort);	// 创建VPE 子码流
 	//pVpe->createJpegPort(Vpe::vpeJpegPort);	// 创建VPE JPEG码流
-
+	
 	Venc *pVenc = Venc::getInstance();		// VENC 初始化
 	pVenc->createMainStream(Venc::vencMainChn, NULL);	// 创建VENC主码流
 	//pVenc->createSubStream(Venc::vencSubChn, NULL);		// 创建VENC子码流
@@ -91,7 +95,7 @@ int main(int argc, const char *argv[])
 #endif
 	
 #if (1 == (USE_AO))
-	audioOut *pAudioOut = audioOut::getInstance();
+	AudioOut *pAudioOut = AudioOut::getInstance();
 #endif
 
 	#if (1 == (USE_WIFILINK))
@@ -134,7 +138,7 @@ int main(int argc, const char *argv[])
 	#endif
 
 	#if (1 == (USE_FFMPEG_SAVE_MP4))
-	Ffmpeg *pFfmpeg = Ffmpeg::getInstance();
+	Mp4Container *pMp4Container = Mp4Container::getInstance();
 	#endif
 
 	// 创建3个线程，分别用于测试AI, AO, 出图。

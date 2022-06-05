@@ -1,4 +1,4 @@
-prefix=/home/linux/Public/openssl/
+prefix=/home/linux/Workspace/skytools/wireless_tools/build_result/glibc9.1.0
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include

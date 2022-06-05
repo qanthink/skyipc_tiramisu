@@ -748,6 +748,7 @@ int SpiPanel::panelFill(unsigned short x0, unsigned short y0, unsigned short x1,
 	}
 	
 	cout << "Call SpiPanel::panelFill() end." << endl;
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------

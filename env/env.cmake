@@ -11,10 +11,12 @@ set(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS}")
 set(CMAKE_SYSTEM_NAME Linux)
 
 #设置toolchain
+#SET(ToolType	"uclibc4.9.4")
+#SET(ToolType	"glibc4.8.3")
 SET(ToolType	"glibc9.1.0")
 
 #设置编译器路径和前缀
-if(${ToolType} STREQUAL "uclibc")			#设置uclibc的路径  
+if(${ToolType} STREQUAL "uclibc4.9.4")		#设置uclibc的路径  
 message("ToolChain: uclibc")				#打印信息
 SET(ToolPath	"/home/linux/tools/toolchain/arm-buildroot-linux-uclibcgnueabihf-4.9.4-uclibc-1.0.31/bin")
 SET(ToolPrefix	"arm-buildroot-linux-uclibcgnueabihf-")
@@ -30,7 +32,7 @@ SET(ToolPath	"/home/linux/tools/toolchain/gcc-sigmastar-9.1.0-2020.07-x86_64_arm
 SET(ToolPrefix	"arm-linux-gnueabihf-")
 endif()
 
-SET(CMAKE_C_COMPILER  	${ToolPath}/${ToolPrefix}gcc)
-SET(CMAKE_CXX_COMPILER 	${ToolPath}/${ToolPrefix}g++)
-SET(CMAKE_STRIP 		${ToolPath}/${ToolPrefix}strip)
+SET(CMAKE_C_COMPILER		${ToolPath}/${ToolPrefix}gcc)
+SET(CMAKE_CXX_COMPILER		${ToolPath}/${ToolPrefix}g++)
+SET(CMAKE_STRIP				${ToolPath}/${ToolPrefix}strip)
 

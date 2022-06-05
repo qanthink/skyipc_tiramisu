@@ -9,7 +9,7 @@ xxx版权所有。
 // audio
 #define USE_FAAC_FAAD 0
 
-#define USE_AI 1
+#define USE_AI 0
 #define USE_AI_SAVE_LOCAL_PCM 0
 #define USE_AI_SAVE_LOCAL_AAC 0
 
@@ -19,12 +19,12 @@ xxx版权所有。
 #define USE_OSD 0
 
 // venc
-#define USE_VENC 0
+#define USE_VENC 1
 #define USE_VENC_SAVE_LOCAL_FILE 0
 
 // wifi and avtp
 #define USE_AVTP_AUDIO 0
-#define USE_AVTP_VIDEO 0
+#define USE_AVTP_VIDEO 1
 
 #define TEST_WIFI 0
 
