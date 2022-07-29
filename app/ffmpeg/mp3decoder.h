@@ -36,21 +36,11 @@ public:
 
 	int getMp3Attr(const char *filePath, long long int *pSampleRate, long long int *pChLayout, AVSampleFormat *pAvSampleFmt, int *pNbSamples);
 
-	int mp3ToPcm(const char *mp3Path, const char *pcmPath);
-	
-	int pcmFileResample(const char *dstPcmPath, long long int dstSampleRate, 
-			long long int dstChLayout, AVSampleFormat dstAvSampleFmt, 
-			const char *srcPcmPath, long long int srcSampleRate, 
-			long long int srcChLayout, AVSampleFormat srcAvSampleFmt, int srcNbSamples);
-	int pcmDataResample(void *dstPcmData, unsigned int dstPcmLen, long long int dstSampleRate, 
-			long long int dstChLayout, AVSampleFormat dstAvSampleFmt, 
-			const void *srcPcmData, unsigned int srcPcmLen, long long int srcSampleRate, 
-			long long int srcChLayout, AVSampleFormat srcAvSampleFmt, int srcNbSamples);
+	int mp3File2PcmFile(const char *mp3Path, const char *pcmPath);
 
 private:
-	bool bEnable = false;
 	bool bRunning = false;		// stream 线程的运行状态。
-	bool bIsDecoding = false;
+	bool bIsDecoding = false;	// 正在解码中
 
 	std::mutex mutex;
 	std::condition_variable cvProduce;
@@ -64,3 +54,30 @@ private:
 	static int thRouteMp3Decoding(void *arg, const char *filePath);
 };
 
+/* PCM 采样器 */
+class PcmResampler{
+public:
+	PcmResampler(long long int dstSampleRate, long long int dstChLayout, AVSampleFormat _dstAvSampleFmt, 
+		long long int srcSampleRate, long long int srcChLayout, AVSampleFormat srcAvSampleFmt, int _srcNbSamples);
+	~PcmResampler();
+
+	int pcmDataResample(void *dstPcmData, unsigned int dstPcmLen, 
+						const void *srcPcmData, unsigned int srcPcmLen);
+	int pcmFileResample(const char *dstPcmPath, const char *srcPcmPath);
+private:
+	bool bInit = false;
+	SwrContext *swrCtx = NULL;
+
+	int inNbChs = 0;		// 输入声道数
+	int outNbChs = 0;		// 输出声道数
+	int srcBufSize = 0;		// 源数据大小
+	int dstBufSize = 0;		// 目标数据大小
+	int srcLineSize = 0;
+	int dstLineSize = 0;
+	unsigned char **srcData = NULL;
+	unsigned char **dstData = NULL;
+	long long int dstNbSamples = 0;
+	long long int dstNbSamplesMax = 0;
+	int srcNbSamples = 0;
+	AVSampleFormat dstAvSampleFmt = AV_SAMPLE_FMT_NONE;
+};

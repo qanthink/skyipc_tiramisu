@@ -24,7 +24,7 @@ public:
 	int readWavHead(const char *filePath);
 
 private:
-	bool bPlaying = false;
+	bool bPlaying = false;					// 控制播放暂停、停止。
 	std::shared_ptr<std::thread> pTh = NULL;
 
 	int playRoutePCM(const char *filePath);

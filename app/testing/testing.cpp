@@ -21,7 +21,7 @@ xxx版权所有。
 #include "aac.h"
 #include "aad.h"
 #include "rgn.h"
-#include "avtp.h"
+#include "avtp_client.h"
 //#include "wifi.h"
 #include "mp4container.h"
 #include "live555rtsp.h"
@@ -418,14 +418,7 @@ void *routeVideo(void *arg)
 	#endif
 
 	#if (1 == (USE_AVTP_VIDEO))
-	const unsigned int ipSize = 16;
-	char ipAddress[ipSize] = {0};
-	Ethernet *pEthernet = Ethernet::getInstance();
-	//pEthernet->getInterfaceIP("eth0", ipAddress, ipSize);
-	pEthernet->getInterfaceIP("wlan0", ipAddress, ipSize);
-	cout << "Call pEthernet->getInterfaceIP();" << endl;
-	cout << "ipAddress = " << ipAddress << endl;
-	AvtpVideoClient avtpVideClient(ipAddress, "192.168.0.200");
+	AvtpVideoClient avtpVideClient("192.168.0.200");
 	#endif
 	
 	while(g_bRunning)
@@ -496,7 +489,7 @@ void *routeVideo(void *arg)
 			avtpVideClient.sendVideoFrame(stStream.pstPack[i].pu8Addr, stStream.pstPack[i].u32Len);
 			if(!g_bRunning)
 			{
-				avtpVideClient.stop();
+				//avtpVideClient.stop();
 			}
 			double lossRate = avtpVideClient.getLossRate();
 			if(lossRate >= 0.9)

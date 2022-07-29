@@ -9,9 +9,15 @@ qanthink 版权所有。
 本程序基于ffmpeg 开源代码进行开发，请遵守ffmpeg 开源规则。
 */
 
-#include "mp3decoder.h"
 #include <fstream>
 #include <iostream>
+#include "mp3decoder.h"
+
+#define __DEBUG_AO__ 0
+
+#if (1 == __DEBUG_AO__)
+#include "ao.hpp"
+#endif
 
 using namespace std;
 
@@ -38,15 +44,7 @@ Mp3Decoder::~Mp3Decoder()
 int Mp3Decoder::enable()
 {
 	cout << "Call Mp3Decoder::enable()." << endl;
-
-	if(bEnable)
-	{
-		return 0;
-	}
-
-	bEnable = true;
 	bRunning = true;
-
 	cout << "Call Mp3Decoder::enable() end." << endl;
 	return 0;
 }
@@ -60,8 +58,7 @@ int Mp3Decoder::enable()
 int Mp3Decoder::disable()
 {
 	cout << "Call Mp3Decoder::disable()." << endl;
-
-	bEnable = false;
+	
 	bRunning = false;
 	cvProduce.notify_all();
 	cvConsume.notify_all();
@@ -330,7 +327,7 @@ int Mp3Decoder::recvPcmFrame(unsigned char *const dataBuff, const unsigned int d
 	返回：	
 	注意：	
 */
-int Mp3Decoder::mp3ToPcm(const char *mp3Path, const char *pcmPath)
+int Mp3Decoder::mp3File2PcmFile(const char *mp3Path, const char *pcmPath)
 {
 	cout << "Call Mp3Decoder::mp3ToPcm()." << endl;
 	// 打开PCM 输出文件
@@ -470,323 +467,6 @@ int Mp3Decoder::mp3ToPcm(const char *mp3Path, const char *pcmPath)
 
 	cout << "Call Mp3Decoder::mp3ToPcm() end." << endl;
 	return 0;
-}
-
-/*
-	功能：	PCM 文件重采样。调整声道数、采样率、采样格式。
-	返回：	成功，返回0;
-			-1, 参数错误；
-			-2, 重采样上下文分配失败或初始化失败；
-	注意：	
-*/
-int Mp3Decoder::pcmFileResample(const char *dstPcmPath, long long int dstSampleRate, long long int dstChLayout, AVSampleFormat dstAvSampleFmt, 
-		const char *srcPcmPath, long long int srcSampleRate, long long int srcChLayout, AVSampleFormat srcAvSampleFmt, int srcNbSamples)
-{
-	//cout << "Call Mp3Decoder::pcmFileResample()." << endl;
-
-	if(NULL == srcPcmPath || NULL == dstPcmPath)
-	{
-		cerr << "Fail to call Mp3Decoder::pcmFileResample(). File path has null value." << endl;
-		return -1;
-	}
-
-	ifstream ifs(srcPcmPath, ios::in);
-	if(!ifs)
-	{
-		cerr << "Fail to open file " << srcPcmPath << endl;
-		return -1;
-	}
-	
-	ofstream ofs(dstPcmPath, ios::out);
-	if(!ofs)
-	{
-		cerr << "Fail to open file " << dstPcmPath << endl;
-		return -1;
-	}
-
-	// 1、创建上下文SwrContext
-	SwrContext *swrCtx = NULL;
-	swrCtx = swr_alloc();
-	if(NULL == swrCtx)
-	{
-		cerr << "In Mp3Decoder::pcmFileResample(): swr_allock() fail" << endl;
-		return -2;
-	}
-
-	// 2、设置重采样的相关参数 这些函数位于头文件 <libavutil/opt.h>
-	av_opt_set_int(swrCtx, "in_channel_layout", srcChLayout, 0);
-	av_opt_set_int(swrCtx, "in_sample_rate", srcSampleRate, 0);
-	av_opt_set_sample_fmt(swrCtx, "in_sample_fmt", srcAvSampleFmt, 0);
-
-	av_opt_set_int(swrCtx, "out_channel_layout", dstChLayout, 0);
-	av_opt_set_int(swrCtx, "out_sample_rate", dstSampleRate, 0);
-	av_opt_set_sample_fmt(swrCtx, "out_sample_fmt", dstAvSampleFmt, 0);
-
-	// 3、初始化上下文
-	int ret = 0;
-	ret = swr_init(swrCtx);
-	if(ret < 0) 
-	{
-		cerr << "In Mp3Decoder::pcmFileResample(): swr_init() fail" << endl;
-		return -2;
-	}
-
-	int inNbChs = 0;		// 声道数
-	int outNbChs = 0;
-	inNbChs = av_get_channel_layout_nb_channels(srcChLayout);
-	outNbChs = av_get_channel_layout_nb_channels(dstChLayout);
-	
-	// 根据srcAvSampleFmt、srcNbSamples、inNbChs 为srcData 分配内存空间，和设置对应的的linesize 的值；返回分配的总内存的大小
-	int srcBufSize = 0;
-	int dstBufSize = 0;
-	int srcLineSize = 0;
-	int dstLineSize = 0;	
-	long long int dstNbSamples = 0;
-	long long int dstNbSamplesMax = 0;
-	//const int srcNbSamples = 1024;
-	unsigned char **srcData = NULL;
-	unsigned char **dstData = NULL;
-
-	srcBufSize = av_samples_alloc_array_and_samples(&srcData, &srcLineSize, inNbChs, srcNbSamples, srcAvSampleFmt, 0);
-	// 根据srcNbSamples*dstSampleRate/srcSampleRate公式初步估算重采样后音频的nb_samples大小
-	dstNbSamples = av_rescale_rnd(srcNbSamples, dstSampleRate, srcSampleRate, AV_ROUND_UP);
-	dstNbSamplesMax = dstNbSamples;
-	dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChs, dstNbSamples, dstAvSampleFmt, 0);
-
-	while(ifs)
-	{
-		size_t readBytes = 0;
-		ifs.read((char *)srcData[0], srcBufSize);
-		if(!ifs)
-		{
-			readBytes = ifs.gcount();
-			if(0 == readBytes)
-			{
-				cout << "Read over in Mp3Decoder::pcmFileResample()." << endl;
-			}
-			else if(readBytes < srcBufSize)
-			{
-				cerr << "Bytes actually read are " << readBytes << endl;
-			}
-			else
-			{
-				cerr << "Fail to read file " << srcPcmPath << endl;
-			}
-			
-			break;
-		}
-
-		/*	因为转换需要缓存，所以要不停的调整转换后的内存的大小，估算重采样后的nb_samples 的大小。
-			这里swr_get_delay() 用于获取重采样的缓冲延迟。
-			dstNbSamples的值会经过多次调整后区域稳定 */
-		dstNbSamples = av_rescale_rnd(swr_get_delay(swrCtx, srcSampleRate) + srcNbSamples, dstSampleRate, srcSampleRate, AV_ROUND_UP);
-		if(dstNbSamples > dstNbSamplesMax)
-		{
-			cerr << "In Mp3Decoder::pcmFileResample(): realloc memory." << endl;
-			// 先释放以前的内存，不管sample_fmt 是planner 还是packet 方式，av_samples_alloc_array_and_samples()函数都是分配的一整块连续的内存
-			av_freep(&dstData[0]);
-			dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChs, dstNbSamples, dstAvSampleFmt, 0);
-			dstNbSamplesMax = dstNbSamples;
-		}
- 
-		// 开始重采样，重采样后的数据将根据前面指定的存储方式写入ds_data 内存块中，返回每个声道实际的采样数。
-		/*	swr_convert() 返回的outNbSmples 是实际转换的采样个数，该值小于或等于预计采样数dstNbSamples, 
-			所以写入文件的时候不能用dstNbSamples的  值，而应该用outNbSmples值。*/
-		int outNbSmples = swr_convert(swrCtx, dstData, dstNbSamples, (const unsigned char **)srcData, srcNbSamples);
-		if(outNbSmples < 0)
-		{
-			cerr << "In Mp3Decoder::pcmFileResample() swr_convert() fail. Result = " << outNbSmples << endl;
-			break;
-		}
-
-		// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据造成错误。
-		dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChs, outNbSmples, dstAvSampleFmt, 1);
-		ofs.write((char *)dstData[0], dstBufSize);
-	}
-
-	// 还有剩余的缓存数据没有转换，第三个传递NULL, 第四个传递0, 即可将缓存中的全部取出
-	do{
-		int realNbSamples = 0;
-		realNbSamples = swr_convert(swrCtx, dstData, dstNbSamples, NULL, 0);
-		if(realNbSamples <= 0)
-		{
-			break;
-		}
-		
-		cout << "In Mp3Decoder::pcmFileResample(), left " << realNbSamples << endl;
-		if(av_sample_fmt_is_planar(dstAvSampleFmt))
-		{
-			int perSampleBytes = 0;
-			perSampleBytes = av_get_bytes_per_sample(dstAvSampleFmt);
-			int i = 0;
-			for(i = 0; i < realNbSamples; ++i)
-			{
-				int j = 0;
-				for(j = 0; j < outNbChs; ++j)
-				{
-					ofs.write((char *)dstData[j] + i * perSampleBytes, perSampleBytes);
-				}
-			}
-		}
-		else
-		{
-			int size = 0;
-			size = av_samples_get_buffer_size(NULL, outNbChs, realNbSamples, dstAvSampleFmt, 1);
-			ofs.write((char *)dstData[0], size);
-		}
-	}while(true);
-
-	// 释放资源
-	int ch = 0;
-	for(ch = 0; ch < outNbChs; ++ch)
-	{
-		av_freep(&dstData[0]);
-	}
-	av_freep(&srcData[0]);
-	swr_free(&swrCtx);
-	
-	ifs.close();
-	ofs.close();
-
-	//cout << "Call Mp3Decoder::pcmFileResample() end." << endl;
-	return 0;
-}
-
-/*
-	功能：	PCM 数据重采样。调整声道数、采样率、采样格式。
-	返回：	成功，返回重采样后的数据长度；
-			-1, 参数错误；
-			-2, 重采样上下文分配失败或初始化失败；
-			-3, PCM 目标数据空间不足或源数据长度不足。
-	注意：	
-*/
-int Mp3Decoder::pcmDataResample(void *dstPcmData, unsigned int dstPcmLen, 
-			long long int dstSampleRate, long long int dstChLayout, AVSampleFormat dstAvSampleFmt, 
-			const void *srcPcmData, unsigned int srcPcmLen, 
-			long long int srcSampleRate, long long int srcChLayout, AVSampleFormat srcAvSampleFmt, int srcNbSamples)
-{
-	//cout << "Call Mp3Decoder::pcmDataResample()." << endl;
-
-	if(NULL == srcPcmData || NULL == dstPcmData)
-	{
-		cerr << "Fail to call Mp3Decoder::pcmFileResample(). Argument has null value." << endl;
-		return -1;
-	}
-
-	// 1、创建上下文SwrContext
-	SwrContext *swrCtx = NULL;
-	swrCtx = swr_alloc();
-	if(NULL == swrCtx)
-	{
-		cerr << "In Mp3Decoder::pcmDataResample(): swr_allock() fail" << endl;
-		return -2;
-	}
-
-	// 2、设置重采样的相关参数 这些函数位于头文件 <libavutil/opt.h>
-	av_opt_set_int(swrCtx, "in_channel_layout", srcChLayout, 0);
-	av_opt_set_int(swrCtx, "in_sample_rate", srcSampleRate, 0);
-	av_opt_set_sample_fmt(swrCtx, "in_sample_fmt", srcAvSampleFmt, 0);
-
-	av_opt_set_int(swrCtx, "out_channel_layout", dstChLayout, 0);
-	av_opt_set_int(swrCtx, "out_sample_rate", dstSampleRate, 0);
-	av_opt_set_sample_fmt(swrCtx, "out_sample_fmt", dstAvSampleFmt, 0);
-
-	// 3、初始化上下文
-	int ret = 0;
-	ret = swr_init(swrCtx);
-	if(ret < 0) 
-	{
-		cerr << "In Mp3Decoder::pcmDataResample(): swr_init() fail" << endl;
-		swr_free(&swrCtx);
-		return -2;
-	}
-
-	// 4、根据声道布局计算声道数。
-	int inNbChs = 0;		// 声道数
-	int outNbChs = 0;
-	inNbChs = av_get_channel_layout_nb_channels(srcChLayout);
-	outNbChs = av_get_channel_layout_nb_channels(dstChLayout);
-
-	int srcBufSize = 0;
-	int dstBufSize = 0;
-	int srcLineSize = 0;
-	int dstLineSize = 0;
-	unsigned char **srcData = NULL;
-	unsigned char **dstData = NULL;
-	long long int dstNbSamples = 0;
-
-	#if 0	// debug
-	cout << "inNbChs = " << inNbChs << ", srcNbSamples = " << srcNbSamples << ", srcAvSampleFmt = " << srcAvSampleFmt << endl;
-	cout << "srcNbSamples = " << srcNbSamples << ", dstSampleRate = " << dstSampleRate << ", srcSampleRate = " << srcSampleRate << endl;
-	#endif
-	// 根据srcAvSampleFmt、srcNbSamples、inNbChs 为srcData 分配内存空间，和设置对应的的linesize 的值；返回分配的总内存的大小
-	srcBufSize = av_samples_alloc_array_and_samples(&srcData, &srcLineSize, inNbChs, srcNbSamples, srcAvSampleFmt, 0);
-	// 根据srcNbSamples * dstSampleRate / srcSampleRate公式初步估算重采样后音频的nb_samples 大小。
-	// eg: 1152 * 16000 / 44100 = 417.96
-	dstNbSamples = av_rescale_rnd(srcNbSamples, dstSampleRate, srcSampleRate, AV_ROUND_UP);
-	dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChs, dstNbSamples, dstAvSampleFmt, 0);
-	
-	long long int dstNbSamplesMax = 0;
-	dstNbSamplesMax = dstNbSamples;
-
-	bool bOOM = false;
-	if(srcBufSize > srcPcmLen)
-	{
-		cerr << "In Mp3Decoder::pcmDataResample(), Truncation: srcBufSize > srcPcmLen." << endl;
-		srcBufSize = srcPcmLen;
-		bOOM = true;
-	}
-	memcpy(srcData[0], srcPcmData, srcBufSize);
-
-	/*	因为转换需要缓存，所以要不停的调整转换后的内存的大小，估算重采样后的nb_samples 的大小。
-		这里swr_get_delay() 用于获取重采样的缓冲延迟。
-		dstNbSamples的值会经过多次调整后区域稳定 */
-	dstNbSamples = av_rescale_rnd(swr_get_delay(swrCtx, srcSampleRate) + srcNbSamples, dstSampleRate, srcSampleRate, AV_ROUND_UP);
-	if(dstNbSamples > dstNbSamplesMax)
-	{
-		cerr << "In Mp3Decoder::pcmDataResample(): realloc memory." << endl;
-		// 先释放以前的内存，不管sample_fmt 是planner 还是packet 方式，av_samples_alloc_array_and_samples()函数都是分配的一整块连续的内存
-		av_freep(&dstData[0]);
-		dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChs, dstNbSamples, dstAvSampleFmt, 0);
-		dstNbSamplesMax = dstNbSamples;
-	}
-
-	// 开始重采样，重采样后的数据将根据前面指定的存储方式写入ds_data 内存块中，返回每个声道实际的采样数。
-	/*	swr_convert() 返回的outNbSmples 是实际转换的采样个数，该值小于或等于预计采样数dstNbSamples, 
-		所以写入文件的时候不能用dstNbSamples的  值，而应该用outNbSmples值。*/
-	int outNbSmples = 0;
-	outNbSmples = swr_convert(swrCtx, dstData, dstNbSamples, (const unsigned char **)srcData, srcNbSamples);
-	if(outNbSmples < 0)
-	{
-		cerr << "In Mp3Decoder::pcmDataResample() swr_convert() fail. outNbSmples = " << outNbSmples << endl;
-	}
-
-	// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据造成错误。
-	dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChs, outNbSmples, dstAvSampleFmt, 1);
-	if(dstPcmLen < dstBufSize)
-	{
-		cerr << "In Mp3Decoder::pcmDataResample(): space is not enough. dstPcmData is less than need." << endl;
-		dstBufSize = dstPcmLen;
-		bOOM = true;
-	}
-	memcpy(dstPcmData, dstData[0], dstBufSize);
-
-	// 释放资源
-	int ch = 0;
-	for(ch = 0; ch < outNbChs; ++ch)
-	{
-		av_freep(&dstData[ch]);
-	}
-	av_freep(&srcData[0]);
-	swr_free(&swrCtx);
-
-	if(bOOM)
-	{
-		return -3;
-	}
-
-	//cout << "Call Mp3Decoder::pcmDataResample() end." << endl;
-	return dstBufSize;
 }
 
 /*
@@ -934,3 +614,347 @@ int Mp3Decoder::getMp3Attr(const char *filePath, long long int *pSampleRate, lon
 	return 0;
 }
 
+/*
+	功能：	构造PCM 重采样器。
+	返回：	
+	注意：	
+*/
+PcmResampler::PcmResampler(long long int dstSampleRate, long long int dstChLayout, AVSampleFormat _dstAvSampleFmt, 
+				long long int srcSampleRate, long long int srcChLayout, AVSampleFormat srcAvSampleFmt, int _srcNbSamples)
+{
+	cout << "Call PcmResampler::PcmResampler()." << endl;
+
+	srcNbSamples = _srcNbSamples;
+	dstAvSampleFmt = _dstAvSampleFmt;
+
+	// 1、创建上下文SwrContext
+	swrCtx = swr_alloc();
+	if(NULL == swrCtx)
+	{
+		cerr << "In PcmResampler::PcmResampler(): swr_alloc() fail" << endl;
+		return;
+	}
+
+	// 2、设置重采样的相关参数 这些函数位于头文件 <libavutil/opt.h>
+	av_opt_set_int(swrCtx, "in_channel_layout", srcChLayout, 0);
+	av_opt_set_int(swrCtx, "in_sample_rate", srcSampleRate, 0);
+	av_opt_set_sample_fmt(swrCtx, "in_sample_fmt", srcAvSampleFmt, 0);
+
+	av_opt_set_int(swrCtx, "out_channel_layout", dstChLayout, 0);
+	av_opt_set_int(swrCtx, "out_sample_rate", dstSampleRate, 0);
+	av_opt_set_sample_fmt(swrCtx, "out_sample_fmt", dstAvSampleFmt, 0);
+
+	// 3、初始化上下文
+	int ret = 0;
+	ret = swr_init(swrCtx);
+	if(ret < 0) 
+	{
+		cerr << "In PcmResampler::PcmResampler(): swr_init() fail" << endl;
+		swr_free(&swrCtx);
+		return;
+	}
+
+	// 4、根据声道布局计算声道数。
+	inNbChs = av_get_channel_layout_nb_channels(srcChLayout);
+	outNbChs = av_get_channel_layout_nb_channels(dstChLayout);
+
+	#if 0	// debug
+	cout << "inNbChs = " << inNbChs << ", srcNbSamples = " << srcNbSamples << ", srcAvSampleFmt = " << srcAvSampleFmt << endl;
+	cout << "srcNbSamples = " << srcNbSamples << ", dstSampleRate = " << dstSampleRate << ", srcSampleRate = " << srcSampleRate << endl;
+	#endif
+	// 根据srcAvSampleFmt、srcNbSamples、inNbChs 为srcData 分配内存空间，和设置对应的的linesize 的值；返回分配的总内存的大小
+	srcBufSize = av_samples_alloc_array_and_samples(&srcData, &srcLineSize, inNbChs, srcNbSamples, srcAvSampleFmt, 0);
+	// 根据srcNbSamples * dstSampleRate / srcSampleRate公式初步估算重采样后音频的nb_samples 大小。
+	// eg: 1152 * 16000 / 44100 = 417.96
+	dstNbSamples = av_rescale_rnd(srcNbSamples, dstSampleRate, srcSampleRate, AV_ROUND_UP);
+	dstNbSamplesMax = dstNbSamples;
+	dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChs, dstNbSamples, dstAvSampleFmt, 0);
+
+	/*	因为转换需要缓存，所以要不停的调整转换后的内存的大小，估算重采样后的nb_samples 的大小。
+		这里swr_get_delay() 用于获取重采样的缓冲延迟。
+		dstNbSamples的值会经过多次调整后区域稳定 */
+	dstNbSamples = av_rescale_rnd(swr_get_delay(swrCtx, srcSampleRate) + srcNbSamples, dstSampleRate, srcSampleRate, AV_ROUND_UP);
+	if(dstNbSamples > dstNbSamplesMax)
+	{
+		cerr << "In PcmResampler::PcmResampler(): realloc memory." << endl;
+		// 先释放以前的内存，不管sample_fmt 是planner 还是packet 方式，av_samples_alloc_array_and_samples()函数都是分配的一整块连续的内存
+		av_freep(&dstData[0]);
+		dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChs, dstNbSamples, dstAvSampleFmt, 0);
+		dstNbSamplesMax = dstNbSamples;
+	}
+
+	bInit = true;
+	cout << "Call PcmResampler::PcmResampler() end." << endl;
+	return;
+}
+
+/*
+	功能：	析构PCM 重采样器。
+	返回：	
+	注意：	
+*/
+PcmResampler::~PcmResampler()
+{
+	bInit = false;
+
+	// 释放资源
+	int ch = 0;
+	for(ch = 0; ch < outNbChs; ++ch)
+	{
+		av_freep(&dstData[ch]);
+		dstData = NULL;
+	}
+
+	if(NULL != swrCtx)
+	{
+		swr_free(&swrCtx);
+		swrCtx = NULL;
+	}
+}
+
+/*
+	功能：	PCM 重采样。
+	返回：	成功，返回重采样后的数据长度。
+			参数错误，返回-1. 
+	注意：	
+*/
+int PcmResampler::pcmDataResample(void *dstPcmData, unsigned int dstPcmLen, 
+					const void *srcPcmData, unsigned int srcPcmLen)
+{
+	if(NULL == dstPcmData || NULL == srcPcmData)
+	{
+		cerr << "In PcmResampler::pcmDataResample(), argument has null value." << endl;
+		return -1;
+	}
+
+	if(srcPcmLen > srcBufSize)
+	{
+		cerr << "In PcmResampler::pcmDataResample(), Truncation: srcPcmLen > srcBufSize." << endl;
+		srcPcmLen = srcBufSize;
+	}
+
+	//cout << "srcPcmLen = " << srcPcmLen << endl;
+	memcpy(srcData[0], srcPcmData, srcPcmLen);
+	// 开始重采样，重采样后的数据将根据前面指定的存储方式写入ds_data 内存块中，返回每个声道实际的采样数。
+	/*	swr_convert() 返回的outNbSmples 是实际转换的采样个数，该值小于或等于预计采样数dstNbSamples, 
+		所以写入文件的时候不能用dstNbSamples的  值，而应该用outNbSmples值。*/
+	int outNbSmples = 0;
+	outNbSmples = swr_convert(swrCtx, dstData, dstNbSamples, (const unsigned char **)srcData, srcNbSamples);
+	if(outNbSmples < 0)
+	{
+		cerr << "In PcmResampler::pcmDataResample() swr_convert() fail. outNbSmples = " << outNbSmples << endl;
+	}
+
+	int dstRealSize = 0;
+	// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据造成错误。
+	dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChs, outNbSmples, dstAvSampleFmt, 1);
+	if(dstPcmLen < dstBufSize)
+	{
+		cerr << "In PcmResampler::pcmDataResample(): space is not enough. dstPcmLen < dstBufSize." << endl;
+		dstRealSize = dstPcmLen;
+	}
+	else
+	{
+		dstRealSize = dstBufSize;
+	}
+	
+	memcpy(dstPcmData, dstData[0], dstRealSize);
+	//cout << "dstRealSize = " << dstRealSize << endl;
+
+	return dstRealSize;
+}
+
+/*
+	功能：	PCM 文件重采样。调整声道数、采样率、采样格式。
+	返回：	成功，返回0;
+			-1, 参数错误；
+			-2, 重采样上下文分配失败或初始化失败；
+	注意：	
+*/
+int PcmResampler::pcmFileResample(const char *dstPcmPath, const char *srcPcmPath)
+{
+	cout << "Call PcmResampler::pcmFileResample()." << endl;
+
+	if(NULL == srcPcmPath || NULL == dstPcmPath)
+	{
+		cerr << "Fail to call PcmResampler::pcmFileResample(). File path has null value." << endl;
+		return -1;
+	}
+
+	ifstream ifs(srcPcmPath, ios::in);
+	if(!ifs)
+	{
+		cerr << "Fail to open file " << srcPcmPath << ", " << strerror(errno) << endl;
+		return -1;
+	}
+	
+	ofstream ofs(dstPcmPath, ios::out);
+	if(!ofs)
+	{
+		cerr << "Fail to open file " << dstPcmPath << ", " << strerror(errno) << endl;
+		ifs.close();
+		return -1;
+	}
+
+	#if 0
+	// 1、创建上下文SwrContext
+	SwrContext *swrCtx = NULL;
+	swrCtx = swr_alloc();
+	if(NULL == swrCtx)
+	{
+		cerr << "In PcmResampler::pcmFileResample(): swr_allock() fail" << endl;
+		return -2;
+	}
+
+	// 2、设置重采样的相关参数 这些函数位于头文件 <libavutil/opt.h>
+	av_opt_set_int(swrCtx, "in_channel_layout", srcChLayout, 0);
+	av_opt_set_int(swrCtx, "in_sample_rate", srcSampleRate, 0);
+	av_opt_set_sample_fmt(swrCtx, "in_sample_fmt", srcAvSampleFmt, 0);
+
+	av_opt_set_int(swrCtx, "out_channel_layout", dstChLayout, 0);
+	av_opt_set_int(swrCtx, "out_sample_rate", dstSampleRate, 0);
+	av_opt_set_sample_fmt(swrCtx, "out_sample_fmt", dstAvSampleFmt, 0);
+
+	// 3、初始化上下文
+	int ret = 0;
+	ret = swr_init(swrCtx);
+	if(ret < 0) 
+	{
+		cerr << "In PcmResampler::pcmFileResample(): swr_init() fail" << endl;
+		return -2;
+	}
+
+	int inNbChs = 0;		// 声道数
+	int outNbChs = 0;
+	inNbChs = av_get_channel_layout_nb_channels(srcChLayout);
+	outNbChs = av_get_channel_layout_nb_channels(dstChLayout);
+	
+	// 根据srcAvSampleFmt、srcNbSamples、inNbChs 为srcData 分配内存空间，和设置对应的的linesize 的值；返回分配的总内存的大小
+	int srcBufSize = 0;
+	int dstBufSize = 0;
+	int srcLineSize = 0;
+	int dstLineSize = 0;	
+	long long int dstNbSamples = 0;
+	long long int dstNbSamplesMax = 0;
+	//const int srcNbSamples = 1024;
+	unsigned char **srcData = NULL;
+	unsigned char **dstData = NULL;
+
+	srcBufSize = av_samples_alloc_array_and_samples(&srcData, &srcLineSize, inNbChs, srcNbSamples, srcAvSampleFmt, 0);
+	// 根据srcNbSamples*dstSampleRate/srcSampleRate公式初步估算重采样后音频的nb_samples大小
+	dstNbSamples = av_rescale_rnd(srcNbSamples, dstSampleRate, srcSampleRate, AV_ROUND_UP);
+	dstNbSamplesMax = dstNbSamples;
+	dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChs, dstNbSamples, dstAvSampleFmt, 0);
+	#endif
+
+	while(ifs)
+	{
+		size_t readBytes = 0;
+		ifs.read((char *)srcData[0], srcBufSize);
+		readBytes = ifs.gcount();
+		if(!ifs)
+		{
+			if(0 == readBytes)
+			{
+				cout << "Read over in PcmResampler::pcmFileResample()." << endl;
+			}
+			else if(readBytes < srcBufSize)
+			{
+				cerr << "Bytes actually read are " << readBytes << endl;
+			}
+			else
+			{
+				cerr << "Fail to read file " << srcPcmPath << endl;
+			}
+			
+			break;
+		}
+		//cout << "readBytes = " << readBytes << endl;
+
+		#if 0
+		/*	因为转换需要缓存，所以要不停的调整转换后的内存的大小，估算重采样后的nb_samples 的大小。
+			这里swr_get_delay() 用于获取重采样的缓冲延迟。
+			dstNbSamples的值会经过多次调整后区域稳定 */
+		dstNbSamples = av_rescale_rnd(swr_get_delay(swrCtx, srcSampleRate) + srcNbSamples, dstSampleRate, srcSampleRate, AV_ROUND_UP);
+		if(dstNbSamples > dstNbSamplesMax)
+		{
+			cerr << "In PcmResampler::pcmFileResample(): realloc memory." << endl;
+			// 先释放以前的内存，不管sample_fmt 是planner 还是packet 方式，av_samples_alloc_array_and_samples()函数都是分配的一整块连续的内存
+			av_freep(&dstData[0]);
+			dstBufSize = av_samples_alloc_array_and_samples(&dstData, &dstLineSize, outNbChs, dstNbSamples, dstAvSampleFmt, 0);
+			dstNbSamplesMax = dstNbSamples;
+		}
+		#endif
+ 
+		// 开始重采样，重采样后的数据将根据前面指定的存储方式写入ds_data 内存块中，返回每个声道实际的采样数。
+		/*	swr_convert() 返回的outNbSmples 是实际转换的采样个数，该值小于或等于预计采样数dstNbSamples, 
+			所以写入文件的时候不能用dstNbSamples的  值，而应该用outNbSmples值。*/
+		int outNbSmples = 0;
+		outNbSmples = swr_convert(swrCtx, dstData, dstNbSamples, (const unsigned char **)srcData, srcNbSamples);
+		if(outNbSmples < 0)
+		{
+			cerr << "In PcmResampler::pcmFileResample() swr_convert() fail. Result = " << outNbSmples << endl;
+			break;
+		}
+
+		// 最后一个参数必须为1, 否则会因为cpu 对齐算出来的大小大于实际的数据大小，导致多写入数据造成错误。
+		dstBufSize = av_samples_get_buffer_size(&dstLineSize, outNbChs, outNbSmples, dstAvSampleFmt, 1);
+		ofs.write((char *)dstData[0], dstBufSize);
+		//cout << "dstBufSize = " << dstBufSize << endl;
+		#if (1 == __DEBUG_AO__)
+		AudioOut *pAudioOut = AudioOut::getInstance();
+		pAudioOut->sendStream(dstData[0], dstBufSize);
+		#endif
+	}
+
+	#if 0
+	// 还有剩余的缓存数据没有转换，第三个传递NULL, 第四个传递0, 即可将缓存中的全部取出
+	do{
+		int realNbSamples = 0;
+		realNbSamples = swr_convert(swrCtx, dstData, dstNbSamples, NULL, 0);
+		if(realNbSamples <= 0)
+		{
+			break;
+		}
+		
+		cout << "In PcmResampler::pcmFileResample(), left " << realNbSamples << endl;
+		if(av_sample_fmt_is_planar(dstAvSampleFmt))
+		{
+			int perSampleBytes = 0;
+			perSampleBytes = av_get_bytes_per_sample(dstAvSampleFmt);
+			int i = 0;
+			for(i = 0; i < realNbSamples; ++i)
+			{
+				int j = 0;
+				for(j = 0; j < outNbChs; ++j)
+				{
+					ofs.write((char *)dstData[j] + i * perSampleBytes, perSampleBytes);
+				}
+			}
+		}
+		else
+		{
+			int size = 0;
+			size = av_samples_get_buffer_size(NULL, outNbChs, realNbSamples, dstAvSampleFmt, 1);
+			ofs.write((char *)dstData[0], size);
+		}
+	}while(true);
+	#endif
+
+	#if 0
+	// 释放资源
+	int ch = 0;
+	for(ch = 0; ch < outNbChs; ++ch)
+	{
+		av_freep(&dstData[0]);
+	}
+	av_freep(&srcData[0]);
+	swr_free(&swrCtx);
+	#endif
+	
+	ifs.close();
+	ofs.close();
+
+	cout << "Call PcmResampler::pcmFileResample() end." << endl;
+	return 0;
+}

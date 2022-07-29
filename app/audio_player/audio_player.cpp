@@ -550,6 +550,8 @@ int AudioPlayer::thPlayRouteMP3(AudioPlayer* pThis, const char *filePath)
 	return pThis->playRouteMP3(filePath);
 }
 
+#define __DUBUG_OUT_PCM__ 0
+
 /*
 	功能：	播放MP3 文件，内部实现。
 	返回：	0, 成功；-1, 参数无效；-2, 文件打开失败；-3, 文件读取失败。
@@ -567,7 +569,7 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 
 	Mp3Decoder mp3Decoder;
 	mp3Decoder.getMp3Attr(filePath, &srcSampleRate, &srcChLayout, &srcAvSampleFmt, &srcNbSamples);
-	#if 1	// debug
+	#if 0	// debug
 	cout << "In AudioPlayer::playRouteMP3(). Mp3 attr: " 
 		<< "srcSampleRate = " << srcSampleRate << ", srcChLayout = " << srcChLayout 
 		<< ", srcAvSampleFmt = " << srcAvSampleFmt << ",  srcNbSamples = " << srcNbSamples << endl;
@@ -575,8 +577,24 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	
 	// 2. 开始解码MP3 文件。
 	mp3Decoder.mp3Decoding(filePath);
+
+	// 3. 初始化重采样器。
+	// 目标音频格式
+	const long long int dstSampleRate = 16000;
+	const long long int dstChLayout = AV_CH_LAYOUT_MONO;
+	const AVSampleFormat dstAvSampleFmt = AV_SAMPLE_FMT_S16;
+	PcmResampler pcmResampler(dstSampleRate, dstChLayout, dstAvSampleFmt, 
+							srcSampleRate, srcChLayout, srcAvSampleFmt, srcNbSamples);
+
+	#if (1 == __DUBUG_OUT_PCM__)	// debug
+	ofstream ofs("/mnt/linux/Audios/pcm/out0.pcm", ios::out);
+	if(!ofs)
+	{
+		cerr << "Fail to open file, " << strerror(errno) << endl;
+	}
+	#endif
 	
-	// 3. 获取解码数据
+	// 4. 获取解码数据
 	// 源音频数据
 	unsigned int srcRealSize = 0;
 	const unsigned int srcDataSize = 1024 * 16;
@@ -585,23 +603,23 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 	while((srcRealSize = mp3Decoder.recvPcmFrame(srcDataBuff, srcDataSize)) > 0 && bPlaying)
 	{
 		//cout << "srcRealSize = " << srcRealSize << endl;
+		#if (1 == __DUBUG_OUT_PCM__)	// debug
+		ofs.write((const char*)srcDataBuff, srcRealSize);
+		if(!ofs)
+		{
+			cerr << "Fail to write file. " << strerror(errno) << endl;
+		}
+		#endif
 
 		// 目标音频数据
 		int dstRealSize = 0;
 		const unsigned int dstDataSize = 1024 * 16;
 		unsigned char dstDataBuff[dstDataSize] = {0};
 
-		// 目标音频格式
-		const long long int dstSampleRate = 16000;
-		const long long int dstChLayout = AV_CH_LAYOUT_MONO;
-		const AVSampleFormat dstAvSampleFmt = AV_SAMPLE_FMT_S16;
+		// 5. 重采样。
+		dstRealSize = pcmResampler.pcmDataResample(dstDataBuff, dstDataSize, srcDataBuff, srcRealSize);
 
-		// 4. 重采样。
-		dstRealSize = mp3Decoder.pcmDataResample(
-						dstDataBuff, dstDataSize, dstSampleRate, dstChLayout, dstAvSampleFmt, 
-						srcDataBuff, srcRealSize, srcSampleRate, srcChLayout, srcAvSampleFmt, srcNbSamples);
-
-		// 5. AO 播放。
+		// 6. AO 播放。
 		if(dstRealSize > 0)
 		{
 			AudioOut *pAudioOut = AudioOut::getInstance();
@@ -614,6 +632,10 @@ int AudioPlayer::playRouteMP3(const char *filePath)
 		#endif
 	}
 	bPlaying = false;
+
+	#if (1 == __DUBUG_OUT_PCM__)
+	ofs.close();
+	#endif
 
 	cout << "Call AudioPlayer::playRouteMP3() end." << endl;
 	return 0;

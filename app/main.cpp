@@ -20,7 +20,7 @@ xxx 版权所有。
 
 #include "aac.h"
 #include "aad.h"
-#include "avtp.h"
+//#include "avtp_client.h"
 #include "ircut.h"
 #include "queue.h"
 #include "spipanel.h"
