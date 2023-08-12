@@ -6,7 +6,7 @@ xxx版权所有。
 
 #include "scl.h"
 #include "isp.h"
-#include "st_common.h"
+#include "sensor.h"
 #include <iostream>
 #include <string.h>
 
@@ -54,30 +54,9 @@ MI_S32 Scl::enable()
 	MI_S32 s32Ret = 0;
 	MI_SCL_DevAttr_t stSclDevAttr;
 	memset(&stSclDevAttr, 0x0, sizeof(MI_SCL_DevAttr_t));
-	int SCL_PORT_ID = 0;	// 照搬SDK Demo, 有计算关系
-	switch(SCL_PORT_ID)
-	{
-		case 0:
-		{
-			stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL2; //Port0->HWSCL2
-			break;
-		}
-		case 1:
-		{
-			stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL3; //Port1->HWSCL3
-			break;
-		}
-		case 2:
-		{
-			stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL4; //Port2->HWSCL4
-			break;
-		}
-		default:
-		{
-			ST_ERR("Invalid Scl Port Id:%d\n", SCL_PORT_ID);
-			return -1;
-		}
-	}
+	
+	//Port0->HWSCL2, //Port1->HWSCL3, //Port2->HWSCL4
+	stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL2 | E_MI_SCL_HWSCL3 | E_MI_SCL_HWSCL4;
 	
 	s32Ret = MI_SCL_CreateDevice(sclDevId, &stSclDevAttr);
 	if(0 != s32Ret)
@@ -115,14 +94,8 @@ MI_S32 Scl::enable()
 		return s32Ret;
 	}
 
-	s32Ret = MI_SCL_EnableOutputPort(sclDevId, sclChnId, sclPortId);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call MI_SCL_EnableOutputPort() in Scl::enable(). " 
-			<< "errno = 0x" << hex << s32Ret << dec << endl;
-		return s32Ret;
-	}
-
+	// port 0
+	#if 0
 	MI_ISP_OutPortParam_t  stIspOutputParam;
 	memset(&stIspOutputParam, 0x0, sizeof(MI_ISP_OutPortParam_t));
 	s32Ret = MI_ISP_GetInputPortCrop(Isp::ispDevId, Isp::ispChnId, &stIspOutputParam.stCropRect);
@@ -137,10 +110,26 @@ MI_S32 Scl::enable()
 	memset(&stSclOutputParam, 0x0, sizeof(MI_SCL_OutPortParam_t));
 	stSclOutputParam.stSCLOutCropRect.u16X = stIspOutputParam.stCropRect.u16X;
 	stSclOutputParam.stSCLOutCropRect.u16Y = stIspOutputParam.stCropRect.u16Y;
-	stSclOutputParam.stSCLOutCropRect.u16Width = stIspOutputParam.stCropRect.u16Width;
+	stSclOutputParam.stSCLOutCropRect.u16Width = stIspOutputParam.stCropRect.u16Width;		// 如果没剪裁，则值为0.
 	stSclOutputParam.stSCLOutCropRect.u16Height = stIspOutputParam.stCropRect.u16Height;
-	stSclOutputParam.stSCLOutputSize.u16Width = 3840;
-	stSclOutputParam.stSCLOutputSize.u16Height = 2160;
+	stSclOutputParam.stSCLOutputSize.u16Width = 1920;
+	stSclOutputParam.stSCLOutputSize.u16Height = 1080;
+	#else
+
+	unsigned int snrW = 0;
+	unsigned int snrH = 0;
+	Sensor *pSensor = Sensor::getInstance();
+	pSensor->getSnrWH(&snrW, &snrH);
+	
+	MI_SCL_OutPortParam_t  stSclOutputParam;
+	memset(&stSclOutputParam, 0x0, sizeof(MI_SCL_OutPortParam_t));
+	stSclOutputParam.stSCLOutCropRect.u16X = 0;
+	stSclOutputParam.stSCLOutCropRect.u16Y = 0;
+	stSclOutputParam.stSCLOutCropRect.u16Width = 0;		// 如果没剪裁，则值为0.
+	stSclOutputParam.stSCLOutCropRect.u16Height = 0;
+	stSclOutputParam.stSCLOutputSize.u16Width = snrW;
+	stSclOutputParam.stSCLOutputSize.u16Height = snrH;
+	#endif
 	stSclOutputParam.bMirror = FALSE;
 	stSclOutputParam.bFlip = FALSE;
 	stSclOutputParam.eCompressMode= E_MI_SYS_COMPRESS_MODE_NONE;
@@ -154,6 +143,30 @@ MI_S32 Scl::enable()
 		return s32Ret;
 	}
 
+	s32Ret = MI_SCL_EnableOutputPort(sclDevId, sclChnId, sclPortId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_EnableOutputPort() in Scl::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	s32Ret = MI_SCL_SetOutputPortParam(sclDevId, sclChnId, sclPortId + 1, &stSclOutputParam);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_SetOutputPortParam() in Scl::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	s32Ret = MI_SCL_EnableOutputPort(sclDevId, sclChnId, sclPortId + 1);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_EnableOutputPort() in Scl::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	
 	bEnable = true;
 
 	cout << "Call Scl::enable() end." << endl;

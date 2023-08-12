@@ -712,7 +712,7 @@ MI_S32 Venc::createStreamWithAttr(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_V
 -----------------------------------------------------------------------------*/
 MI_S32 Venc::createH264Stream(MI_VENC_CHN vencChn, unsigned int width, unsigned int height)
 {
-	cout << "Call Venc::createH264Stream() end." << endl;
+	cout << "Call Venc::createH264Stream()." << endl;
 
 	MI_VENC_ChnAttr_t stChnAttr;
 	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
@@ -754,7 +754,18 @@ MI_S32 Venc::createH264Stream(MI_VENC_CHN vencChn, unsigned int width, unsigned 
 
 	MI_VENC_InputSourceConfig_t stVencInputSourceConfig;
 	memset(&stVencInputSourceConfig, 0, sizeof(MI_VENC_InputSourceConfig_t));
-	stVencInputSourceConfig.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
+	//stVencInputSourceConfig.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
+	//stVencInputSourceConfig.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE;
+	static bool bFirst = true;
+	if(bFirst)
+	{
+		stVencInputSourceConfig.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
+		bFirst = false;
+	}
+	else
+	{
+		stVencInputSourceConfig.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE;
+	}
 	s32Ret = MI_VENC_SetInputSourceConfig(MI_VENC_DEV_ID_H264_H265_0, vencChn, &stVencInputSourceConfig);
 	if(0 != s32Ret)
 	{

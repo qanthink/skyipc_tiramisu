@@ -267,15 +267,15 @@ MI_S32 Sys::bindIsp2Scl(MI_U32 u32IspDevID, MI_U32 u32SclDevID, MI_U32 u32SrcFrm
 	return 0;
 }
 
-MI_S32 Sys::bindScl2Venc(MI_U32 u32SclDevID, MI_U32 u32VencCh, MI_U32 u32SrcFrmrate, MI_U32 u32DstFrmrate, MI_SYS_BindType_e eBindType, MI_U32 u32BindParam)
+MI_S32 Sys::bindScl2Venc(MI_U32 u32SclPortId, MI_U32 u32VencCh, MI_U32 u32SrcFrmrate, MI_U32 u32DstFrmrate, MI_SYS_BindType_e eBindType, MI_U32 u32BindParam)
 {
 	cout << "Call Sys::bindScl2Venc()." << endl;
 	MI_SYS_ChnPort_t stSrcChnPort;
 	memset(&stSrcChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 	stSrcChnPort.eModId = E_MI_MODULE_ID_SCL;
-	stSrcChnPort.u32DevId = u32SclDevID;
+	stSrcChnPort.u32DevId = 0;
 	stSrcChnPort.u32ChnId = 0;
-	stSrcChnPort.u32PortId = 0;
+	stSrcChnPort.u32PortId = u32SclPortId;
 
 	MI_SYS_ChnPort_t stDstChnPort;
 	memset(&stDstChnPort, 0, sizeof(MI_SYS_ChnPort_t));

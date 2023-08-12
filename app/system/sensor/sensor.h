@@ -37,7 +37,7 @@ private:
 
 	/*	与sensor 的配置相关，同一颗sensor 可能出不同配置。
 		例如IMX415 可以出：3840x2160@30fps; 2560x1440@30fps; 1920x1080@60fps; */
-	const static MI_U8 u8SnrResIndex = 7;
+	const static MI_U8 u8SnrResIndex = 6;
 	
 	const static MI_U32 u32DefFps = 30;
 	const static MI_U32 u32PlaneID = 0;

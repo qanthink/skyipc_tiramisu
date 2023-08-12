@@ -438,6 +438,7 @@ int main(int argc, const char *argv[])
 
 	// SCL 初始化，并绑定前级ISP.
 	Scl *pScl = Scl::getInstance();
+	sleep(1);
 	pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 
 	// 创建DIVP 缩放、剪裁通道
@@ -448,23 +449,23 @@ int main(int argc, const char *argv[])
 
 	Venc *pVenc = Venc::getInstance();
 	#if (1 == (USE_IPC))
-	unsigned int subW = 1280;
-	unsigned int subH = 720;
+	unsigned int subW = 1920;
+	unsigned int subH = 1080;
 	// 创建子码流
 	#if (1 == (USE_VENC_SUB))
-	//pVpe->createPort(Vpe::vpeSubPort, subW, subH);
 	pVenc->createH264Stream(Venc::vencSubChn, subW, subH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 0.25 * 1024);
-	//pSys->bindVpe2Venc(Vpe::vpeSubPort, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
-	//pSys->bindIsp2Venc(Isp::ispDevId, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+	pSys->bindScl2Venc(Scl::sclPortId, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_HW_RING, subH);
 	#endif
 
+	sleep(2);
 	// 创建主码流
 	#if (1 == (USE_VENC_MAIN))
-	//pVpe->createPort(Vpe::vpeMainPort, snrW, snrH);
 	pVenc->createH264Stream(Venc::vencMainChn, snrW, snrH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, 1 * 1024);
-	pSys->bindScl2Venc(Scl::sclDevId, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_HW_RING, snrH);
+	sleep(2);
+	//pSys->bindScl2Venc(Scl::sclPortId + 1, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_HW_RING, snrH);
+	pSys->bindScl2Venc(Scl::sclPortId + 1, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, snrH);
 	#if (1 == (USE_DIVP))
 	pSys->bindVpe2Divp(Vpe::vpeMainPort, Divp::divpChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 	pSys->bindDivp2Venc(Divp::divpChn, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
