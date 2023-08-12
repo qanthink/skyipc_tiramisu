@@ -8,9 +8,17 @@ xxx版权所有。
 
 #include "mi_isp.h"
 
+/*
+	ISP 可以创建多个PORT？
+*/
+
 class Isp{
 public:
 	static Isp* getInstance();
+
+	const static MI_ISP_DEV ispDevId = 0;
+	const static MI_ISP_CHANNEL ispChnId = 0;
+	const static MI_ISP_PORT ispPortId = 0;
 
 	int enable();
 	int disable();
@@ -36,10 +44,6 @@ public:
 	int setIqServerDataPath(char *iqFilePath);
 
 	int loadBinFile(char* filepath);
-
-public:
-	const static MI_ISP_DEV ispDevId = 0;
-	const static MI_ISP_CHANNEL ispChnId = 0;
 
 private:
 	Isp();

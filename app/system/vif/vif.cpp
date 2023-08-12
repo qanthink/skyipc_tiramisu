@@ -61,7 +61,7 @@ MI_S32 Vif::enable()
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call pSensor->getPadInfo() in Vif::enable()." 
-			<< "s32Ret = " << s32Ret << endl;
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
 
@@ -72,7 +72,7 @@ MI_S32 Vif::enable()
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call pSensor->getPlaneInfo() in Vif::enable()." 
-			<< "s32Ret = " << s32Ret << endl;
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
 
@@ -80,7 +80,6 @@ MI_S32 Vif::enable()
 	MI_VIF_GROUP vifGroupId = 0;		// 有复杂的计算关系。
 	MI_VIF_GroupAttr_t stVifGroupAttr;
 	memset(&stVifGroupAttr, 0, sizeof(MI_VIF_GroupAttr_t));
-	
 	stVifGroupAttr.eIntfMode = E_MI_VIF_MODE_MIPI;
 	stVifGroupAttr.eWorkMode = E_MI_VIF_WORK_MODE_1MULTIPLEX;
 	stVifGroupAttr.eHDRType = E_MI_VIF_HDR_TYPE_OFF;
@@ -91,7 +90,7 @@ MI_S32 Vif::enable()
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VIF_CreateDevGroup() in Vif::enable()." 
-			<< "s32Ret = " << s32Ret << endl;
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
 
@@ -99,7 +98,6 @@ MI_S32 Vif::enable()
 	MI_VIF_DEV vifDevId = 0;			// 有复杂的计算关系。
 	MI_VIF_DevAttr_t stVifDevAttr;
 	memset(&stVifDevAttr, 0, sizeof(MI_VIF_DevAttr_t));
-
 	stVifDevAttr.stInputRect.u16X = stPlaneInfo.stCapRect.u16X;
 	stVifDevAttr.stInputRect.u16Y = stPlaneInfo.stCapRect.u16Y;
 	stVifDevAttr.stInputRect.u16Width = stPlaneInfo.stCapRect.u16Width;
@@ -117,7 +115,7 @@ MI_S32 Vif::enable()
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VIF_SetDevAttr() in Vif::enable()." 
-			<< "s32Ret = " << s32Ret << endl;
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
 
@@ -126,12 +124,11 @@ MI_S32 Vif::enable()
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VIF_EnableDev() in Vif::enable()." 
-			<< "s32Ret = " << s32Ret << endl;
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
 
 	// step5: 设置输出端口输出属性、深度。
-	MI_VIF_PORT vifPortId = 0;
 	MI_VIF_OutputPortAttr_t stVifPortAttr;
 	memset(&stVifPortAttr, 0, sizeof(MI_VIF_OutputPortAttr_t));
 
@@ -155,7 +152,7 @@ MI_S32 Vif::enable()
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VIF_SetOutputPortAttr() in Vif::enable()." 
-			<< "s32Ret = " << s32Ret << endl;
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
 
@@ -167,11 +164,11 @@ MI_S32 Vif::enable()
 	stChnPort.u32DevId = vifDevId;
 	stChnPort.u32ChnId = vifChnId;
 	stChnPort.u32PortId = vifPortId;
-	s32Ret = MI_SYS_SetChnOutputPortDepth(0, &stChnPort, 0, 3 + 3);	// 此处可优化。
+	s32Ret = MI_SYS_SetChnOutputPortDepth(Sys::u16SocId, &stChnPort, 0, 3 + 3);	// 此处可优化。
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_SYS_SetChnOutputPortDepth() in Vif::enable()." 
-			<< "s32Ret = " << s32Ret << endl;
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
 
@@ -180,7 +177,7 @@ MI_S32 Vif::enable()
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VIF_EnableOutputPort() in Vif::enable()." 
-			<< "s32Ret = " << s32Ret << endl;
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
 

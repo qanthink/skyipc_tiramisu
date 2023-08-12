@@ -29,8 +29,9 @@ aux_source_directory(common DIR_APP_SRC)
 include_directories(
 	sys
 	sensor
+	isp
 	scl
-	vpe
+	#vpe
 	rgn/st_rgn
 	#uvc_uac/st_uvc
 	common

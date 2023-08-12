@@ -5,7 +5,7 @@ xxx版权所有。
 ----------------------------------------------------------------*/
 
 #include "venc.h"
-#include "st_common.h"
+//#include "st_common.h"
 #include <iostream>
 #include <string.h>
 
@@ -202,7 +202,7 @@ MI_S32 Venc::setCrop(MI_VENC_CHN vencChn, MI_U32 x, MI_U32 y, MI_U32 w, MI_U32 h
 }
 #endif
 
-#if 0
+#if 1
 /*-----------------------------------------------------------------------------
 描--述：改变比特率。
 参--数：vencChn VENC通道号；
@@ -210,7 +210,7 @@ MI_S32 Venc::setCrop(MI_VENC_CHN vencChn, MI_U32 x, MI_U32 y, MI_U32 w, MI_U32 h
 返回值：成功，返回0; 失败，返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::changeBitrate(MI_VENC_CHN vencChn, MI_U32 u32BitrateKb)
+MI_S32 Venc::changeBitrate(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_U32 u32BitrateKb)
 {
 	cout << "Call Venc::changeBitrate()." << endl;
 
@@ -218,7 +218,7 @@ MI_S32 Venc::changeBitrate(MI_VENC_CHN vencChn, MI_U32 u32BitrateKb)
 	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
 
 	MI_S32 s32Ret = 0;
-	s32Ret = MI_VENC_GetChnAttr(vencChn, &stChnAttr);
+	s32Ret = MI_VENC_GetChnAttr(vencDev, vencChn, &stChnAttr);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VENC_GetChnAttr() in Venc::changeBitrate(), errno = " 
@@ -241,7 +241,7 @@ MI_S32 Venc::changeBitrate(MI_VENC_CHN vencChn, MI_U32 u32BitrateKb)
 		stChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = u32BitrateKb * 1024;	// 转换为bps.
 	}
 
-	s32Ret = MI_VENC_SetChnAttr(vencChn, &stChnAttr);
+	s32Ret = MI_VENC_SetChnAttr(vencDev, vencChn, &stChnAttr);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VENC_SetChnAttr() in Venc::changeBitrate(), errno = " 
@@ -657,11 +657,11 @@ MI_S32 Venc::createStreamWithAttr(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_V
 
 	if(bUseSliceMode)
 	{
-		if(vesTypeH264 == pstChnAttr->stVeAttr.eType)
+		if(E_MI_VENC_MODTYPE_H264E == pstChnAttr->stVeAttr.eType)
 		{
 			s32Ret = setH264SliceSplit(vencChn, NULL);	// slice 分片模式
 		}
-		else if(vesTypeH265 == pstChnAttr->stVeAttr.eType)
+		else if(E_MI_VENC_MODTYPE_H265E == pstChnAttr->stVeAttr.eType)
 		{
 			s32Ret = setH265SliceSplit(vencChn, NULL);	// slice 分片模式
 		}
@@ -704,20 +704,18 @@ MI_S32 Venc::createStreamWithAttr(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_V
 	return s32Ret;
 }
 
-
 /*-----------------------------------------------------------------------------
-描--述：创建码流。
+描--述：创建H.264码流。
 参--数：vencChn 通道号；pstChnAttr 指向频道属性的结构体指针，传入NULL, 使用默认属性。
 返回值：返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::createH26xStream(MI_VENC_CHN vencChn, unsigned int width, unsigned int height, MI_VENC_ModType_e vesType)
+MI_S32 Venc::createH264Stream(MI_VENC_CHN vencChn, unsigned int width, unsigned int height)
 {
-	cout << "Call Venc::createH26xStream() end." << endl;
+	cout << "Call Venc::createH264Stream() end." << endl;
 
 	MI_VENC_ChnAttr_t stChnAttr;
 	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
-
 	stChnAttr.stVeAttr.stAttrH264e.u32PicWidth = width;
 	stChnAttr.stVeAttr.stAttrH264e.u32PicHeight = height;
 	stChnAttr.stVeAttr.stAttrH264e.u32MaxPicWidth = width;
@@ -727,8 +725,8 @@ MI_S32 Venc::createH26xStream(MI_VENC_CHN vencChn, unsigned int width, unsigned 
 	stChnAttr.stVeAttr.stAttrH264e.u32Profile = 1;
 	stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_H264E;
 	stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_H264CBR;
-	stChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = 1024 * 1024;
-	stChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateNum = 15;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32BitRate = 1 * 1024 * 1024;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32SrcFrmRateNum = 30;
 	stChnAttr.stRcAttr.stAttrH264Cbr.u32SrcFrmRateDen = 1;
 	stChnAttr.stRcAttr.stAttrH264Cbr.u32Gop = 30;
 	stChnAttr.stRcAttr.stAttrH264Cbr.u32FluctuateLevel = 0;
@@ -738,58 +736,129 @@ MI_S32 Venc::createH26xStream(MI_VENC_CHN vencChn, unsigned int width, unsigned 
 	s32Ret = MI_VENC_CreateChn(MI_VENC_DEV_ID_H264_H265_0, vencChn, &stChnAttr);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call Venc::createChn(), s32Ret = " << s32Ret << endl;
+		cerr << "Fail to call MI_VENC_CreateChn() in Venc::createH264Stream(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
 
 	if(bUseSliceMode)
 	{
-		if(vesTypeH264 == vesType)
+		s32Ret = setH264SliceSplit(vencChn, NULL);	// slice 分片模式
+		if(0 != s32Ret)
 		{
-			s32Ret = setH264SliceSplit(vencChn, NULL);	// slice 分片模式
-		}
-		else if(vesTypeH265 == vesType)
-		{
-			s32Ret = setH265SliceSplit(vencChn, NULL);	// slice 分片模式
+			cerr << "Fail to call setH264SliceSplit() in Venc::createH264Stream(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
 		}
 	}
 
+	MI_VENC_InputSourceConfig_t stVencInputSourceConfig;
+	memset(&stVencInputSourceConfig, 0, sizeof(MI_VENC_InputSourceConfig_t));
+	stVencInputSourceConfig.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
+	s32Ret = MI_VENC_SetInputSourceConfig(MI_VENC_DEV_ID_H264_H265_0, vencChn, &stVencInputSourceConfig);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call Venc::setH26xSliceSplit(), s32Ret = " << s32Ret << endl;
+		cerr << "Fail to call MI_VENC_SetInputSourceConfig() in Venc::createH264Stream(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
 
-	#if 0
-	if(pstStreamAttr[i].eBindType == E_MI_SYS_BIND_TYPE_HW_RING)
-	{
-		stInputSource.eInputSrcBufferMode = bHaftRing ? E_MI_VENC_INPUT_MODE_RING_HALF_FRM : E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
-	}
-	else
-	{
-		stInputSource.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE;
-	}
-	#endif
-	
-	MI_VENC_InputSourceConfig_t stInputSource;
-	stInputSource.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
-	s32Ret = MI_VENC_SetInputSourceConfig(MI_VENC_DEV_ID_H264_H265_0, vencChn, &stInputSource);
+	s32Ret = MI_VENC_SetMaxStreamCnt(MI_VENC_DEV_ID_H264_H265_0, vencChn, 3 + 1);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call Venc::MI_VENC_SetInputSourceConfig(), s32Ret = " << s32Ret << endl;
+		cerr << "Fail to call MI_VENC_SetMaxStreamCnt() in Venc::createH264Stream(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
-
-	STCHECKRESULT(MI_VENC_SetMaxStreamCnt(MI_VENC_DEV_ID_H264_H265_0, vencChn, 3+1));
 
 	s32Ret = MI_VENC_StartRecvPic(MI_VENC_DEV_ID_H264_H265_0, vencChn);					// 开始接受通道数据
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call Venc::startRecvPic(), s32Ret = " << s32Ret << endl;
+		cerr << "Fail to call MI_VENC_StartRecvPic() in Venc::createH264Stream(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
 	
-	cout << "Call Venc::createH26xStream() end." << endl;
+	cout << "Call Venc::createH264Stream() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：创建H.265码流。
+参--数：vencChn 通道号；pstChnAttr 指向频道属性的结构体指针，传入NULL, 使用默认属性。
+返回值：返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+MI_S32 Venc::createH265Stream(MI_VENC_CHN vencChn, unsigned int width, unsigned int height)
+{
+	cout << "Call Venc::createH265Stream() end." << endl;
+
+	MI_VENC_ChnAttr_t stChnAttr;
+	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
+	stChnAttr.stVeAttr.stAttrH264e.u32PicWidth = width;
+	stChnAttr.stVeAttr.stAttrH264e.u32PicHeight = height;
+	stChnAttr.stVeAttr.stAttrH264e.u32MaxPicWidth = width;
+	stChnAttr.stVeAttr.stAttrH264e.u32MaxPicHeight = height;
+	stChnAttr.stVeAttr.stAttrH264e.bByFrame = true;
+	stChnAttr.stVeAttr.stAttrH264e.u32BFrameNum = 2;
+	stChnAttr.stVeAttr.stAttrH264e.u32Profile = 1;
+	stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_H265E;
+	stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_H265CBR;
+	stChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = 1 * 1024 * 1024;
+	stChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateNum = 30;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32SrcFrmRateDen = 1;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32Gop = 30;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32FluctuateLevel = 0;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32StatTime = 0;
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_VENC_CreateChn(MI_VENC_DEV_ID_H264_H265_0, vencChn, &stChnAttr);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_CreateChn() in Venc::createH265Stream(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	if(bUseSliceMode)
+	{
+		s32Ret = setH265SliceSplit(vencChn, NULL);	// slice 分片模式
+		if(0 != s32Ret)
+		{
+			cerr << "Fail to call setH265SliceSplit() in Venc::createH265Stream(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+			return s32Ret;
+		}
+	}
+
+	MI_VENC_InputSourceConfig_t stVencInputSourceConfig;
+	memset(&stVencInputSourceConfig, 0, sizeof(MI_VENC_InputSourceConfig_t));
+	stVencInputSourceConfig.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
+	s32Ret = MI_VENC_SetInputSourceConfig(MI_VENC_DEV_ID_H264_H265_0, vencChn, &stVencInputSourceConfig);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_SetInputSourceConfig() in Venc::createH265Stream(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	s32Ret = MI_VENC_SetMaxStreamCnt(MI_VENC_DEV_ID_H264_H265_0, vencChn, 3 + 1);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_SetMaxStreamCnt() in Venc::createH265Stream(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	s32Ret = MI_VENC_StartRecvPic(MI_VENC_DEV_ID_H264_H265_0, vencChn);					// 开始接受通道数据
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_StartRecvPic() in Venc::createH265Stream(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	
+	cout << "Call Venc::createH265Stream() end." << endl;
 	return s32Ret;
 }
 

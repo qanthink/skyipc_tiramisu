@@ -18,7 +18,6 @@ xxx版权所有。
 
 #include "testing.h"
 #include "sensor.h"
-#include "vpe.h"
 #include "isp.h"
 #include "venc.h"
 #include "sys.h"
@@ -416,7 +415,7 @@ void *routeVideo(void *arg)
 		int i = 0;		// 2020.7.22 增加for 循环，适配slice mode 下数据需要多片分发。
 		for(i = 0; i < stStream.u32PackCount; ++i)
 		{
-			if(stStream.pstPack[i].u32Len > Venc::superMaxISize && Venc::vesTypeJpege != vesType)
+			if(stStream.pstPack[i].u32Len > Venc::superMaxISize && E_MI_VENC_MODTYPE_JPEGE != vesType)
 			{
 				cerr << "stStream.pstPack[" << i << "].u32Len is out of range." << endl;
 				break;

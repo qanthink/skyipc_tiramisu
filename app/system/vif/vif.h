@@ -12,6 +12,10 @@ class Vif{
 public:
 	static Vif* getInstance();
 
+	const static MI_VIF_DEV vifDevID = 0;
+	const static MI_VIF_DEV vifChnID = 0;
+	const static MI_VIF_PORT vifPortId = 0;
+
 	MI_S32 enable();
 	MI_S32 disable();
 	
@@ -24,7 +28,6 @@ public:
 	MI_S32 enableChnPort(MI_VIF_PORT u32ChnPort);				// 启用通道端口
 	MI_S32 disableChnPort(MI_VIF_PORT u32ChnPort);				// 禁用通道端口
 
-	//const static MI_VIF_PORT vifPort = 0;
 private:
 	Vif();
 	~Vif();
@@ -32,7 +35,5 @@ private:
 	Vif& operator=(const Vif&);
 
 	bool bEnable = false;
-	const static MI_VIF_DEV vifDevID = 0;
-	const static MI_VIF_DEV vifChnID = 0;
 };
 

@@ -22,6 +22,19 @@ Sensor::~Sensor()
 }
 
 /*-----------------------------------------------------------------------------
+描--述：Sensor 模块获取实例的唯一入口函数。
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
+Sensor* Sensor::getInstance()
+{
+	static Sensor sensor;
+	return &sensor;
+}
+
+
+/*-----------------------------------------------------------------------------
 描--述：
 参--数：
 返回值：
@@ -42,7 +55,9 @@ int Sensor::enable()
 	s32Ret = MI_SNR_SetPlaneMode(ePADId, bEnableHDR);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_SNR_SetPlaneMode(), errno = " << s32Ret << endl;
+		cerr << "Fail to call MI_SNR_SetPlaneMode() in Sensor::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
 	}
 
 	// 查询配置。
@@ -50,11 +65,12 @@ int Sensor::enable()
 	s32Ret = MI_SNR_QueryResCount(ePADId, &u32ResCount);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_SNR_QueryResCount(), errno = " << s32Ret << endl;
+		cerr << "Fail to call MI_SNR_QueryResCount() in Sensor::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
 	}
 
 	// 显示所有配置。
-	#if 1
 	int i = 0;
 	for(i = 0; i < u32ResCount; ++i)
 	{
@@ -64,41 +80,45 @@ int Sensor::enable()
 		s32Ret = MI_SNR_GetRes(ePADId, i, &stSnrRes);
 		if(0 != s32Ret)
 		{
-			cerr << "Fail to call MI_SNR_GetRes(), errno = " << s32Ret << endl;
+			cerr << "Fail to call MI_SNR_GetRes() in Sensor::enable(). "
+				<< "errno = 0x" << hex << s32Ret << dec << endl;
 			continue;
 		}
 
-		cout << "Sensor res index: " << i << endl;
-		cout << "WindowOutputSize[w, h]:" << stSnrRes.stOutputSize.u16Width << ", " << stSnrRes.stOutputSize.u16Height << endl;
-		cout << "WindowCropRect[x, y, w, h]: " << stSnrRes.stCropRect.u16X << ", " << stSnrRes.stCropRect.u16Y << ", "
-			<< stSnrRes.stCropRect.u16Width << ", " << stSnrRes.stCropRect.u16Height << endl;
-		cout << "FPS[min, max]: " << stSnrRes.u32MinFps << ", " << stSnrRes.u32MaxFps << endl;
-		cout << "strResDesc[32]: " << stSnrRes.strResDesc << endl;
+		printf("index %d, Crop(%d,%d,%d,%d), outputsize(%d,%d), maxfps %d, minfps %d, ResDesc %s\n",
+		i,
+		stSnrRes.stCropRect.u16X, stSnrRes.stCropRect.u16Y, stSnrRes.stCropRect.u16Width,stSnrRes.stCropRect.u16Height,
+		stSnrRes.stOutputSize.u16Width, stSnrRes.stOutputSize.u16Height,
+		stSnrRes.u32MaxFps,stSnrRes.u32MinFps,
+		stSnrRes.strResDesc);
 	}
-	#endif
 
 	// 设置配置
 	cout << "In Sensor::enable(), u8SnrResIndex = " << (int)u8SnrResIndex << endl;
 	s32Ret = MI_SNR_SetRes(ePADId, u8SnrResIndex);	// 单sensor 方案中，一般使用0 配置。
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_SNR_SetRes(), errno = " << s32Ret << endl;
+		cerr << "Fail to call MI_SNR_SetRes() in Sensor::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
 	}
 
-	#if 0
 	// 设置帧率。
 	s32Ret = MI_SNR_SetFps(ePADId, u32DefFps);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_SNR_SetFps(), errno = " << hex << s32Ret << endl;
+		cerr << "Fail to call MI_SNR_SetFps() in Sensor::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
 	}
-	#endif
 
 	// 启用sensor.
 	s32Ret = MI_SNR_Enable(ePADId);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_SNR_Enable(), errno = " << s32Ret << endl;
+		cerr << "Fail to call MI_SNR_Enable() in Sensor::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
 	}
 	
 	bEnable = true;

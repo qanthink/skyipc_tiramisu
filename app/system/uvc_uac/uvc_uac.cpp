@@ -5,7 +5,6 @@ xxx版权所有。
 ----------------------------------------------------------------*/
 
 #include "venc.h"
-#include "vpe.h"
 #include "sys.h"
 #include "sensor.h"
 #include "isp.h"
@@ -170,8 +169,8 @@ static MI_S32 UVC_MM_FillBuffer(void *uvc, ST_UVC_BufInfo_t *bufInfo)
 		
 		dstChnPort.eModId = E_MI_MODULE_ID_VPE;
 		dstChnPort.u32DevId = 0;
-		dstChnPort.u32PortId = Vpe::vpeSubPort;
-		dstChnPort.u32ChnId = Vpe::vpeCh;
+		//dstChnPort.u32PortId = Vpe::vpeSubPort;
+		//dstChnPort.u32ChnId = Vpe::vpeCh;
 		s32Ret = MI_SYS_ChnOutputPortGetBuf(&dstChnPort, &stBufInfo, &stBufHandle);
 		if(MI_SUCCESS != s32Ret)
 		{
@@ -255,7 +254,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 	MI_VENC_CHN vencCh = 0;
 	Sensor *pSensor = Sensor::getInstance();
 	Sys *pSys = Sys::getInstance();
-	Vpe *pVpe = Vpe::getInstance();
+	//Vpe *pVpe = Vpe::getInstance();
 	Venc *pVenc = Venc::getInstance();
 
 	switch(pstDev->setting.fcc)
@@ -263,16 +262,16 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 		case V4L2_PIX_FMT_YUYV:
 		{
 			cout << "V4L2 pixel format = V4L2_PIX_FMT_YUYV" << endl;
-			MI_VPE_PortMode_t stVpeMode;
-			memset(&stVpeMode, 0, sizeof(stVpeMode));
-			stVpeMode.bFlip = FALSE;
-			stVpeMode.bMirror = FALSE;
-			stVpeMode.u16Width = format.width;
-			stVpeMode.u16Height= format.height;
-			stVpeMode.eCompressMode = E_MI_SYS_COMPRESS_MODE_NONE;
-			stVpeMode.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV422_YUYV;
+			//MI_VPE_PortMode_t stVpeMode;
+			//memset(&stVpeMode, 0, sizeof(stVpeMode));
+			//stVpeMode.bFlip = FALSE;
+			//stVpeMode.bMirror = FALSE;
+			//stVpeMode.u16Width = format.width;
+			//stVpeMode.u16Height= format.height;
+			//stVpeMode.eCompressMode = E_MI_SYS_COMPRESS_MODE_NONE;
+			//stVpeMode.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV422_YUYV;
 
-			s32Ret = MI_VPE_SetPortMode(Vpe::vpeCh, Vpe::vpeSubPort, &stVpeMode);
+			//s32Ret = MI_VPE_SetPortMode(Vpe::vpeCh, Vpe::vpeSubPort, &stVpeMode);
 			if(0 != s32Ret)
 			{
 				cerr << "Fail to call MI_VPE_SetPortMode() in UVC_StartCapture(). "
@@ -283,8 +282,8 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 			memset(&stChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 			stChnPort.eModId = E_MI_MODULE_ID_VPE;
 			stChnPort.u32DevId = 0;
-			stChnPort.u32ChnId = Vpe::vpeCh;
-			stChnPort.u32PortId = Vpe::vpeSubPort;
+			//stChnPort.u32ChnId = Vpe::vpeCh;
+			//stChnPort.u32PortId = Vpe::vpeSubPort;
 
 			/* 虽然后续会再次调用 MI_SYS_SetChnOutputPortDepth(), 但此处的也不可少 */
 			s32Ret = MI_SYS_SetChnOutputPortDepth(MI_VENC_DEV_ID_H264_H265_0, &stChnPort, 0, 5);
@@ -294,7 +293,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 					<< "s32Ret = " << s32Ret << endl;
 			}
 
-			s32Ret = MI_VPE_EnablePort(Vpe::vpeCh, Vpe::vpeSubPort);
+			//s32Ret = MI_VPE_EnablePort(Vpe::vpeCh, Vpe::vpeSubPort);
 			if(0 != s32Ret)
 			{
 				cerr << "Fail to call MI_VPE_EnablePort(). s32Ret = " << s32Ret << endl;
@@ -318,30 +317,30 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 		{
 			cout << "V4L2 pixel format = V4L2_PIX_FMT_MJPEG" << endl;
 			vencCh = Venc::vencJpegChn;
-			pVpe->createPort(Vpe::vpeMainPort, format.width, format.height);
+			//pVpe->createPort(Vpe::vpeMainPort, format.width, format.height);
 			pVenc->createJpegStream(vencCh, format.width, format.height);
-			pVenc->changeBitrate(vencCh, 1 * 1024);
-			pSys->bindVpe2Venc(Vpe::vpeMainPort, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+			pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, vencCh, 1 * 1024);
+			//pSys->bindVpe2Venc(Vpe::vpeMainPort, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 			break;
 		}
 		case V4L2_PIX_FMT_H264:
 		{
 			cout << "V4L2 pixel format = V4L2_PIX_FMT_H264" << endl;
 			vencCh = Venc::vencMainChn;
-			pVpe->createPort(Vpe::vpeMainPort, format.width, format.height);
-			pVenc->createH26xStream(vencCh, format.width, format.height, Venc::vesTypeH264);
-			pVenc->changeBitrate(vencCh, 1 * 1024);
-			pSys->bindVpe2Venc(Vpe::vpeMainPort, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+			//pVpe->createPort(Vpe::vpeMainPort, format.width, format.height);
+			pVenc->createH264Stream(vencCh, format.width, format.height);
+			pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, vencCh, 1 * 1024);
+			//pSys->bindVpe2Venc(Vpe::vpeMainPort, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 			break;
 		}
 		case V4L2_PIX_FMT_H265:
 		{
 			cout << "V4L2 pixel format = V4L2_PIX_FMT_H265" << endl;
 			vencCh = Venc::vencMainChn;
-			pVpe->createPort(Vpe::vpeMainPort, format.width, format.height);
-			pVenc->createH26xStream(vencCh, format.width, format.height, Venc::vesTypeH265);
-			pVenc->changeBitrate(vencCh, 1 * 1024);
-			pSys->bindVpe2Venc(Vpe::vpeMainPort, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+			//pVpe->createPort(Vpe::vpeMainPort, format.width, format.height);
+			pVenc->createH265Stream(vencCh, format.width, format.height);
+			pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, vencCh, 1 * 1024);
+			//pSys->bindVpe2Venc(Vpe::vpeMainPort, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 			break;
 		}
 		default:
@@ -402,10 +401,10 @@ static MI_S32 UVC_StopCapture(void *uvc)
 		case V4L2_PIX_FMT_YUYV:
 		{
 			cout << "V4L2 pixel format = V4L2_PIX_FMT_YUYV" << endl;
-			Vpe *pVpe = Vpe::getInstance();
+			//Vpe *pVpe = Vpe::getInstance();
 			//pVpe->stopChannel();
 			//pVpe->destroyChannel();
-			pVpe->disablePort(Vpe::vpeSubPort);
+			//pVpe->disablePort(Vpe::vpeSubPort);
 			return MI_SUCCESS;
 			break;
 		}
@@ -441,11 +440,11 @@ static MI_S32 UVC_StopCapture(void *uvc)
 		|| (V4L2_PIX_FMT_H265 == pstDev->setting.fcc)
 		|| (V4L2_PIX_FMT_MJPEG == pstDev->setting.fcc))
 	{
-		Vpe *pVpe = Vpe::getInstance();
+		//Vpe *pVpe = Vpe::getInstance();
 		Venc *pVenc = Venc::getInstance();
 		pVenc->stopRecvPic(MI_VENC_DEV_ID_H264_H265_0, vencCh);
 		pVenc->destroyChn(MI_VENC_DEV_ID_H264_H265_0, vencCh);
-		pVpe->disablePort(Vpe::vpeMainPort);
+		//pVpe->disablePort(Vpe::vpeMainPort);
 	}
 
 	cout << "Call UVC_StopCapture() end." << endl;
@@ -534,11 +533,11 @@ int UvcUac::stopUvc()
 {
 	cout << "Call UvcUac::stopUvc()." << endl;
 
-	Vpe *pVpe = Vpe::getInstance();
+	//Vpe *pVpe = Vpe::getInstance();
 	Venc *pVenc = Venc::getInstance();
 	pVenc->stopRecvPic(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn);
 	pVenc->destroyChn(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn);
-	pVpe->disablePort(Vpe::vpeMainPort);
+	//pVpe->disablePort(Vpe::vpeMainPort);
 
 	/* 与SDK 不同，SDK 中是：
 	ST_UVC_StopDev((dev->handle));		// 不是指针。

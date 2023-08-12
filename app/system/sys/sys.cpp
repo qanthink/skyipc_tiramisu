@@ -6,7 +6,6 @@ xxx版权所有。
 
 #include "sys.h"
 #include "mi_venc.h"
-#include "st_common.h"
 #include <iostream>
 #include <string.h>
 
@@ -153,9 +152,9 @@ MI_S32 Sys::bindVif2Vpe(MI_U32 u32VifPortID, MI_U32 u32VpeChnID, MI_U32 u32SrcFr
 	MI_SYS_ChnPort_t stDstChnPort;
 	memset(&stDstChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 	stDstChnPort.eModId = E_MI_MODULE_ID_VPE;
-	stSrcChnPort.u32DevId = 0;
-	stSrcChnPort.u32ChnId = u32VpeChnID;
-	stSrcChnPort.u32PortId = 0;
+	stDstChnPort.u32DevId = 0;
+	stDstChnPort.u32ChnId = u32VpeChnID;
+	stDstChnPort.u32PortId = 0;
 	
 	//MI_S32 MI_SYS_BindChnPort(MI_SYS_ChnPort_t *pstSrcChnPort, MI_SYS_ChnPort_t *pstDstChnPort, MI_U32 u32SrcFrmrate,  MI_U32 u32DstFrmrate);
 	MI_S32 s32Ret = 0;
@@ -190,16 +189,18 @@ MI_S32 Sys::bindVif2Isp(MI_U32 u32VifDevID, MI_U32 u32IspDevID, MI_U32 u32SrcFrm
 	MI_SYS_ChnPort_t stDstChnPort;
 	memset(&stDstChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 	stDstChnPort.eModId = E_MI_MODULE_ID_ISP;
-	stSrcChnPort.u32DevId = u32IspDevID;
-	stSrcChnPort.u32ChnId = 0;		// 通道号暂且为0.
-	stSrcChnPort.u32PortId = 0;
+	stDstChnPort.u32DevId = u32IspDevID;
+	stDstChnPort.u32ChnId = 0;		// 通道号暂且为0.
+	stDstChnPort.u32PortId = 0;
 	
 	//MI_S32 MI_SYS_BindChnPort(MI_SYS_ChnPort_t *pstSrcChnPort, MI_SYS_ChnPort_t *pstDstChnPort, MI_U32 u32SrcFrmrate,  MI_U32 u32DstFrmrate);
 	MI_S32 s32Ret = 0;
 	s32Ret = MI_SYS_BindChnPort2(u16SocId, &stSrcChnPort, &stDstChnPort, u32SrcFrmrate, u32DstFrmrate, eBindType, u32BindParam);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_SYS_BindChnPort2(), errno = " << s32Ret << endl;
+		cerr << "Fail to call MI_SYS_BindChnPort2() in bindVif2Isp(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
 	}
 
 	cout << "Call Sys::bindVif2Isp() end." << endl;
@@ -219,11 +220,18 @@ MI_S32 Sys::bindIsp2Venc(MI_U32 u32IspDevID, MI_U32 u32VencCh, MI_U32 u32SrcFrmr
 	MI_SYS_ChnPort_t stDstChnPort;
 	memset(&stDstChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 	stDstChnPort.eModId = E_MI_MODULE_ID_VENC;
-	stSrcChnPort.u32DevId = u32VencCh;
-	stSrcChnPort.u32ChnId = 0;		// 通道号暂且为0.
-	stSrcChnPort.u32PortId = 0;
+	stDstChnPort.u32DevId = u32VencCh;
+	stDstChnPort.u32ChnId = 0;		// 通道号暂且为0.
+	stDstChnPort.u32PortId = 0;
 
-	STCHECKRESULT(MI_SYS_BindChnPort2(u16SocId, &stSrcChnPort, &stDstChnPort, u32SrcFrmrate, u32DstFrmrate, eBindType, u32BindParam));
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_SYS_BindChnPort2(u16SocId, &stSrcChnPort, &stDstChnPort, u32SrcFrmrate, u32DstFrmrate, eBindType, u32BindParam);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SYS_BindChnPort2() in bindIsp2Venc(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
 	
 	cout << "Call Sys::bindIsp2Venc() end." << endl;
 	return 0;
@@ -242,11 +250,18 @@ MI_S32 Sys::bindIsp2Scl(MI_U32 u32IspDevID, MI_U32 u32SclDevID, MI_U32 u32SrcFrm
 	MI_SYS_ChnPort_t stDstChnPort;
 	memset(&stDstChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 	stDstChnPort.eModId = E_MI_MODULE_ID_SCL;
-	stSrcChnPort.u32DevId = u32SclDevID;
-	stSrcChnPort.u32ChnId = 0;		// 通道号暂且为0.
-	stSrcChnPort.u32PortId = 0;
+	stDstChnPort.u32DevId = u32SclDevID;
+	stDstChnPort.u32ChnId = 0;		// 通道号暂且为0.
+	stDstChnPort.u32PortId = 0;
 
-	STCHECKRESULT(MI_SYS_BindChnPort2(u16SocId, &stSrcChnPort, &stDstChnPort, u32SrcFrmrate, u32DstFrmrate, eBindType, u32BindParam));
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_SYS_BindChnPort2(u16SocId, &stSrcChnPort, &stDstChnPort, u32SrcFrmrate, u32DstFrmrate, eBindType, u32BindParam);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SYS_BindChnPort2() in bindIsp2Scl(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
 	
 	cout << "Call Sys::bindIsp2Scl() end." << endl;
 	return 0;
@@ -265,11 +280,18 @@ MI_S32 Sys::bindScl2Venc(MI_U32 u32SclDevID, MI_U32 u32VencCh, MI_U32 u32SrcFrmr
 	MI_SYS_ChnPort_t stDstChnPort;
 	memset(&stDstChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 	stDstChnPort.eModId = E_MI_MODULE_ID_VENC;
-	stSrcChnPort.u32DevId = MI_VENC_DEV_ID_H264_H265_0;
-	stSrcChnPort.u32ChnId = u32VencCh;		// 通道号暂且为0.
-	stSrcChnPort.u32PortId = 0;
+	stDstChnPort.u32DevId = MI_VENC_DEV_ID_H264_H265_0;
+	stDstChnPort.u32ChnId = u32VencCh;		// 通道号暂且为0.
+	stDstChnPort.u32PortId = 0;
 
-	STCHECKRESULT(MI_SYS_BindChnPort2(u16SocId, &stSrcChnPort, &stDstChnPort, u32SrcFrmrate, u32DstFrmrate, eBindType, u32BindParam));
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_SYS_BindChnPort2(u16SocId, &stSrcChnPort, &stDstChnPort, u32SrcFrmrate, u32DstFrmrate, eBindType, u32BindParam);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SYS_BindChnPort2() in bindScl2Venc(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
 	
 	cout << "Call Sys::bindScl2Venc() end." << endl;
 	return 0;

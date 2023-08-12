@@ -5,6 +5,7 @@ xxx版权所有。
 ----------------------------------------------------------------*/
 
 #include "scl.h"
+#include "isp.h"
 #include "st_common.h"
 #include <iostream>
 #include <string.h>
@@ -19,18 +20,19 @@ Scl::Scl()
 Scl::~Scl()
 {
 	disable();
+	bEnable = false;
 }
 
 /*-----------------------------------------------------------------------------
-描--述：VIF 模块获取实例的唯一入口函数。
+描--述：SCL 模块获取实例的唯一入口函数。
 参--数：
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
 Scl* Scl::getInstance()
 {
-	static Scl vif;
-	return &vif;
+	static Scl scl;
+	return &scl;
 }
 
 /*-----------------------------------------------------------------------------
@@ -48,20 +50,15 @@ MI_S32 Scl::enable()
 		cerr << "Fail to call Scl::enable(). Modules is already been enabled!" << endl;
 		return 0;
 	}
-	
-	MI_SCL_DevAttr_t stSclDevAttr;
-	MI_SCL_ChannelAttr_t stSclChnAttr;
-	MI_SCL_ChnParam_t stSclChnParam;
-	memset(&stSclDevAttr, 0x0, sizeof(MI_SCL_DevAttr_t));
-	memset(&stSclChnAttr, 0x0, sizeof(MI_SCL_ChannelAttr_t));
-	memset(&stSclChnParam, 0x0, sizeof(MI_SCL_ChnParam_t));
 
-	int SCL_PORT_ID = 0;
+	MI_S32 s32Ret = 0;
+	MI_SCL_DevAttr_t stSclDevAttr;
+	memset(&stSclDevAttr, 0x0, sizeof(MI_SCL_DevAttr_t));
+	int SCL_PORT_ID = 0;	// 照搬SDK Demo, 有计算关系
 	switch(SCL_PORT_ID)
 	{
 		case 0:
 		{
-
 			stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL2; //Port0->HWSCL2
 			break;
 		}
@@ -81,14 +78,80 @@ MI_S32 Scl::enable()
 			return -1;
 		}
 	}
-	STCHECKRESULT(MI_SCL_CreateDevice(SclDevId, &stSclDevAttr));
-
-	int g_device_num = 1;
-	for(int i = 0; i < g_device_num; i++)
+	
+	s32Ret = MI_SCL_CreateDevice(sclDevId, &stSclDevAttr);
+	if(0 != s32Ret)
 	{
-		STCHECKRESULT(MI_SCL_CreateChannel(SclDevId, i, &stSclChnAttr));
-		STCHECKRESULT(MI_SCL_SetChnParam(SclDevId, i, &stSclChnParam));
-		STCHECKRESULT(MI_SCL_StartChannel(SclDevId, i));
+		cerr << "Fail to call MI_SCL_CreateDevice() in Scl::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	
+	MI_SCL_ChannelAttr_t stSclChnAttr;
+	memset(&stSclChnAttr, 0x0, sizeof(MI_SCL_ChannelAttr_t));
+	s32Ret = MI_SCL_CreateChannel(sclDevId, sclChnId, &stSclChnAttr);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_CreateChannel() in Scl::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	MI_SCL_ChnParam_t stSclChnParam;
+	memset(&stSclChnParam, 0x0, sizeof(MI_SCL_ChnParam_t));
+	s32Ret = MI_SCL_SetChnParam(sclDevId, sclChnId, &stSclChnParam);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_SetChnParam() in Scl::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	
+	s32Ret = MI_SCL_StartChannel(sclDevId, sclChnId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_StartChannel() in Scl::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	s32Ret = MI_SCL_EnableOutputPort(sclDevId, sclChnId, sclPortId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_EnableOutputPort() in Scl::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	MI_ISP_OutPortParam_t  stIspOutputParam;
+	memset(&stIspOutputParam, 0x0, sizeof(MI_ISP_OutPortParam_t));
+	s32Ret = MI_ISP_GetInputPortCrop(Isp::ispDevId, Isp::ispChnId, &stIspOutputParam.stCropRect);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_GetInputPortCrop() in Scl::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	MI_SCL_OutPortParam_t  stSclOutputParam;
+	memset(&stSclOutputParam, 0x0, sizeof(MI_SCL_OutPortParam_t));
+	stSclOutputParam.stSCLOutCropRect.u16X = stIspOutputParam.stCropRect.u16X;
+	stSclOutputParam.stSCLOutCropRect.u16Y = stIspOutputParam.stCropRect.u16Y;
+	stSclOutputParam.stSCLOutCropRect.u16Width = stIspOutputParam.stCropRect.u16Width;
+	stSclOutputParam.stSCLOutCropRect.u16Height = stIspOutputParam.stCropRect.u16Height;
+	stSclOutputParam.stSCLOutputSize.u16Width = 3840;
+	stSclOutputParam.stSCLOutputSize.u16Height = 2160;
+	stSclOutputParam.bMirror = FALSE;
+	stSclOutputParam.bFlip = FALSE;
+	stSclOutputParam.eCompressMode= E_MI_SYS_COMPRESS_MODE_NONE;
+	stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
+	
+	s32Ret = MI_SCL_SetOutputPortParam(sclDevId, sclChnId, sclPortId, &stSclOutputParam);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_SetOutputPortParam() in Scl::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
 	}
 
 	bEnable = true;

@@ -20,10 +20,6 @@ public:
 	const static MI_VENC_CHN vencMainChn = 1;
 	const static MI_VENC_CHN vencJpegChn = 2;
 	const static bool bUseSliceMode = false;
-	
-	const static MI_VENC_ModType_e vesTypeH264 = E_MI_VENC_MODTYPE_H264E;
-	const static MI_VENC_ModType_e vesTypeH265 = E_MI_VENC_MODTYPE_H265E;
-	const static MI_VENC_ModType_e vesTypeJpege = E_MI_VENC_MODTYPE_JPEGE;
 
 	const static unsigned int superMaxISize = 128 * 1024;
 
@@ -33,7 +29,7 @@ public:
 
 	/* 上层用户最常调用：请求I 帧、改变码率、获取流、打印流信息。 */
 	MI_S32 requestIdr(MI_VENC_DEV vencDev, MI_VENC_CHN VeChn, MI_BOOL bInstant);
-	MI_S32 changeBitrate(MI_VENC_CHN VeChn, MI_U32 u32BitrateKb);
+	MI_S32 changeBitrate(MI_VENC_DEV vencDev, MI_VENC_CHN VeChn, MI_U32 u32BitrateKb);
 	void printStreamInfo(const MI_VENC_Stream_t* pstVencStream);
 	int rcvStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream);
 
@@ -43,8 +39,8 @@ public:
 	MI_S32 setCrop(MI_VENC_CHN vencChn, MI_U32 x, MI_U32 y, MI_U32 w, MI_U32 h);
 
 	MI_S32 createStreamWithAttr(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr);
-	MI_S32 createH26xStream(MI_VENC_CHN vencChn, unsigned int width, 
-								unsigned int height, MI_VENC_ModType_e vesType);
+	MI_S32 createH264Stream(MI_VENC_CHN vencChn, unsigned int width, unsigned int height);
+	MI_S32 createH265Stream(MI_VENC_CHN vencChn, unsigned int width, unsigned int height);
 	MI_S32 createJpegStream(MI_VENC_CHN vencChn, unsigned int width, unsigned int height);
 	MI_S32 setH264SliceSplit(MI_VENC_CHN VeChn, MI_VENC_ParamH264SliceSplit_t *pstSliceSplit);
 	MI_S32 setH265SliceSplit(MI_VENC_CHN VeChn, MI_VENC_ParamH265SliceSplit_t *pstSliceSplit);

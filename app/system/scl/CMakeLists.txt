@@ -1,6 +1,7 @@
 aux_source_directory(. DIR_APP_SRC)
 
 include_directories(
+	../isp
 	../common
 )
 

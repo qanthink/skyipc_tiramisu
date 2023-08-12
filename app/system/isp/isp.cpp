@@ -43,15 +43,30 @@ int Isp::enable()
 {
 	cout << "Call Isp::enable()." << endl;
 
+	MI_S32 s32Ret = 0;
 	MI_ISP_DevAttr_t stIspDevAttr;
 	memset(&stIspDevAttr, 0x0, sizeof(MI_ISP_DevAttr_t));
 	stIspDevAttr.u32DevStitchMask = E_MI_ISP_DEVICEMASK_ID0;
-	STCHECKRESULT(MI_ISP_CreateDevice(ispDevId, &stIspDevAttr));
+	
+	s32Ret = MI_ISP_CreateDevice(ispDevId, &stIspDevAttr);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_CreateDevice() in Isp::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
 
-	MI_ISP_ChannelAttr_t  stIspChnAttr;
+	MI_ISP_ChannelAttr_t stIspChnAttr;
 	memset(&stIspChnAttr, 0x0, sizeof(MI_ISP_ChannelAttr_t));
-	stIspChnAttr.u32SensorBindId = E_MI_ISP_SENSOR0;	
-	STCHECKRESULT(MI_ISP_CreateChannel(ispDevId, ispChnId, &stIspChnAttr));
+	stIspChnAttr.u32SensorBindId = E_MI_ISP_SENSOR0;	// 有计算关系。sensor pad0 -> E_MI_ISP_SENSOR0
+	
+	s32Ret = MI_ISP_CreateChannel(ispDevId, ispChnId, &stIspChnAttr);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_CreateChannel() in Isp::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
 	
 	MI_ISP_ChnParam_t stIspChnParam;
 	memset(&stIspChnParam, 0x0, sizeof(MI_ISP_ChnParam_t));
@@ -60,8 +75,29 @@ int Isp::enable()
 	stIspChnParam.bMirror = FALSE;
 	stIspChnParam.bFlip = FALSE;
 	stIspChnParam.eRot = E_MI_SYS_ROTATE_NONE;
-	STCHECKRESULT(MI_ISP_SetChnParam(ispDevId, ispChnId, &stIspChnParam));
-	STCHECKRESULT(MI_ISP_StartChannel(ispDevId, ispChnId));
+	s32Ret = MI_ISP_SetChnParam(ispDevId, ispChnId, &stIspChnParam);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_SetChnParam() in Isp::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	
+	s32Ret = MI_ISP_StartChannel(ispDevId, ispChnId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_StartChannel() in Isp::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	s32Ret = MI_ISP_EnableOutputPort(ispDevId, ispChnId, ispPortId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_EnableOutputPort() in Isp::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
 	
 	cout << "Call Isp::enable() end." << endl;
 	return 0;

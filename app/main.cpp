@@ -71,6 +71,7 @@ int testSys()
     STCHECKRESULT(MI_SNR_SetRes(u8SnrPad,s8SnrResIndex));
     STCHECKRESULT(MI_SNR_Enable(u8SnrPad));
 
+	// step 2 vif.
 	MI_SNR_PADInfo_t  stSnrPadInfo;
 	MI_SNR_PlaneInfo_t stSnrPlaneInfo;
 	STCHECKRESULT(MI_SNR_GetPadInfo(u8SnrPad, &stSnrPadInfo));
@@ -132,6 +133,7 @@ int testSys()
     MI_ISP_DEV IspDevId = ISP_DEV_ID;
     MI_ISP_CHANNEL IspChnId = ISP_CHN_ID;
 
+	// step3 isp
     MI_ISP_DevAttr_t stIspDevAttr;
     MI_ISP_ChannelAttr_t  stIspChnAttr;
     MI_ISP_ChnParam_t stIspChnParam;
@@ -170,6 +172,7 @@ int testSys()
     STCHECKRESULT(MI_ISP_SetChnParam(IspDevId, IspChnId, &stIspChnParam));
     STCHECKRESULT(MI_ISP_StartChannel(IspDevId, IspChnId));
 
+	// bind
     ST_Sys_BindInfo_T stBindInfo;
     memset(&stBindInfo, 0x0, sizeof(ST_Sys_BindInfo_T));
 
@@ -186,7 +189,7 @@ int testSys()
     stBindInfo.eBindType = E_MI_SYS_BIND_TYPE_FRAME_BASE;
     STCHECKRESULT(ST_Sys_Bind(&stBindInfo));
 
-    #if 1	// pri pool
+    #if 0	// pri pool
     MI_SYS_GlobalPrivPoolConfig_t stGlobalPrivPoolConf;
 	memset(&stGlobalPrivPoolConf, 0x0, sizeof(stGlobalPrivPoolConf));
 	stGlobalPrivPoolConf.bCreate = TRUE;
@@ -199,6 +202,7 @@ int testSys()
 	STCHECKRESULT(MI_SYS_ConfigPrivateMMAPool(0,&stGlobalPrivPoolConf));
     #endif
 
+	// scl
 	int SCL_DEV_ID_RT = 0;
 	int SCL_PORT_ID = 0;
     MI_SCL_DEV SclDevId = SCL_DEV_ID_RT;
@@ -233,6 +237,9 @@ int testSys()
         STCHECKRESULT(MI_SCL_SetChnParam(SclDevId, i, &stSclChnParam));
         STCHECKRESULT(MI_SCL_StartChannel(SclDevId, i));
     }
+
+    STCHECKRESULT(MI_ISP_EnableOutputPort(IspDevId, IspChnId, 0));
+    STCHECKRESULT(MI_SCL_EnableOutputPort(SclDevId, 0, 0));
 
 	return 0;
 }
@@ -372,14 +379,14 @@ int testV()
 	stBindInfo[1].u32BindParam = u32Height;
 	STCHECKRESULT(MI_VENC_SetInputSourceConfig(VencDevId, VencChnId, &stVencInputSourceConfig));
 
-	STCHECKRESULT(MI_VENC_SetMaxStreamCnt(VencDevId, VencChnId, 3+1));
+	STCHECKRESULT(MI_VENC_SetMaxStreamCnt(VencDevId, VencChnId, 3 + 1));
+    STCHECKRESULT(MI_VENC_StartRecvPic(VencDevId, VencChnId));
     STCHECKRESULT(ST_Sys_Bind(&stBindInfo[0]));
     STCHECKRESULT(ST_Sys_Bind(&stBindInfo[1]));
-	sleep(5);
-    STCHECKRESULT(MI_ISP_EnableOutputPort(IspDevId, IspChnId, IspPortId));
-    sleep(5);
-    STCHECKRESULT(MI_SCL_EnableOutputPort(SclDevId, SclChnId, SclPortId));
-    STCHECKRESULT(MI_VENC_StartRecvPic(VencDevId, VencChnId));
+	//sleep(5);
+    //STCHECKRESULT(MI_ISP_EnableOutputPort(IspDevId, IspChnId, IspPortId));
+    //STCHECKRESULT(MI_SCL_EnableOutputPort(SclDevId, SclChnId, SclPortId));
+    //sleep(5);
 	
     
 	return 0;
@@ -396,13 +403,15 @@ int main(int argc, const char *argv[])
 
 	signal(SIGINT, sigHandler);
 
+	#if 0
 	testSys();
 	testV();
+	#endif
 	
 	//sleep(66);
 	//return 0;
 
-	#if 0
+	#if 1
 
 	/* ==================== 第一部分，系统初始化 ==================== */
 	IrCutLed *pIrCutLed = IrCutLed::getInstance();
@@ -413,7 +422,7 @@ int main(int argc, const char *argv[])
 
 	// Sensor 初始化。数据流向：sensor -> vif -> vpe -> (DIVP) -> venc -> 应用处理。
 	Sensor *pSensor = Sensor::getInstance();	// sensor 初始化
-	pSensor->setFps(20);
+	pSensor->setFps(30);
 
 	unsigned int snrW = 0;
 	unsigned int snrH = 0;
@@ -423,34 +432,13 @@ int main(int argc, const char *argv[])
 	// VIF 初始化
 	Vif *pVif = Vif::getInstance();
 
+	// ISP 初始化，并绑定前级VIF.
 	Isp *pIsp = Isp::getInstance();
+	pSys->bindVif2Isp(Vif::vifDevID, Isp::ispDevId, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 
-	// VPE 初始化，并绑定前级VIF.
-	//Vpe *pVpe = Vpe::getInstance();
-	//pSys->bindVif2Vpe(Vif::vifPort, Vpe::vpeInputPort, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
-	pSys->bindVif2Isp(0, 0, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
-
+	// SCL 初始化，并绑定前级ISP.
 	Scl *pScl = Scl::getInstance();
-
-	MI_ISP_OutPortParam_t stIspOutputParam;
-	memset(&stIspOutputParam, 0x0, sizeof(MI_ISP_OutPortParam_t));
-	STCHECKRESULT(MI_ISP_GetInputPortCrop(Isp::ispDevId, Isp::ispChnId, &stIspOutputParam.stCropRect));
-
-	#if 1
-	MI_SCL_OutPortParam_t  stSclOutputParam;
-	memset(&stSclOutputParam, 0, sizeof(MI_SCL_OutPortParam_t));
-	stSclOutputParam.stSCLOutCropRect.u16X = stIspOutputParam.stCropRect.u16X;
-	stSclOutputParam.stSCLOutCropRect.u16Y = stIspOutputParam.stCropRect.u16Y;
-	stSclOutputParam.stSCLOutCropRect.u16Width = stIspOutputParam.stCropRect.u16Width;
-	stSclOutputParam.stSCLOutCropRect.u16Height = stIspOutputParam.stCropRect.u16Height;
-	stSclOutputParam.stSCLOutputSize.u16Width = 3840;
-	stSclOutputParam.stSCLOutputSize.u16Height = 2160;
-	stSclOutputParam.bMirror = FALSE;
-	stSclOutputParam.bFlip = FALSE;
-	stSclOutputParam.eCompressMode= E_MI_SYS_COMPRESS_MODE_NONE;
-	stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
-	STCHECKRESULT(MI_SCL_SetOutputPortParam(Scl::SclDevId, 0, 0, &stSclOutputParam));
-	#endif
+	pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 
 	// 创建DIVP 缩放、剪裁通道
 	#if (1 == (USE_DIVP))
@@ -465,8 +453,8 @@ int main(int argc, const char *argv[])
 	// 创建子码流
 	#if (1 == (USE_VENC_SUB))
 	//pVpe->createPort(Vpe::vpeSubPort, subW, subH);
-	pVenc->createH26xStream(Venc::vencSubChn, subW, subH, Venc::vesTypeH264);
-	pVenc->changeBitrate(Venc::vencSubChn, 0.25 * 1024);
+	pVenc->createH264Stream(Venc::vencSubChn, subW, subH);
+	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 0.25 * 1024);
 	//pSys->bindVpe2Venc(Vpe::vpeSubPort, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 	//pSys->bindIsp2Venc(Isp::ispDevId, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 	#endif
@@ -474,19 +462,9 @@ int main(int argc, const char *argv[])
 	// 创建主码流
 	#if (1 == (USE_VENC_MAIN))
 	//pVpe->createPort(Vpe::vpeMainPort, snrW, snrH);
-	pVenc->createH26xStream(Venc::vencMainChn, snrW, snrH, Venc::vesTypeH264);
-	//pVenc->changeBitrate(Venc::vencMainChn, 1 * 1024);
-	//pSys->bindIsp2Venc(Isp::ispDevId, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 2160);
-
-
-	//MI_ISP_OutPortParam_t  stIspOutputParam;
-	memset(&stIspOutputParam, 0x0, sizeof(MI_ISP_OutPortParam_t));
-	stIspOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
-	STCHECKRESULT(MI_ISP_GetInputPortCrop(Isp::ispDevId, Isp::ispChnId, &stIspOutputParam.stCropRect));
-	STCHECKRESULT(MI_ISP_SetOutputPortParam(Isp::ispDevId, Isp::ispChnId, 0, &stIspOutputParam));
-	
-	pSys->bindIsp2Scl(Isp::ispDevId, Scl::SclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 2160);
-	pSys->bindScl2Venc(Scl::SclDevId, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 2160);
+	pVenc->createH264Stream(Venc::vencMainChn, snrW, snrH);
+	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, 1 * 1024);
+	pSys->bindScl2Venc(Scl::sclDevId, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_HW_RING, snrH);
 	#if (1 == (USE_DIVP))
 	pSys->bindVpe2Divp(Vpe::vpeMainPort, Divp::divpChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 	pSys->bindDivp2Venc(Divp::divpChn, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
@@ -499,7 +477,7 @@ int main(int argc, const char *argv[])
 	#if (1 == (USE_VENC_JPEG))
 	//pVpe->createPort(Vpe::vpeMainPort, snrW, snrH);
 	pVenc->createJpegStream(Venc::vencJpegChn, snrW, snrH);
-	pVenc->changeBitrate(Venc::vencJpegChn, 10);
+	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 10);
 	pSys->bindVpe2Venc(Vpe::vpeMainPort, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 	#endif
 
@@ -599,7 +577,7 @@ int main(int argc, const char *argv[])
 	// 测试主码流
 	#if (1 == (USE_VENC_MAIN))
 	cout << "routeVideoMain" << endl;
-	thread thVideoMain(routeVideo, (void *)Venc::vencSubChn);
+	thread thVideoMain(routeVideo, (void *)Venc::vencMainChn);
 	#endif
 
 	// 测试子码流
