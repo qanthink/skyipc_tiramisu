@@ -251,6 +251,7 @@ typedef enum __attribute__ ((aligned (4)))
     API20_XNR,          //[49]
     API20_TEMP,         //[50]
     API20_TEMP_INFO,    //[51]
+    API20_ALSC_ADJ,     //[52]
     API20_MAX,        //for para reset
 } MI_ISP_API_ID_e;
 
@@ -1442,6 +1443,20 @@ typedef struct MI_ISP_IQ_TEMP_INFO_TYPE_s
 {
     MI_U8 u8Temperature;
 } MI_ISP_IQ_TEMP_INFO_TYPE_t;
+
+typedef struct MI_ISP_IQ_ALSC_ADJ_s
+{
+    MI_ISP_BOOL_e bEnable;              //0 ~ 1
+    MI_U16 u16ComplexTH;
+    MI_U16 u16MaxAdjustR;
+    MI_U16 u16MinAdjustR;
+    MI_U16 u16MaxAdjustB;
+    MI_U16 u16MinAdjustB;
+    MI_U8  u8CheckRange;
+    MI_U8  u8UniformLineTH;
+    MI_U8  u8DebugLevel;
+    MI_INTP_LUT_IQ GlobalStrengthByBv;
+} MI_ISP_IQ_ALSC_ADJ_t;
 
 #if 1 // MAINTOOL API
 typedef enum __attribute__ ((aligned (4)))

@@ -58,9 +58,11 @@ extern "C"
 
     typedef struct MI_LDC_ChnParam_s
     {
+        MI_BOOL bBypass;
         MI_BOOL bUseProjection3x3Matrix;
         MI_S32  as32Projection3x3Matrix[LDC_MAXTRIX_NUM];
-        MI_U16 u16FocalLength;
+        MI_U32  u32FocalLengthX;
+        MI_U32  u32FocalLengthY;
 
         void*  pConfigAddr;
         MI_U32 u32ConfigSize;
@@ -75,10 +77,12 @@ extern "C"
     {
         MI_LDC_WorkMode_e eMode;
 
+        MI_BOOL bBypass;
         MI_BOOL bUseProjection3x3Matrix;
         MI_S32  as32Projection3x3Matrix[LDC_MAXTRIX_NUM];
         MI_U16  u16UserSliceNum;
-        MI_U16  u16FocalLength;
+        MI_U32  u32FocalLengthX;
+        MI_U32  u32FocalLengthY;
 
         void*  pConfigAddr;
         MI_U32 u32ConfigSize;

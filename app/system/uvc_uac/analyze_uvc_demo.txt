@@ -1,0 +1,137 @@
+关键函数：
+ST_UvcInitDev(dev, maxpacket[i], mult[i], burst[i], intf[2*i], intf[2*i+1], mode, type);
+// 该函数其实不重要，它里面的实现，很重要，直接关联底层API, 而该函数本身只是封装了底层API.
+// 由于封装引起的结构体、变量一大堆，反而不好理解。
+// 该函数解析完，就知道最底层的API 怎么用了。该该函数直接标灰。
+参数解析：
+	dev, ST_UvcDev_t 类型的设备信息；
+	maxpacket, MI_S32 类型，最大封包，不清楚干嘛的；
+	mult, MI_U8类型，不知道啥含义，翻译过来是多重;复合
+	burst, MI_U8类型，翻译过来，突发;爆裂;爆破;猝发;迸发;
+	intf, MI_U8类型，外部中断；
+	intf, MI_U8类型，外部中断；
+	mode, 内存映射模式或者用户指针模式；
+	type, ISO C类型或者散装类型。
+该函数在ST_UvcInit() 中通过for 循环，多次创建了UBC 设备。
+
+来看具体实现：重中之重，直接调用底层。
+MI_S32 ST_UvcInitDev(ST_UvcDev_t *dev, MI_U32 maxpacket, MI_U8 mult, MI_U8 burst, MI_U8 c_intf, MI_U8 s_intf, MI_S32 mode, MI_S32 type)
+{
+	ST_UVC_Setting_t pstSet={g_maxbuf_cnt, maxpacket, mult, burst, c_intf, s_intf, (UVC_IO_MODE_e)mode, (Transfer_Mode_e)type};
+	ST_UVC_MMAP_BufOpts_t m = {UVC_MM_FillBuffer};
+	ST_UVC_USERPTR_BufOpts_t u = {UVC_UP_FillBuffer, UVC_UP_FinishBuffer};
+
+	ST_UVC_OPS_t fops = { UVC_Init, UVC_Deinit, {{}},
+							NULL, NULL, NULL};
+							//UVC_StartCapture,
+							//UVC_StopCapture,
+							//UVC_ForceIdr};
+	if (mode==UVC_MEMORY_MMAP)
+		fops.m = m;
+
+	printf(ASCII_COLOR_YELLOW "ST_UvcInitDev: name:%s bufcnt:%d mult:%d burst:%d ci:%d si:%d, Mode:%s, Type:%s" ASCII_COLOR_END "\n",
+		dev->name, g_maxbuf_cnt, mult, burst, c_intf, s_intf, mode==UVC_MEMORY_MMAP?"mmap":"userptr", type==USB_ISOC_MODE?"isoc":"bulk");
+
+	ST_UVC_ChnAttr_t pstAttr ={pstSet,fops};
+	STCHECKRESULT(ST_UVC_Init(dev->name, &dev->handle));
+	STCHECKRESULT(ST_UVC_CreateDev(dev->handle, &pstAttr));
+	STCHECKRESULT(ST_UVC_StartDev(dev->handle));
+	
+	return MI_SUCCESS;
+}
+
+解析该函数：
+ST_UVC_Setting_t pstSet = {g_maxbuf_cnt, maxpacket, mult, burst, c_intf, s_intf, (UVC_IO_MODE_e)mode, (Transfer_Mode_e)type};
+// ST_UVC_Setting_t, SDK 底层类型，用就行了。
+// 需要进一步解析。
+ST_UVC_MMAP_BufOpts_t m = {UVC_MM_FillBuffer};
+// ST_UVC_MMAP_BufOpts_t 定义内存映射区的操作函数，SDK 底层类型，用就行了。
+// 需要进一步解析。
+ST_UVC_USERPTR_BufOpts_t u = {UVC_UP_FillBuffer, UVC_UP_FinishBuffer};
+// ST_UVC_USERPTR_BufOpts_t, 定义用户内存区的操作函数，SDK 底层类型，用就行了。
+// 由于我们采用内存映射模式，故而可以不解析，忽略。
+
+ST_UVC_OPS_t fops = { UVC_Init, UVC_Deinit, {{}},
+							NULL, NULL, NULL};
+							//UVC_StartCapture,
+							//UVC_StopCapture,
+							//UVC_ForceIdr};
+// 定义ST_UVC操作方式，参数1 UVC_INIT 初始化函数、参数2 UVC_DEINIT 初始化函数、参数3 开始UVC抓图、参数4 停止UVC 抓图、参数5 强制I 帧。
+// 参数3 4 5可能需要实现，几天的程序没跑起来，或许与这里有关系。
+
+ST_UVC_ChnAttr_t pstAttr ={pstSet,fops};
+// 定义UVC 通道属性，参数1 UVC 参数集，参数2 UVC 操作方式
+ST_UVC_Init(dev->name, &dev->handle)
+// UVC 初始化
+ST_UVC_CreateDev(dev->handle, &pstAttr)
+//UVC 创建设备
+ST_UVC_StartDev(dev->handle)
+//UVC 开始设备。
+
+对上面的过程进一步解析，追踪更清晰的东西：
+1. 理解ST_UVC_Setting_t:
+typedef struct ST_UVC_Setting_s {
+    /* buffer related*/
+    uint8_t nbuf;
+    /* payload related*/
+    uint32_t maxpacket;
+    uint8_t mult;
+    uint8_t burst;
+    /* interface num */
+    uint8_t c_intf;
+    uint8_t s_intf;
+    /* v4l2 memory type */
+    UVC_IO_MODE_e io_mode;
+    /* transfer mode : bulk or isoc */
+    Transfer_Mode_e mode;
+} ST_UVC_Setting_t;
+// 发现理解不了，只能在后续程序中，直接使用Demo 中给的值。
+
+2. 理解ST_UVC_OPS_t:
+typedef struct ST_UVC_OPS_s {
+    int32_t  (* UVC_Inputdev_Init)  (void *uvc);
+    int32_t  (* UVC_Inputdev_Deinit)(void *uvc);
+    union {
+        ST_UVC_MMAP_BufOpts_t m;
+        ST_UVC_USERPTR_BufOpts_t u;
+    };
+    int32_t  (* UVC_StartCapture)   (void *uvc,Stream_Params_t format);
+    int32_t  (* UVC_StopCapture)    (void *uvc);
+    void     (* UVC_ForceIdr)       (void *uvc);
+} ST_UVC_OPS_t;
+// 代码及注释，很好理解，不再赘述。
+// 需要强调的是，先前自己的程序就是没有传入UVC_StartCapture, UVC_StopCapture, UVC_ForceIdr 导致无法出图。
+
+
+
+正常：
+eModId = 7, u32DevId = 0 32ChnId = 0 32PortId = 0.
+异常：
+eModId = 0, u32DevId = 0 32ChnId = 0 32PortId = 0.
+
+2023.6.23
+总流程如下：
+ST_UVC_SetTraceLevel(trace_level);
+	UVC_IO_MODE_e mode = UVC_MEMORY_MMAP;
+	Transfer_Mode_e type = USB_ISOC_MODE;
+	ST_UVC_Setting_t pstSet={g_maxbuf_cnt, maxpacket, mult, burst, c_intf, s_intf, mode, type};
+	ST_UVC_MMAP_BufOpts_t m = {UVC_MM_FillBuffer};
+	ST_UVC_OPS_t fops = { UVC_Init,
+                          UVC_Deinit,
+                          {{}},
+                          UVC_StartCapture,
+                          UVC_StopCapture,
+                          UVC_ForceIdr};
+	ST_UVC_ChnAttr_t pstAttr ={pstSet,fops};
+ST_UVC_Init(stUvcDev.name, &stUvcDev.handle);
+ST_UVC_CreateDev(stUvcDev.handle, &pstAttr);
+ST_UVC_StartDev(stUvcDev.handle);
+分拆流程：
+UVC_MM_FillBuffer，是把H.26X、YUV 数据写进指定的BUFFER. 会被反复调用。
+UVC_StartCapture 是用于初始化编码器的，是一个被调函数，被底层调用。
+				注意获取参数的值，Stream_Params_t format. 包含了PC端播放器请求的视频信息。
+				例如分辨率、帧率、数据格式。
+				只在播放器请求视频的时候，被调用一次。
+UVC_StopCapture 停止获取数据，一般用来反初始化编码器。
+UVC_ForceIdr 基本没有用。
+UVC_StartCapture、UVC_StopCapture、UVC_ForceIdr 可以实现为空，但是不能传NULL 给fops.

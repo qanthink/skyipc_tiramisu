@@ -189,10 +189,12 @@ typedef enum {
 
 typedef enum {
     E_MI_SYS_FRAME_TILE_MODE_NONE = 0,
-    E_MI_SYS_FRAME_TILE_MODE_16x16, // tile mode 16x16
-    E_MI_SYS_FRAME_TILE_MODE_16x32, // tile mode 16x32
-    E_MI_SYS_FRAME_TILE_MODE_32x16, // tile mode 32x16
-    E_MI_SYS_FRAME_TILE_MODE_32x32, // tile mode 32x32
+    E_MI_SYS_FRAME_TILE_MODE_16x16,  // tile mode 16x16
+    E_MI_SYS_FRAME_TILE_MODE_16x32,  // tile mode 16x32
+    E_MI_SYS_FRAME_TILE_MODE_32x16,  // tile mode 32x16
+    E_MI_SYS_FRAME_TILE_MODE_32x32,  // tile mode 32x32
+    E_MI_SYS_FRAME_TILE_MODE_128x32, // tile mode 128x32
+    E_MI_SYS_FRAME_TILE_MODE_128x64, // tile mode 128x64
     E_MI_SYS_FRAME_TILE_MODE_MAX
 } MI_SYS_FrameTileMode_e;
 

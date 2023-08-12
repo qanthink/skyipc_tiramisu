@@ -9,7 +9,6 @@ xxx版权所有。
 
 #include "ethernet.h"
 #include "spipanel.h"
-#include "testing.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -376,7 +375,8 @@ int Ethernet::showWlanInfOnPanel()
 	#endif
 	//pSpipanel->panelShowText(xStart, yStart + deltaY * 7, "", SPIPANEL_COLOR_WHITE, SPIPANEL_COLOR_BLACK, fontSize, true);
 
-	while(g_bRunning)
+//	while(g_bRunning)
+	while(true)
 	{
 		const unsigned int bufLen = 16;
 		char buf[bufLen] = {0};

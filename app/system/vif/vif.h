@@ -9,7 +9,7 @@ xxx版权所有。
 #include "mi_vif.h"
 
 class Vif{
-public:	
+public:
 	static Vif* getInstance();
 
 	MI_S32 enable();
@@ -24,7 +24,7 @@ public:
 	MI_S32 enableChnPort(MI_VIF_PORT u32ChnPort);				// 启用通道端口
 	MI_S32 disableChnPort(MI_VIF_PORT u32ChnPort);				// 禁用通道端口
 
-	const static MI_VIF_PORT vifPort = 0;
+	//const static MI_VIF_PORT vifPort = 0;
 private:
 	Vif();
 	~Vif();
@@ -32,8 +32,7 @@ private:
 	Vif& operator=(const Vif&);
 
 	bool bEnable = false;
-	const static MI_VIF_DEV vifDev = 0;
-	MI_VIF_DevAttr_t stDevAttr;
-	const static MI_U8 vifDevIdPerGroup = 0;
+	const static MI_VIF_DEV vifDevID = 0;
+	const static MI_VIF_DEV vifChnID = 0;
 };
 

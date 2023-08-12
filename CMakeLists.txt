@@ -6,6 +6,6 @@ include(env/env.cmake)
 
 #增加需要编译的子文件夹
 add_subdirectory(app)
-add_subdirectory(thirdparty/libfaac)
-add_subdirectory(thirdparty/libfaad)
+#add_subdirectory(thirdparty/libfaac)
+#add_subdirectory(thirdparty/libfaad)
 

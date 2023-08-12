@@ -173,6 +173,7 @@ extern "C"
 #define ID_API_ISP_IQ_TEMP_INFO                     ( ID_API_ISP_IQ_BASE  + 57 ) // 57. 4153
 #define ID_API_ISP_IQ_DAYNIGHT_DETECTION            ( ID_API_ISP_IQ_BASE  + 58 ) // 58. 4154
 #define ID_API_ISP_IQ_QUERY_DAYNIGHT_INFO           ( ID_API_ISP_IQ_BASE  + 59 ) // 59. 4155
+#define ID_API_ISP_IQ_ALSC_ADJ                      ( ID_API_ISP_IQ_BASE  + 60 ) // 60. 4156
 
 #define ID_API_ISP_AE_HIST_WEIGHT_Y                 ( ID_API_ISP_AE_BASE  +  1 ) //  1. 5121
 #define ID_API_ISP_AE_QUERY_EXPOSURE_INFO           ( ID_API_ISP_AE_BASE  +  2 ) //  2. 5122

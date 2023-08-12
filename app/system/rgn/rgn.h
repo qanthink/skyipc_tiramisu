@@ -37,7 +37,6 @@ MI_S32 ST_OSD_Update(MI_RGN_HANDLE hHandle);
 #pragma once
 
 #include "mi_rgn.h"
-#include "st_common.h"
 #include "st_rgn.h"
 
 class Rgn{

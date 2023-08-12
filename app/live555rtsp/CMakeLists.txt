@@ -3,10 +3,6 @@ aux_source_directory(. DIR_APP_SRC)
 add_library(live555rtsp ${DIR_APP_SRC})
 
 include_directories(
-	../system/venc
-	../queue
-#	../system/audio_ai
-#	../system/audio_ao
 )
 
 # 注意3点：1.live555依赖openssl; 2.openssl的依赖顺序；

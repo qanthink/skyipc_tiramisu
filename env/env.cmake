@@ -34,5 +34,14 @@ endif()
 
 SET(CMAKE_C_COMPILER		${ToolPath}/${ToolPrefix}gcc)
 SET(CMAKE_CXX_COMPILER		${ToolPath}/${ToolPrefix}g++)
-SET(CMAKE_STRIP				${ToolPath}/${ToolPrefix}strip)
+SET(CMAKE_STRIP			${ToolPath}/${ToolPrefix}strip)
 
+#设置程序名称
+option(OPTION_NAME "ipc" ON)
+if (ipc)
+SET(PROJECT_NAME skyipc)
+add_definitions(-DUSE_IPC=1)
+else()
+SET(PROJECT_NAME skyuvc)
+add_definitions(-DUSE_UVC=1)
+endif()

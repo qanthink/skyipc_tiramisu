@@ -6,7 +6,7 @@ xxx版权所有。
 
 #include "mi_sys.h"
 #include "vpe.h"
-#include "sensor.hpp"
+#include "sensor.h"
 #include <iostream>
 #include <string.h>
 
@@ -74,7 +74,7 @@ MI_S32 Vpe::disable()
 	cout << "Call Vpe::disable()." << endl;
 
 	//disablePort(Vpe::vpeJpegPort);
-	//disablePort(Vpe::vpeSubPort);
+	disablePort(Vpe::vpeSubPort);
 	disablePort(Vpe::vpeMainPort);
 	stopChannel();
 	destroyChannel();
@@ -94,14 +94,6 @@ MI_S32 Vpe::setChnOutputPortDepth(MI_VPE_PORT vpePort, MI_U32 u32UserFrameDepth,
 {
 	cout << "Call Vpe::setChnOutputPortDepth()." << endl;
 
-	// 入参检测，下标不能超过数组长度。
-	if(vpePort > u32MaxVpePortID)
-	{
-		cerr << "Fail to call Vpe::setChnOutputPortDepth(). Max port allowed is " << \
-				u32MaxVpePortID << ", your port = " << vpePort << endl;
-		return -1;
-	}
-
 	MI_SYS_ChnPort_t stChnPort;
 	memset(&stChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 	stChnPort.eModId = E_MI_MODULE_ID_VPE;
@@ -111,7 +103,7 @@ MI_S32 Vpe::setChnOutputPortDepth(MI_VPE_PORT vpePort, MI_U32 u32UserFrameDepth,
 
 	// MI_S32 MI_SYS_SetChnOutputPortDepth(MI_SYS_ChnPort_t *pstChnPort , MI_U32 u32UserFrameDepth , MI_U32 u32BufQueueDepth);
 	MI_S32 s32Ret = 0;
-	//s32Ret = MI_SYS_SetChnOutputPortDepth(&stChnPort, u32UserFrameDepth, u32BufQueueDepth);
+	s32Ret = MI_SYS_SetChnOutputPortDepth(&stChnPort, u32UserFrameDepth, u32BufQueueDepth);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_SYS_SetChnOutputPortDepth(), errno = " << s32Ret << endl;
@@ -137,7 +129,7 @@ MI_S32 Vpe::createChannel()
 	MI_SNR_PlaneInfo_t stPlaneInfo;
 	memset(&stPlaneInfo, 0, sizeof(MI_SNR_PlaneInfo_t ));	
 	Sensor *pSensor = Sensor::getInstance();
-	s32Ret = pSensor->getPlaneInfo(0, &stPlaneInfo);
+	s32Ret = pSensor->getPlaneInfo(E_MI_SNR_PAD_ID_0, &stPlaneInfo);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call pSensor->getPlaneInfo(), errno = " << s32Ret << endl;
@@ -156,12 +148,15 @@ MI_S32 Vpe::createChannel()
 	stVpeChAttr.bUvInvert = FALSE;
 	stVpeChAttr.ePixFmt = (MI_SYS_PixelFormat_e)RGB_BAYER_PIXEL(stPlaneInfo.ePixPrecision, stPlaneInfo.eBayerId);
 	stVpeChAttr.eRunningMode = E_MI_VPE_RUN_REALTIME_MODE;
-	//stVpeChAttr.bRotation = FALSE;
+	stVpeChAttr.bRotation = FALSE;
+	stVpeChAttr.u32ChnPortMode = E_MI_VPE_ZOOM_LDC_NULL;
+	stVpeChAttr.bEnLdc = FALSE;
 	stVpeChAttr.eHDRType = E_MI_VPE_HDR_TYPE_OFF;
 	stVpeChAttr.eSensorBindId = E_MI_VPE_SENSOR0;	// 争议：sensor0 or sensor_invalid
+	//stVpeChAttr.eSensorBindId = (MI_VPE_SensorChannel_e)(0x01<<pstVifDevAttr->stBindSensor.eSensorPadID);
 	//stVpeChAttr.u32ChnPortMode = pstChannelInfo->u32ChnPortMode;
 	
-	// step3: 创建VPE 通道。	
+	// step3: 创建VPE 通道。
 	s32Ret = MI_VPE_CreateChannel(vpeCh, &stVpeChAttr);
 	if(0 != s32Ret)
 	{
@@ -270,18 +265,19 @@ MI_S32 Vpe::disablePort(MI_VPE_PORT vpePort)
 {
 	cout << "Call Vpe::disablePort()." << endl;
 
-	if(vpePort > u32MaxVpePortID)
-	{
-		cerr << "Fail to call Vpe::disablePort(), max portID = " << u32MaxVpePortID << \
-			", your vpePort = " << vpePort << endl;
-	}
-
 	// MI_S32 MI_VPE_DisablePort(MI_VPE_CHANNEL VpeCh, MI_VPE_PORT VpePort);
 	MI_S32 s32Ret = 0;
 	s32Ret = MI_VPE_DisablePort(vpeCh, vpePort);
-	if(0 != s32Ret)
+	switch(s32Ret)
 	{
-		cerr << "Fail to call MI_VPE_DisablePort(), errno = " << s32Ret << endl;
+		case 0xA0078005:
+			cerr << "Fail to call MI_VPE_DisablePort() in Vpe::disablePort(). MI_ERR_VPE_UNEXIST." << endl;
+			break;
+		case MI_SUCCESS:
+			break;
+		default:
+			cerr << "Fail to call MI_VPE_DisablePort() in Vpe::disablePort(). errno = " << s32Ret << endl;
+			break;
 	}
 
 	cout << "Call Vpe::disablePort() end." << endl;
@@ -298,13 +294,6 @@ MI_S32 Vpe::setPortMode(MI_VPE_PORT vpePort, MI_VPE_PortMode_t *pstVpeMode)
 {
 	cout << "Call Vpe::setPortMode()." << endl;
 
-	if(vpePort > u32MaxVpePortID)
-	{
-		cerr << "Fail to call Vpe::setPortMode(), max port ID is " << \
-				u32MaxVpePortID << ", your port value is " << vpePort << endl;
-		return -1;
-	}
-
 	MI_S32 s32Ret = 0;
 	MI_VPE_PortMode_t stVpeMode;	
 	if(NULL == pstVpeMode)	// 如果用户传入空指针，则使用如下默认参数。
@@ -316,7 +305,7 @@ MI_S32 Vpe::setPortMode(MI_VPE_PORT vpePort, MI_VPE_PortMode_t *pstVpeMode)
 		MI_SNR_PlaneInfo_t stSnrPlaneInfo;
 		memset(&stSnrPlaneInfo, 0, sizeof(&stSnrPlaneInfo));
 		Sensor *pSensor = Sensor::getInstance();
-		s32Ret = pSensor->getPlaneInfo(0, &stSnrPlaneInfo);
+		s32Ret = pSensor->getPlaneInfo(E_MI_SNR_PAD_ID_0, &stSnrPlaneInfo);
 		if(0 != s32Ret)
 		{
 			cerr << "Fail to call pSensor->getPlaneInfo(), errno = " << s32Ret << endl;
@@ -358,8 +347,9 @@ MI_S32 Vpe::setChannelParam()
 	memset(&stVpeChParam, 0, sizeof(MI_VPE_ChannelPara_t));
 	stVpeChParam.bFlip = FALSE;
 	stVpeChParam.bMirror = FALSE;
+	stVpeChParam.bEnLdc = FALSE;
 	stVpeChParam.eHDRType = E_MI_VPE_HDR_TYPE_OFF;
-	stVpeChParam.e3DNRLevel = E_MI_VPE_3DNR_LEVEL_OFF;
+	stVpeChParam.e3DNRLevel = E_MI_VPE_3DNR_LEVEL1;
 
 	MI_S32 s32Ret = 0;
 	s32Ret = MI_VPE_SetChannelParam(vpeCh, &stVpeChParam);
@@ -372,48 +362,35 @@ MI_S32 Vpe::setChannelParam()
 	return s32Ret;
 }
 
-
 /*-----------------------------------------------------------------------------
-描--述：设置主码流端口模式
+描--述：设置端口模式
 参--数：vpePort 端口号
 返回值：成功，返回0; 失败，返回错误码。
-注--意：主码流端口号为1.
+注--意：子码流端口号为2.
 -----------------------------------------------------------------------------*/
-MI_S32 Vpe::createMainPort(MI_VPE_PORT vpePort)
+MI_S32 Vpe::createPort(MI_VPE_PORT vpePort, unsigned int width, unsigned int height)
 {
-	cout << "Call Vpe::createMainPort()." << endl;
-
-	// 获取sensor 信息并填充VPE 结构体。
-	MI_S32 s32Ret = 0;
-	MI_SNR_PlaneInfo_t stSnrPlaneInfo;
-	memset(&stSnrPlaneInfo, 0, sizeof(&stSnrPlaneInfo));
-	
-	Sensor *pSensor = Sensor::getInstance();
-	s32Ret = pSensor->getPlaneInfo(0, &stSnrPlaneInfo);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call pSensor->getPlaneInfo(), errno = " << s32Ret << endl;
-		return s32Ret;
-	}
+	cout << "Call Vpe::createPort()." << endl;
 
 	// 填充VPE 结构体
-	MI_VPE_PortMode_t stVpeMode;	
+	MI_VPE_PortMode_t stVpeMode;
 	memset(&stVpeMode, 0, sizeof(MI_VPE_PortMode_t));
-	stVpeMode.u16Width = stSnrPlaneInfo.stCapRect.u16Width;		// 输出图像的分辨率。动态属性，可在运行期间更改。
-	stVpeMode.u16Height = stSnrPlaneInfo.stCapRect.u16Height;
+	stVpeMode.u16Width = width;
+	stVpeMode.u16Height = height;
 	stVpeMode.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
 	stVpeMode.eCompressMode = E_MI_SYS_COMPRESS_MODE_NONE;
 	stVpeMode.bMirror = FALSE;
 	stVpeMode.bFlip = FALSE;
 
 	// 设置端口模式
+	MI_S32 s32Ret = 0;
 	s32Ret = setPortMode(vpePort, &stVpeMode);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call setPortMode(), errno = " << s32Ret << endl;
 	}
 
-	s32Ret = setChnOutputPortDepth(vpePort, 0, 2);
+	s32Ret = setChnOutputPortDepth(vpePort, 0, 4);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call setChnOutputPortDepth(), errno = " << s32Ret << endl;
@@ -425,178 +402,7 @@ MI_S32 Vpe::createMainPort(MI_VPE_PORT vpePort)
 		cerr << "Fail to call enablePort(), errno = " << s32Ret << endl;
 	}
 	
-	cout << "Call Vpe::createMainPort() end." << endl;
+	cout << "Call Vpe::createPort() end." << endl;
 	return s32Ret;
 }
-
-/*-----------------------------------------------------------------------------
-描--述：设置子码流端口模式
-参--数：vpePort 端口号
-返回值：成功，返回0; 失败，返回错误码。
-注--意：子码流端口号为2.
------------------------------------------------------------------------------*/
-MI_S32 Vpe::createSubPort(MI_VPE_PORT vpePort)
-{
-	cout << "Call Vpe::setSubPortMode()." << endl;
-
-	// 填充VPE 结构体
-	MI_VPE_PortMode_t stVpeMode;
-	memset(&stVpeMode, 0, sizeof(MI_VPE_PortMode_t));
-	#if 0	// 支持16:9 480 * 270
-	stVpeMode.u16Width = 480;
-	stVpeMode.u16Height = 270;
-	#else
-	stVpeMode.u16Width = 1280;
-	stVpeMode.u16Height = 720;
-	#endif
-	stVpeMode.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
-	stVpeMode.eCompressMode = E_MI_SYS_COMPRESS_MODE_NONE;
-	stVpeMode.bMirror = FALSE;
-	stVpeMode.bFlip = FALSE;
-	
-	MI_S32 s32Ret = 0;
-	s32Ret = setPortMode(vpePort, &stVpeMode);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call setPortMode(), errno = " << s32Ret << endl;
-	}
-
-	s32Ret = setChnOutputPortDepth(vpePort, 0, 2);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call setChnOutputPortDepth(), errno = " << s32Ret << endl;
-	}
-
-	s32Ret = enablePort(vpePort);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call enablePort(), errno = " << s32Ret << endl;
-	}
-	
-	cout << "Call Vpe::setSubPortMode() end." << endl;
-	return s32Ret;
-}
-
-/*-----------------------------------------------------------------------------
-描--述：设置JPEG 码流端口模式
-参--数：
-返回值：成功，返回0; 失败，返回错误码。
-注--意：JPEG码流端口号为3.
------------------------------------------------------------------------------*/
-MI_S32 Vpe::createJpegPort(MI_VPE_PORT vpePort)
-{
-	cout << "Call Vpe::setSubPortMode()." << endl;
-
-	// 填充VPE 结构体
-	MI_VPE_PortMode_t stVpeMode;
-	memset(&stVpeMode, 0, sizeof(MI_VPE_PortMode_t));
-	stVpeMode.u16Width = 1280;
-	stVpeMode.u16Height = 720;
-	stVpeMode.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV422_YUYV;
-	stVpeMode.eCompressMode = E_MI_SYS_COMPRESS_MODE_NONE;
-	stVpeMode.bMirror = FALSE;
-	stVpeMode.bFlip = FALSE;
-	
-	MI_S32 s32Ret = 0;
-	s32Ret = setPortMode(vpePort, &stVpeMode);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call setPortMode(), errno = " << s32Ret << endl;
-	}
-
-	s32Ret = setChnOutputPortDepth(vpePort, 0, 2);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call setChnOutputPortDepth(), errno = " << s32Ret << endl;
-	}
-
-	s32Ret = enablePort(vpePort);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call enablePort(), errno = " << s32Ret << endl;
-	}
-	
-	cout << "Call Vpe::setSubPortMode() end." << endl;
-	return s32Ret;
-}
-
-/*-----------------------------------------------------------------------------
-描--述：对图像进行剪裁和缩放。
-参--数：vpePort, 端口号；crX, crY, crW, crH, Crop 起始点和宽高，如果不剪裁，可全设为0.
-		outW, outH, 输出图像的宽高，控制了缩放。
-返回值：成功，返回0; 失败，返回错误码。
-注--意：Ispahan 不支持。
------------------------------------------------------------------------------*/
-MI_S32 Vpe::setPortCropScale(MI_VPE_PORT vpePort, unsigned int crX, unsigned int crY, 
-					unsigned int crW, unsigned int crH, unsigned int outW, unsigned int outH)
-{
-	cout << "Call Vpe::setPortCrop()." << endl;
-
-	MI_SYS_WindowRect_t stWinRect;
-	memset(&stWinRect, 0, sizeof(MI_SYS_WindowRect_t));
-	stWinRect.u16X = crX;
-	stWinRect.u16Y = crY;
-	stWinRect.u16Width = crW;
-	stWinRect.u16Height = crH;
-	
-	MI_S32 s32Ret = 0;
-	s32Ret = MI_VPE_SetPortCrop(vpeCh, vpePort, &stWinRect);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call MI_VPE_SetChannelCrop() in Vpe::setPortCrop(). errno = " << s32Ret << endl;
-	}
-
-	MI_VPE_PortMode_t stPortMode;
-	memset(&stPortMode, 0, sizeof(MI_VPE_PortMode_t));
-	stPortMode.u16Width = outW;
-	stPortMode.u16Height = outH;
-	stPortMode.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
-	stPortMode.eCompressMode = E_MI_SYS_COMPRESS_MODE_NONE;
-	stPortMode.bMirror = FALSE;
-	stPortMode.bFlip = FALSE;
-	s32Ret = MI_VPE_SetPortMode(vpeCh, vpePort, &stPortMode);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call MI_VPE_SetPortMode() in Vpe::setPortCrop(). errno = " << s32Ret << endl;
-		return s32Ret;
-	}
-
-	s32Ret = MI_VPE_EnablePort(vpeCh, vpePort);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call MI_VPE_EnablePort() in Vpe::setPortCrop(). errno = " << s32Ret << endl;
-		return s32Ret;
-	}
-
-	cout << "Call Vpe::setPortCrop() end." << endl;
-	return s32Ret;
-}
-
-/*-----------------------------------------------------------------------------
-描--述：Crop
-参--数：
-返回值：成功，返回0; 失败，返回错误码。
-注--意：Ispahan 不支持。
------------------------------------------------------------------------------*/
-MI_S32 Vpe::setChannelCrop(unsigned int x, unsigned int y, unsigned int w, unsigned int h)
-{
-	cout << "Call Vpe::setChannelCrop()." << endl;
-
-	MI_SYS_WindowRect_t stWinRect;
-	memset(&stWinRect, 0, sizeof(MI_SYS_WindowRect_t));
-	stWinRect.u16X = x;
-	stWinRect.u16Y = y;
-	stWinRect.u16Height = h;
-	stWinRect.u16Width = w;
-	
-	MI_S32 s32Ret = 0;
-	s32Ret = MI_VPE_SetChannelCrop(vpeCh, &stWinRect);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call MI_VPE_SetChannelCrop() in Vpe::setChannelCrop(). errno = " << s32Ret << endl;
-	}
-	
-	cout << "Call Vpe::setChannelCrop() end." << endl;
-	return s32Ret;
-}
-
+ 

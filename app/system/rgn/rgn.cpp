@@ -415,10 +415,10 @@ MI_U32 Rgn::osdCreate_N(MI_U32 u32OsdUsedNum)
 	cout << "Call Rgn::osdCreate_N()." << endl;
 
 	const MI_U16 u16Sx = 100;			// 若干个OSD 的起点坐标
-	const MI_U16 u16Sy = 400;
-	const MI_U16 u16Width = 500;		// 每个OSD 的宽高
-	const MI_U16 u16Height = 40;
-	const MI_U16 u16IntervalX = 0;		// OSD 之间的间隔
+	const MI_U16 u16Sy = 100;
+	const MI_U16 u16Width = 960;		// 每个OSD 的宽高
+	const MI_U16 u16Height = 64;
+	const MI_U16 u16IntervalX = 10;		// OSD 之间的间隔
 	const MI_U16 u16IntervalY = 0;
 
 	// OSD 区域属性，用于设置宽高、像素格式。
@@ -432,10 +432,10 @@ MI_U32 Rgn::osdCreate_N(MI_U32 u32OsdUsedNum)
 	// OSD 端口属性，用于选择绑定的模块，默认绑定VPE.
 	MI_RGN_ChnPort_t stChnPort;
 	memset(&stChnPort, 0, sizeof(MI_RGN_ChnPort_t));
-	//stChnPort.eModId = E_MI_MODULE_ID_VPE;
+	stChnPort.eModId = E_MI_RGN_MODID_VPE;
 	stChnPort.s32DevId = 0;
 	stChnPort.s32ChnId = 0;
-	//stChnPort.s32OutputPortId = Vpe::vpeMainPort;	// 将OSD 绑定到主码流
+	stChnPort.s32OutputPortId = Vpe::vpeMainPort;	// 将OSD 绑定到主码流
 
 	// OSD 通道属性用于设置起始位置等信息。
 	MI_RGN_ChnPortParam_t stChnAttr;
@@ -488,10 +488,10 @@ MI_U32 Rgn::osdDestroy_N(MI_U32 u32OsdUsedNum)
 	// OSD 端口
 	MI_RGN_ChnPort_t stChnPort;
 	memset(&stChnPort, 0, sizeof(MI_RGN_ChnPort_t));
-	//stChnPort.eModId = E_MI_RGN_MODID_VPE;
+	stChnPort.eModId = E_MI_RGN_MODID_VPE;
 	stChnPort.s32DevId = 0;
 	stChnPort.s32ChnId = 0;
-	//stChnPort.s32OutputPortId = Vpe::vpeMainPort;	// 将OSD 绑定到主码流
+	stChnPort.s32OutputPortId = Vpe::vpeMainPort;	// 将OSD 绑定到主码流
 	
 	int i = 0;
 	MI_U32 u32DestroiedCnt = 0;

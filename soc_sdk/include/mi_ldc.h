@@ -46,9 +46,12 @@ extern "C"
     MI_S32 MI_LDC_StartChannel(MI_LDC_DEV devId, MI_LDC_CHN chnId);
     MI_S32 MI_LDC_StopChannel(MI_LDC_DEV devId, MI_LDC_CHN chnId);
 
-MI_S32 MI_LDC_GetOutputPortAttr(MI_LDC_DEV devId, MI_LDC_CHN chnId, MI_LDC_OutputPortAttr_t *pstOutputAttr);
-MI_S32 MI_LDC_SetChnParam(MI_LDC_DEV devId, MI_LDC_CHN chnId, MI_LDC_ChnParam_t *pstChnParam);
-MI_S32 MI_LDC_DoLutDirectTask(MI_LDC_DEV devId, MI_LDC_CHN chnId, MI_LDC_LutTaskAttr_t *pstAttr);
+    MI_S32 MI_LDC_GetOutputPortAttr(MI_LDC_DEV devId, MI_LDC_CHN chnId, MI_LDC_OutputPortAttr_t *pstOutputAttr);
+
+    MI_S32 MI_LDC_GetChnParam(MI_LDC_DEV devId, MI_LDC_CHN chnId, MI_LDC_ChnParam_t *pstChnParam);
+    MI_S32 MI_LDC_SetChnParam(MI_LDC_DEV devId, MI_LDC_CHN chnId, MI_LDC_ChnParam_t *pstChnParam);
+
+    MI_S32 MI_LDC_DoLutDirectTask(MI_LDC_DEV devId, MI_LDC_CHN chnId, MI_LDC_LutTaskAttr_t *pstAttr);
 
 #ifdef __cplusplus
 }

@@ -140,6 +140,8 @@ extern "C"
     MI_S32 MI_ISP_IQ_SetDayNightDetection(MI_U32 DevId, MI_U32 Channel, MI_ISP_DAYNIGHT_DETECTION_TYPE_t *data);
     MI_S32 MI_ISP_IQ_GetDayNightDetection(MI_U32 DevId, MI_U32 Channel, MI_ISP_DAYNIGHT_DETECTION_TYPE_t *data);
     MI_S32 MI_ISP_IQ_QueryDayNightInfo(MI_U32 DevId, MI_U32 Channel, MI_ISP_DAYNIGHT_INFO_TYPE_t *data);
+    MI_S32 MI_ISP_IQ_SetALSC_ADJ(MI_U32 DevId, MI_U32 Channel, MI_ISP_IQ_ALSC_ADJ_t *data);
+    MI_S32 MI_ISP_IQ_GetALSC_ADJ(MI_U32 DevId, MI_U32 Channel, MI_ISP_IQ_ALSC_ADJ_t *data);
     /************************************* IQ  API END   *************************************/
 
     /************************************* AE  API START *************************************/

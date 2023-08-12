@@ -5,6 +5,7 @@ xxx版权所有。
 ----------------------------------------------------------------*/
 
 #include "venc.h"
+#include "st_common.h"
 #include <iostream>
 #include <string.h>
 
@@ -43,8 +44,7 @@ Venc* Venc::getInstance()
 MI_S32 Venc::enable()
 {
 	cout << "Call Venc::enable()." << endl;
-
-	bEnable = true;	
+	bEnable = true;
 	cout << "Call Venc::enable() end." << endl;
 	return 0;
 }
@@ -63,8 +63,8 @@ MI_S32 Venc::disable()
 	
 	//stopRecvPic(vencSubChn);
 	//destroyChn(vencSubChn);
-	stopRecvPic(vencMainChn);
-	destroyChn(vencMainChn);
+	//stopRecvPic(vencMainChn);
+	//destroyChn(vencMainChn);
 
 	cout << "Call Venc::disable() end." << endl;
 	return 0;
@@ -76,7 +76,7 @@ MI_S32 Venc::disable()
 返回值：成功，返回0; 失败，返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::createChn(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
+MI_S32 Venc::createChn(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 {
 	cout << "Call Venc::createChn()." << endl;
 
@@ -89,10 +89,11 @@ MI_S32 Venc::createChn(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 		return -1;
 	}
 
+	// MI_S32 MI_VENC_CreateChn(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr);
 	s32Ret = MI_VENC_CreateChn(vencDev, vencChn, pstChnAttr);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_VENC_CreateChn(), errno = " << s32Ret << endl;
+		cerr << "Fail to call MI_VENC_CreateChn() in Venc::createChn(), errno = " << s32Ret << endl;
 	}
 
 	cout << "Call Venc::createChn() end." << endl;
@@ -105,7 +106,7 @@ MI_S32 Venc::createChn(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 返回值：成功，返回0; 失败，返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::getChnAttr(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
+MI_S32 Venc::getChnAttr(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 {
 	cout << "Call Venc::getChnAttr()." << endl;
 
@@ -126,7 +127,7 @@ MI_S32 Venc::getChnAttr(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 	s32Ret = MI_VENC_GetChnAttr(vencDev, vencChn, pstChnAttr);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_VENC_GetChnAttr(), errno = " << s32Ret << endl;
+		cerr << "Fail to call MI_VENC_GetChnAttr() in Venc::getChnAttr(), errno = " << s32Ret << endl;
 	}
 
 	if(0 == s32Ret && bShow)
@@ -151,7 +152,7 @@ MI_S32 Venc::getChnAttr(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 返回值：成功，返回0; 失败，返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::setChnAttr(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
+MI_S32 Venc::setChnAttr(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 {
 	cout << "Call Venc::setChnAttr()." << endl;
 	if(NULL == pstChnAttr)
@@ -165,47 +166,16 @@ MI_S32 Venc::setChnAttr(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 	s32Ret = MI_VENC_SetChnAttr(vencDev, vencChn, pstChnAttr);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_VENC_SetChnAttr(), errno = " << s32Ret << endl;
+		cerr << "Fail to call MI_VENC_SetChnAttr() in Venc::setChnAttr(), errno = " << s32Ret << endl;
 	}
 
 	cout << "Call Venc::setChnAttr() end." << endl;
 	return s32Ret;
 }
 
+#if 0
 /*-----------------------------------------------------------------------------
-描--述：改变比特率。
-参--数：vencChn VENC通道号；u32Bitrate 传输的比特率 bit/s
-返回值：成功，返回0; 失败，返回错误码。
-注--意：
------------------------------------------------------------------------------*/
-MI_S32 Venc::changeBitrate(MI_VENC_CHN vencChn, MI_U32 u32BitrateKb)
-{
-	cout << "Call Venc::changeBitrate()." << endl;
-
-	MI_VENC_ChnAttr_t stChnAttr;
-	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
-
-	MI_S32 s32Ret = 0;
-	s32Ret = getChnAttr(vencChn, &stChnAttr);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call Venc::getChnAttr(), errno = " << s32Ret << endl;
-		return s32Ret;
-	}
-
-	stChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = u32BitrateKb * 1024;	// 转换为bps.
-	s32Ret = setChnAttr(vencChn, &stChnAttr);	
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call Venc::setChnAttr(), errno = " << s32Ret << endl;
-	}
-
-	cout << "Call Venc::changeBitrate() end." << endl;
-	return s32Ret;
-}
-
-/*-----------------------------------------------------------------------------
-描--述：设置通道属性。
+描--述：设置剪裁区域。
 参--数：vencChn VENC通道；pstChnAttr 指向通道属性的结构体指针。
 返回值：成功，返回0; 失败，返回错误码。
 注--意：
@@ -221,7 +191,7 @@ MI_S32 Venc::setCrop(MI_VENC_CHN vencChn, MI_U32 x, MI_U32 y, MI_U32 w, MI_U32 h
 	stCropCfg.stRect.u32Top = y;
 	stCropCfg.stRect.u32Width = w;
 	stCropCfg.stRect.u32Height = h;
-	s32Ret = MI_VENC_SetCrop(vencDev, vencChn, &stCropCfg);
+	s32Ret = MI_VENC_SetCrop(vencChn, &stCropCfg);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VENC_SetCrop(), errno = " << s32Ret << endl;
@@ -230,6 +200,58 @@ MI_S32 Venc::setCrop(MI_VENC_CHN vencChn, MI_U32 x, MI_U32 y, MI_U32 w, MI_U32 h
 	cout << "Call Venc::setCrop() end." << endl;
 	return s32Ret;
 }
+#endif
+
+#if 0
+/*-----------------------------------------------------------------------------
+描--述：改变比特率。
+参--数：vencChn VENC通道号；
+		u32BitrateKb 传输的比特率 Kbps, 取值范围：[2, 100 000], 适用于H.26X 和MJPEG.
+返回值：成功，返回0; 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+MI_S32 Venc::changeBitrate(MI_VENC_CHN vencChn, MI_U32 u32BitrateKb)
+{
+	cout << "Call Venc::changeBitrate()." << endl;
+
+	MI_VENC_ChnAttr_t stChnAttr;
+	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_VENC_GetChnAttr(vencChn, &stChnAttr);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_GetChnAttr() in Venc::changeBitrate(), errno = " 
+		<< s32Ret << endl;
+		return s32Ret;
+	}
+
+	if(E_MI_VENC_RC_MODE_MAX <= stChnAttr.stRcAttr.eRcMode)
+	{
+		cerr << "In Venc::changeBitrate(), unrecognized encoding format." << endl;
+		return -1;
+	}
+	else if(E_MI_VENC_RC_MODE_MJPEGCBR == stChnAttr.stRcAttr.eRcMode || 
+		E_MI_VENC_RC_MODE_MJPEGFIXQP == stChnAttr.stRcAttr.eRcMode)
+	{
+		stChnAttr.stRcAttr.stAttrMjpegCbr.u32BitRate = u32BitrateKb * 1024; // 转换为bps.
+	}
+	else
+	{
+		stChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = u32BitrateKb * 1024;	// 转换为bps.
+	}
+
+	s32Ret = MI_VENC_SetChnAttr(vencChn, &stChnAttr);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_SetChnAttr() in Venc::changeBitrate(), errno = " 
+		<< s32Ret << endl;
+	}
+
+	cout << "Call Venc::changeBitrate() end." << endl;
+	return s32Ret;
+}
+#endif
 
 /*-----------------------------------------------------------------------------
 描--述：销毁通道。
@@ -237,16 +259,23 @@ MI_S32 Venc::setCrop(MI_VENC_CHN vencChn, MI_U32 x, MI_U32 y, MI_U32 w, MI_U32 h
 返回值：成功，返回0; 失败，返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::destroyChn(MI_VENC_CHN vencChn)
+MI_S32 Venc::destroyChn(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn)
 {
 	cout << "Call Venc::destroyChn()." << endl;
 
 	// MI_S32 MI_VENC_DestroyChn(MI_VENC_CHN vencChn);
 	MI_S32 s32Ret = 0;
 	s32Ret = MI_VENC_DestroyChn(vencDev, vencChn);
-	if(0 != s32Ret)
+	switch(s32Ret)
 	{
-		cerr << "Fail to call MI_VENC_DestroyChn(), errno = " << s32Ret << endl;
+		case 0xA0022005:
+			cerr << "Fail to call MI_VENC_DestroyChn() in Venc::destroyChn(). channel unexist." << endl;
+			break;
+		case MI_SUCCESS:
+			break;
+		default:
+			cerr << "Fail to call MI_VENC_DestroyChn(), errno = " << s32Ret << endl;
+			break;
 	}
 
 	cout << "Call Venc::destroyChn() end." << endl;
@@ -259,7 +288,7 @@ MI_S32 Venc::destroyChn(MI_VENC_CHN vencChn)
 返回值：成功，返回0; 失败，返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::startRecvPic(MI_VENC_CHN vencChn)
+MI_S32 Venc::startRecvPic(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn)
 {
 	cout << "Call Venc::startRecvPic()." << endl;
 
@@ -276,6 +305,7 @@ MI_S32 Venc::startRecvPic(MI_VENC_CHN vencChn)
 	return s32Ret;
 }
 
+#if 0
 /*-----------------------------------------------------------------------------
 描--述：VENC停止接收图像。
 参--数：vencChn 通道号。
@@ -289,15 +319,23 @@ MI_S32 Venc::stopRecvPic(MI_VENC_CHN vencChn)
 	// MI_S32 MI_VENC_StopRecvPic(MI_VENC_CHN vencChn);
 	MI_S32 s32Ret = 0;
 
-	s32Ret = MI_VENC_StopRecvPic(vencDev, vencChn);
-	if(0 != s32Ret)
+	s32Ret = MI_VENC_StopRecvPic(vencChn);
+	switch(s32Ret)
 	{
-		cerr << "Fail to call MI_VENC_StopRecvPic(), errno = " << s32Ret << endl;
+		case 0xA0022005:
+			cerr << "Fail to call MI_VENC_StopRecvPic() in Venc::stopRecvPic(). channel unexist." << endl;
+			break;
+		case MI_SUCCESS:
+			break;
+		default:
+			cerr << "Fail to call MI_VENC_StopRecvPic(), errno = " << s32Ret << endl;
+			break;
 	}
 
 	cout << "Call Venc::stopRecvPic() end." << endl;
 	return s32Ret;
 }
+#endif
 
 /*-----------------------------------------------------------------------------
 描--述：查询VENC 状态。
@@ -306,7 +344,7 @@ MI_S32 Venc::stopRecvPic(MI_VENC_CHN vencChn)
 注--意：关注结构体中如下参数：u32LeftPics 待编码帧个数。
 	u32CurPacks 当前帧的码流包个数。调用MI_VENC_GetStream() 之前应确保该参数大于0.
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::query(MI_VENC_CHN vencChn, MI_VENC_ChnStat_t *pstChnStat)
+MI_S32 Venc::query(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ChnStat_t *pstChnStat)
 {
 	// cout << "Call Venc::query()." << endl;
 
@@ -352,7 +390,7 @@ MI_S32 Venc::query(MI_VENC_CHN vencChn, MI_VENC_ChnStat_t *pstChnStat)
 返回值：传递非法参数，返回-1; 成功，返回0; 失败，返回错误码。
 注--意：必须与releaseStream() 成对使用，避免内存泄漏。
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::getStream(MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream, MI_S32 s32MilliSec)
+MI_S32 Venc::getStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream, MI_S32 s32MilliSec)
 {
 	// cout << "Call Venc::getStream()." << endl;
 	
@@ -381,7 +419,7 @@ MI_S32 Venc::getStream(MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream, MI_S32 
 注--意：在rcvStream() 后必须主动调用该函数释放缓冲区内存，避免内存泄漏。
 	ispahanV20中调整为，先调用SDK接口MI_VENC_ReleaseStream, 再释放用户空间free(pstStream->pstPack)
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::releaseStream(MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream)
+MI_S32 Venc::releaseStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream)
 {
 	// cout << "Call Venc::releaseStream()." << endl;
 	
@@ -411,7 +449,7 @@ MI_S32 Venc::releaseStream(MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream)
 返回值：成功返回文件描述符，失败返回错误码。
 注--意：用于调用select/poll监听是否有编码数据，与轮询CPU相比有效降低了cpu使用率。
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::getFd(MI_VENC_CHN vencChn)
+MI_S32 Venc::getFd(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn)
 {
 	// cout << "Call Venc::getFd()." << endl;
 
@@ -459,7 +497,7 @@ MI_S32 Venc::setJpegParam(MI_VENC_CHN vencChn, MI_VENC_ParamJpeg_t *pstJpegParam
 	// MI_S32 MI_VENC_SetJpegParam(MI_VENC_CHN vencChn, MI_VENC_ParamJpeg_t *pstJpegParam);
 	MI_S32 s32Ret = 0;
 
-	s32Ret = MI_VENC_SetJpegParam(vencDev, vencChn, pstJpegParam);
+	s32Ret = MI_VENC_SetJpegParam(MI_VENC_DEV_ID_JPEG_0, vencChn, pstJpegParam);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VENC_SetJpegParam(), errno = " << s32Ret << endl;
@@ -493,7 +531,7 @@ MI_S32 Venc::getJpegParam(MI_VENC_CHN vencChn, MI_VENC_ParamJpeg_t *pstJpegParam
 	memset(&stJpegParam, 0, sizeof(MI_VENC_ParamJpeg_t));
 	
 	// MI_S32 MI_VENC_GetJpegParam(MI_VENC_CHN vencChn, MI_VENC_ParamJpeg_t *pstJpegParam);
-	s32Ret = MI_VENC_GetJpegParam(vencDev, vencChn, pstJpegParam);	
+	s32Ret = MI_VENC_GetJpegParam(MI_VENC_DEV_ID_JPEG_0, vencChn, pstJpegParam);	
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VENC_GetJpegParam(), errno = " << s32Ret << endl;
@@ -509,10 +547,44 @@ MI_S32 Venc::getJpegParam(MI_VENC_CHN vencChn, MI_VENC_ParamJpeg_t *pstJpegParam
 	return s32Ret;
 }
 
+#if 0
+/*-----------------------------------------------------------------------------
+描--述：设置H264 的slice 分割属性。
+参--数：vencChn 通道号；pstSliceSplit 指向分割参数的结构体指针。
+返回值：成功，返回0; 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+MI_S32 Venc::setH264SliceSplit(MI_VENC_CHN vencChn, MI_VENC_ParamH264SliceSplit_t *pstSliceSplit)
+{
+	cout << "Call Venc::setH264SliceSplit()." << endl;
+
+	MI_VENC_ParamH264SliceSplit_t stSliceSplit;
+	if(NULL == pstSliceSplit)
+	{
+		cerr << "Call Venc::setH264SliceSplit() with null value. Use default argument!" << endl;
+		pstSliceSplit = &stSliceSplit;
+
+		stSliceSplit.bSplitEnable = true;
+		stSliceSplit.u32SliceRowCount = 8;	// 0 <= u32SliceRowCount <= (height+31)/height;
+											// 2 -> 17 4 -> 9 8 -> 5
+	}
+	
+	// MI_S32 MI_VENC_SetH265SliceSplit(MI_VENC_CHN vencChn, MI_VENC_ParamH265SliceSplit_t *pstSliceSplit);
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_VENC_SetH264SliceSplit(vencChn, pstSliceSplit);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_SetH264SliceSplit(), errno = " << s32Ret << endl;
+	}
+
+	cout << "Call Venc::setH264SliceSplit() end." << endl;
+	return s32Ret;
+}
+
 /*-----------------------------------------------------------------------------
 描--述：设置H265 的slice 分割属性。
 参--数：vencChn 通道号；pstSliceSplit 指向分割参数的结构体指针。
-返回值：传递非法参数，返回-1; 成功，返回0; 失败，返回错误码。
+返回值：成功，返回0; 失败，返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
 MI_S32 Venc::setH265SliceSplit(MI_VENC_CHN vencChn, MI_VENC_ParamH265SliceSplit_t *pstSliceSplit)
@@ -532,7 +604,7 @@ MI_S32 Venc::setH265SliceSplit(MI_VENC_CHN vencChn, MI_VENC_ParamH265SliceSplit_
 	
 	// MI_S32 MI_VENC_SetH265SliceSplit(MI_VENC_CHN vencChn, MI_VENC_ParamH265SliceSplit_t *pstSliceSplit);
 	MI_S32 s32Ret = 0;
-	s32Ret = MI_VENC_SetH265SliceSplit(vencDev, vencChn, pstSliceSplit);
+	s32Ret = MI_VENC_SetH265SliceSplit(vencChn, pstSliceSplit);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VENC_SetH265SliceSplit(), errno = " << s32Ret << endl;
@@ -541,6 +613,7 @@ MI_S32 Venc::setH265SliceSplit(MI_VENC_CHN vencChn, MI_VENC_ParamH265SliceSplit_
 	cout << "Call Venc::setH265SliceSplit() end." << endl;
 	return s32Ret;
 }
+#endif
 
 /*-----------------------------------------------------------------------------
 描--述：请求I帧。
@@ -548,9 +621,9 @@ MI_S32 Venc::setH265SliceSplit(MI_VENC_CHN vencChn, MI_VENC_ParamH265SliceSplit_
 返回值：返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::requestIdr(MI_VENC_CHN vencChn, MI_BOOL bInstant)
+MI_S32 Venc::requestIdr(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_BOOL bInstant)
 {
-	//cout << "Call Venc::requestIdr()." << endl;
+	cout << "Call Venc::requestIdr()." << endl;
 
 	MI_S32 s32Ret = 0;
 	s32Ret = MI_VENC_RequestIdr(vencDev, vencChn, bInstant);
@@ -565,100 +638,17 @@ MI_S32 Venc::requestIdr(MI_VENC_CHN vencChn, MI_BOOL bInstant)
 }
 
 /*-----------------------------------------------------------------------------
-描--述：创建主码流。
-参--数：vencChn 通道号；pstChnAttr 指向频道属性的结构体指针，传入NULL, 使用默认属性。
+描--述：创建码流。
+参--数：vencChn 通道号；pstChnAttr 指向频道属性的结构体指针。
 返回值：返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::createMainStream(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
+MI_S32 Venc::createStreamWithAttr(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 {
-	cout << "Call Venc::createMainStream() end." << endl;
+	cout << "Call Venc::createStreamWithAttr()." << endl;
 
-	MI_VENC_ChnAttr_t stChnAttr;
-	if(NULL == pstChnAttr)
-	{
-		cerr << "Call Venc::createMainStream() with null pointer. Use default argument!" << endl;
-		pstChnAttr = &stChnAttr;
-		memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
-
-		switch(emMainResIn)
-		{
-			case emResol2MP_1920_1080:
-			{
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 1920;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 1080;
-				break;
-			}
-			case emResol4MP_2560_1440:
-			{
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 2560;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 1440;
-				break;
-			}
-			case emResol8MP_3840_2160:
-			{
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 3840;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 2160;
-				break;
-			}
-			default:
-			{
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 3840;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 2160;
-				break;
-			}
-		}
-
-		switch(emMainResOut)
-		{
-			case emResol2MP_1920_1080:
-			{
-				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 1920;
-				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 1080;
-				break;
-			}
-			case emResol4MP_2560_1440:
-			{
-				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 2560;
-				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 1440;
-				break;
-			}
-			case emResol8MP_3840_2160:
-			{
-				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 3840;
-				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 2160;
-				break;
-			}
-			default:
-			{
-				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 1920;
-				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 1080;
-				break;
-			}
-		}
-		
-		if(bUseSliceMode)
-		{
-			stChnAttr.stVeAttr.stAttrH265e.bByFrame = false;	// 按帧/包获取码流：true/false
-		}
-		else
-		{
-			stChnAttr.stVeAttr.stAttrH265e.bByFrame = true;		// 按帧/包获取码流：true/false
-		}
-		//stChnAttr.stVeAttr.stAttrH265e.u32Profile = 0;		// 编码优先级级，暂不支持。
-
-		stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_H265E;
-		stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_H265CBR;
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = mainBitRateKb * 1024;
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateNum = mainFrmRate;	// FPS = 分母Num / 分子Den
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateDen = 1;
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32Gop = mainGop;
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32FluctuateLevel = 0;	// 暂不支持
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32StatTime = 0;		// 暂不支持
-	}
-	
 	MI_S32 s32Ret = 0;
-	s32Ret = createChn(vencChn, pstChnAttr);
+	s32Ret = createChn(vencDev, vencChn, pstChnAttr);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call Venc::createChn(), s32Ret = " << s32Ret << endl;
@@ -667,99 +657,151 @@ MI_S32 Venc::createMainStream(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr
 
 	if(bUseSliceMode)
 	{
-		s32Ret = setH265SliceSplit(vencChn, NULL);	// slice 分片模式
-		if(0 != s32Ret)
+		if(vesTypeH264 == pstChnAttr->stVeAttr.eType)
 		{
-			cerr << "Fail to call Venc::setH265SliceSplit(), s32Ret = " << s32Ret << endl;
-			return s32Ret;
+			s32Ret = setH264SliceSplit(vencChn, NULL);	// slice 分片模式
+		}
+		else if(vesTypeH265 == pstChnAttr->stVeAttr.eType)
+		{
+			s32Ret = setH265SliceSplit(vencChn, NULL);	// slice 分片模式
 		}
 	}
+
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call Venc::setH26xSliceSplit(), s32Ret = " << s32Ret << endl;
+		return s32Ret;
+	}
+
+	#if 0
+	if(pstStreamAttr[i].eBindType == E_MI_SYS_BIND_TYPE_HW_RING)
+	{
+		stInputSource.eInputSrcBufferMode = bHaftRing ? E_MI_VENC_INPUT_MODE_RING_HALF_FRM : E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
+	}
+	else
+	{
+		stInputSource.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE;
+	}
+	#endif
 	
-	s32Ret = startRecvPic(vencChn);					// 开始接受通道数据
+	MI_VENC_InputSourceConfig_t stInputSource;
+	stInputSource.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE;
+	s32Ret = MI_VENC_SetInputSourceConfig(vencDev, vencChn, &stInputSource);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call Venc::MI_VENC_SetInputSourceConfig(), s32Ret = " << s32Ret << endl;
+		return s32Ret;
+	}
+
+	s32Ret = startRecvPic(vencDev, vencChn);					// 开始接受通道数据
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call Venc::startRecvPic(), s32Ret = " << s32Ret << endl;
 		return s32Ret;
 	}
 	
-	cout << "Call Venc::createMainStream() end." << endl;
+	cout << "Call Venc::createStreamWithAttr() end." << endl;
 	return s32Ret;
 }
 
+
 /*-----------------------------------------------------------------------------
-描--述：创建子码流。
+描--述：创建码流。
 参--数：vencChn 通道号；pstChnAttr 指向频道属性的结构体指针，传入NULL, 使用默认属性。
 返回值：返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::createSubStream(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
+MI_S32 Venc::createH26xStream(MI_VENC_CHN vencChn, unsigned int width, unsigned int height, MI_VENC_ModType_e vesType)
 {
-	cout << "Call Venc::createSubStream() end." << endl;
+	cout << "Call Venc::createH26xStream() end." << endl;
 
 	MI_VENC_ChnAttr_t stChnAttr;
-	if(NULL == pstChnAttr)
-	{
-		cerr << "Call Venc::createSubStream() with null pointer. Use default argument!" << endl;
-		pstChnAttr = &stChnAttr;
-		memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
+	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
 
-		switch(emSubResIn)
-		{
-			case emResol1MP_1280_720:
-			{
-				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 1280;
-				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 720;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 1280;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 720;
-				break;
-			}
-			case emResol4MP_2560_1440:
-			{
-				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 1920;
-				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 1080;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 1920;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 1080;
-				break;
-			}
-			default:
-			{
-				stChnAttr.stVeAttr.stAttrH265e.u32PicWidth = 1920;
-				stChnAttr.stVeAttr.stAttrH265e.u32PicHeight = 1080;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = 1920;
-				stChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = 1080;
-				break;
-			}
-		}
+	stChnAttr.stVeAttr.stAttrH264e.u32PicWidth = width;
+	stChnAttr.stVeAttr.stAttrH264e.u32PicHeight = height;
+	stChnAttr.stVeAttr.stAttrH264e.u32MaxPicWidth = width;
+	stChnAttr.stVeAttr.stAttrH264e.u32MaxPicHeight = height;
+	stChnAttr.stVeAttr.stAttrH264e.bByFrame = true;
+	stChnAttr.stVeAttr.stAttrH264e.u32BFrameNum = 2;
+	stChnAttr.stVeAttr.stAttrH264e.u32Profile = 1;
+	stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_H264E;
+	stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_H264CBR;
+	stChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = 1024 * 1024;
+	stChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateNum = 15;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32SrcFrmRateDen = 1;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32Gop = 30;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32FluctuateLevel = 0;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32StatTime = 0;
 
-		//stChnAttr.stVeAttr.stAttrH265e.u32Profile = 0;		// 编码优先级级，暂不支持。
-		stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_H265E;
-		stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_H265CBR;
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = subBitRateKb * 1024;
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateNum = 30;	// FPS = 分母Num / 分子Den
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateDen = 1;
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32Gop = subGop;
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32FluctuateLevel = 0;	// 暂不支持
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32StatTime = 0;		// 暂不支持
-	}
-	
 	MI_S32 s32Ret = 0;
-	s32Ret = createChn(vencChn, pstChnAttr);
+	s32Ret = MI_VENC_CreateChn(MI_VENC_DEV_ID_H264_H265_0, vencChn, &stChnAttr);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call Venc::createChn(), s32Ret = " << s32Ret << endl;
 		return s32Ret;
 	}
 
-	s32Ret = startRecvPic(vencChn);
+	if(bUseSliceMode)
+	{
+		if(vesTypeH264 == vesType)
+		{
+			s32Ret = setH264SliceSplit(vencChn, NULL);	// slice 分片模式
+		}
+		else if(vesTypeH265 == vesType)
+		{
+			s32Ret = setH265SliceSplit(vencChn, NULL);	// slice 分片模式
+		}
+	}
+
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call Venc::setH26xSliceSplit(), s32Ret = " << s32Ret << endl;
+		return s32Ret;
+	}
+
+	#if 0
+	if(pstStreamAttr[i].eBindType == E_MI_SYS_BIND_TYPE_HW_RING)
+	{
+		stInputSource.eInputSrcBufferMode = bHaftRing ? E_MI_VENC_INPUT_MODE_RING_HALF_FRM : E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
+	}
+	else
+	{
+		stInputSource.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE;
+	}
+	#endif
+	
+	MI_VENC_InputSourceConfig_t stInputSource;
+	stInputSource.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
+	s32Ret = MI_VENC_SetInputSourceConfig(MI_VENC_DEV_ID_H264_H265_0, vencChn, &stInputSource);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call Venc::MI_VENC_SetInputSourceConfig(), s32Ret = " << s32Ret << endl;
+		return s32Ret;
+	}
+
+	STCHECKRESULT(MI_VENC_SetMaxStreamCnt(MI_VENC_DEV_ID_H264_H265_0, vencChn, 3+1));
+
+	s32Ret = MI_VENC_StartRecvPic(MI_VENC_DEV_ID_H264_H265_0, vencChn);					// 开始接受通道数据
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call Venc::startRecvPic(), s32Ret = " << s32Ret << endl;
 		return s32Ret;
 	}
 	
-	cout << "Call Venc::createSubStream() end." << endl;
+	cout << "Call Venc::createH26xStream() end." << endl;
 	return s32Ret;
 }
+
+#ifdef ALIGN_UP
+#undef ALIGN_UP
+#define ALIGN_UP(x, align) (((x) + ((align) - 1)) & ~((align) - 1))
+#else
+#define ALIGN_UP(x, align) (((x) + ((align) - 1)) & ~((align) - 1))
+#endif
+#ifndef ALIGN_DOWN
+#define ALIGN_DOWN(val, alignment) (((val)/(alignment))*(alignment))
+#endif
 
 /*-----------------------------------------------------------------------------
 描--述：创建JPEG码流。
@@ -767,41 +809,44 @@ MI_S32 Venc::createSubStream(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
 返回值：返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::createJpegStream(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr)
+MI_S32 Venc::createJpegStream(MI_VENC_CHN vencChn, unsigned int width, unsigned int height)
 {
 	cout << "Call Venc::createJpegStream() end." << endl;
 
 	MI_VENC_ChnAttr_t stChnAttr;
-	if(NULL == pstChnAttr)
-	{
-		cerr << "Call Venc::createJpegStream() with null pointer. Use default argument!" << endl;
-		pstChnAttr = &stChnAttr;
-		memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
+	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
 
-		stChnAttr.stVeAttr.stAttrJpeg.u32BufSize = 2 * 1920 * 1080;	// 不小于最大宽高的乘积
-		stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_MJPEGFIXQP;
-		stChnAttr.stVeAttr.stAttrJpeg.u32PicWidth = 1920;
-		stChnAttr.stVeAttr.stAttrJpeg.u32PicHeight = 1080;
-		stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicWidth = 1920;
-		stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicHeight = 1080;
-		stChnAttr.stVeAttr.stAttrJpeg.bByFrame = TRUE;
-		stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_JPEGE;
-		stChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateNum = 30;
-		stChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateDen = 1;
-	}
+	//stChnAttr.stVeAttr.stAttrJpeg.u32BufSize = 2 * width * height;	// 不小于最大宽高的乘积
+	stChnAttr.stVeAttr.stAttrJpeg.u32BufSize = ALIGN_UP(width*height*3/4, 16);
+	stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_MJPEGCBR;
+	stChnAttr.stVeAttr.stAttrJpeg.u32PicWidth = width;
+	stChnAttr.stVeAttr.stAttrJpeg.u32PicHeight = height;
+	stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicWidth = width;
+	//stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicHeight = height;
+	stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicHeight = ALIGN_UP(height, 16);
+	stChnAttr.stVeAttr.stAttrJpeg.bByFrame = TRUE;
+	stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_JPEGE;
+	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateNum = 30;
+	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateDen = 1;
+	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32Qfactor = 1;
+
+	MI_VENC_InputSourceConfig_t stInputSource;
+	stInputSource.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
 	
 	MI_S32 s32Ret = 0;
-	s32Ret = createChn(vencChn, pstChnAttr);
+	s32Ret = createChn(MI_VENC_DEV_ID_JPEG_0, vencChn, &stChnAttr);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call Venc::createChn(), s32Ret = " << s32Ret << endl;
+		cerr << "Fail to call createChn() in Venc::createJpegStream(), s32Ret = " << s32Ret << endl;
 		return s32Ret;
 	}
 
-	s32Ret = startRecvPic(vencChn);
+	MI_VENC_SetMaxStreamCnt(MI_VENC_DEV_ID_JPEG_0, vencChn, 3);
+
+	s32Ret = startRecvPic(MI_VENC_DEV_ID_JPEG_0, vencChn);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call Venc::startRecvPic(), s32Ret = " << s32Ret << endl;
+		cerr << "Fail to call startRecvPic() in Venc::createJpegStream(), s32Ret = " << s32Ret << endl;
 		return s32Ret;
 	}
 	
@@ -821,7 +866,7 @@ MI_S32 Venc::createJpegStream(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr
 	-6, malloc(3) 出错。
 注--意：原则上函数体不应超过屏幕的最大显示量，然而取流的过程确实比较繁琐，不得已而写了这个100多行的函数。
 -----------------------------------------------------------------------------*/
-int Venc::rcvStream(MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream)
+int Venc::rcvStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream)
 {
 	//cout << "Call Venc::rcvStream()." << endl;
 
@@ -834,7 +879,7 @@ int Venc::rcvStream(MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream)
 	
 	// step1: 获取文件描述符。
 	MI_S32 s32Fd = 0;
-	s32Fd = getFd(vencChn);
+	s32Fd = getFd(vencDev, vencChn);
 	if(-1 == s32Fd)
 	{
 		cerr << "Fail to call Venc::getFd()." << endl;
@@ -872,7 +917,7 @@ int Venc::rcvStream(MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream)
 	MI_S32 s32Ret = 0;
 	MI_VENC_ChnStat_t stChnStat;
 	memset(&stChnStat, 0, sizeof(MI_VENC_ChnStat_t));
-	s32Ret = query(vencChn, &stChnStat);
+	s32Ret = query(vencDev, vencChn, &stChnStat);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call Venc::query(), errno = " << s32Ret << endl;
@@ -899,7 +944,7 @@ int Venc::rcvStream(MI_VENC_CHN vencChn, MI_VENC_Stream_t *pstStream)
 	
 	// step5: 获取流。
 	MI_S32 s32MilliSec = 40;
-	s32Ret = getStream(vencChn, pstStream, s32MilliSec);
+	s32Ret = getStream(vencDev, vencChn, pstStream, s32MilliSec);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call Venc::getStream(), errno = " << s32Ret << endl;
@@ -936,7 +981,7 @@ void Venc::printStreamInfo(const MI_VENC_Stream_t *pstVencStream)
 	int i = 0;
 	for(i = 0; i < pstVencStream->u32PackCount; ++i)
 	{
-		if(pstVencStream->pstPack[i].u32Len > stStreamPack_t::u32PackMaxLen)
+		if(pstVencStream->pstPack[i].u32Len > superMaxISize)
 		{
 			cerr << "pstVencStream->pstPack[" << i << "].u32Len is out of range." << endl;
 			break;
@@ -966,3 +1011,139 @@ void Venc::printStreamInfo(const MI_VENC_Stream_t *pstVencStream)
 	}
 }
 
+/*-----------------------------------------------------------------------------
+描--述：获取编码类型。
+参--数：vencChn VENC通道。
+返回值：成功，返回编码类型; 失败，返回E_MI_VENC_MODTYPE_VENC.
+注--意：
+-----------------------------------------------------------------------------*/
+MI_VENC_ModType_e Venc::getVesType(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn)
+{
+	cout << "Call Venc::getVesType()." << endl;
+
+	MI_VENC_ChnAttr_t stChnAttr;
+	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
+
+	// MI_S32 MI_VENC_GetChnAttr(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr);
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_VENC_GetChnAttr(vencDev, vencChn, &stChnAttr);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_GetChnAttr() in Venc::getVesType(), errno = " << s32Ret << endl;
+		return E_MI_VENC_MODTYPE_VENC;
+	}
+
+	cout << "Call Venc::getVesType() end." << endl;
+	return stChnAttr.stVeAttr.eType;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：设置编码类型。
+参--数：vencChn VENC通道；vesType 编码类型
+返回值：成功，返回0; 失败，错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+int Venc::setVesType(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ModType_e vesType)
+{
+	cout << "Call Venc::setVesType()." << endl;
+
+	MI_VENC_ChnAttr_t stChnAttr;
+	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
+
+	// MI_S32 MI_VENC_GetChnAttr(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr);
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_VENC_GetChnAttr(vencDev, vencChn, &stChnAttr);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_GetChnAttr() in Venc::setVesType(), errno = " << s32Ret << endl;
+		return s32Ret;
+	}
+
+	stChnAttr.stVeAttr.eType = vesType;
+	s32Ret = MI_VENC_SetChnAttr(vencDev, vencChn, &stChnAttr);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_SetChnAttr() in Venc::setVesType(), errno = " << s32Ret << endl;
+		return s32Ret;
+	}
+
+	cout << "Call Venc::setVesType() end." << endl;
+	return 0;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：获取编码宽高。
+参--数：vencChn VENC通道。
+返回值：成功，返回0; 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+int Venc::getResolution(MI_VENC_DEV vencDev, MI_VENC_CHN vencCh, int *pWidth, int *pHeight)
+{
+	cout << "Call Venc::getResolution()." << endl;
+
+	MI_VENC_ChnAttr_t stChnAttr;
+	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
+
+	// MI_S32 MI_VENC_GetChnAttr(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr);
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_VENC_GetChnAttr(vencDev, vencCh, &stChnAttr);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_GetChnAttr() in Venc::getResolution(), errno = " << s32Ret << endl;
+		return s32Ret;
+	}
+
+	*pWidth = stChnAttr.stVeAttr.stAttrH264e.u32PicWidth;
+	*pHeight = stChnAttr.stVeAttr.stAttrH264e.u32PicHeight;
+
+	cout << "Call Venc::getResolution() end." << endl;
+	return 0;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：设置编码宽高。
+参--数：vencChn VENC通道。
+返回值：成功，返回0; 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+int Venc::setResolution(MI_VENC_DEV vencDev, MI_VENC_CHN vencCh, int width, int height)
+{
+	cout << "Call Venc::setResolution()." << endl;
+	cout << "Call Venc::setResolution() end." << endl;
+	return 0;
+}
+
+#if 0
+/*-----------------------------------------------------------------------------
+描--述：通道是否存在。
+参--数：vencChn VENC通道。
+返回值：1, 通道存在；0, 通道不存在；
+注--意：
+-----------------------------------------------------------------------------*/
+int Venc::isChannelExists(MI_VENC_CHN vencCh)
+{
+	cout << "Call Venc::isChannelExists()." << endl;
+	MI_S32 s32Ret = 0;
+	MI_U32 u32Devid = 0;
+	s32Ret = MI_VENC_GetChnDevid(vencCh, &u32Devid);
+	if(0 == s32Ret)		// 正常返回，channel 存在。
+	{
+		cout << "Call Venc::isChannelExists() end." << endl;
+		return 1;
+	}
+	else if(MI_ERR_VENC_UNEXIST == s32Ret)
+	{
+		cout << "Call Venc::isChannelExists() end." << endl;
+		return 0;
+	}
+	else
+	{
+		cerr << "Fail to call MI_VENC_GetChnDevid() in Venc::isChannelExists(). "
+		<< "s32Ret = " << s32Ret << endl;
+		return 0;
+	}
+
+	cout << "Call Venc::isChannelExists() end." << endl;
+	return 0;
+}
+#endif

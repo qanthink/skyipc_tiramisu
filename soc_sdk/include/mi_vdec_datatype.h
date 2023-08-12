@@ -230,6 +230,26 @@ typedef struct MI_VDEC_CropCfg_s
     MI_SYS_WindowRect_t stRect; /* Crop region */
 } MI_VDEC_CropCfg_t;
 
+typedef struct MI_VDEC_DispFrame_s
+{
+    MI_SYS_FrameTileMode_e  eTileMode;      // tile mode
+    MI_SYS_PixelFormat_e    ePixelFormat;   // pixel format
+    MI_SYS_CompressMode_e   eCompressMode;  // compress mode
+    MI_SYS_FrameScanMode_e  eFrameScanMode; // frame scan mode
+    MI_SYS_FieldType_e      eFieldType;     // Field type: Top, Bottom, Both
+
+    MI_PHY phyAddr[2];                      // phyAddr[0]:luma buffer addr, phyAddr[1]:chroma buffer addr.
+                                            // Notice that it is miu bus addr but not cpu bus addr.
+    MI_U32 u32Stride[2];                    // u32Stride[0]:luma buffer stride, u32Stride[1]:chroma buffer stride.
+    MI_U32 u32BufSize[2];                   // u32BufSize[0]:luma buffer size, u32BufSize[1]:chroma buffer size.
+    MI_U16 u16Width;                        // width
+    MI_U16 u16Height;                       // hight
+    MI_S32 s32Idx;                          // index used by vdec disp_queue
+    MI_U32 u32DecFlag;                      // for internal usage
+
+    MI_SYS_WindowRect_t     stCropWindow;   // crop window info
+} MI_VDEC_DispFrame_t;
+
 #ifdef __cplusplus
 }
 #endif

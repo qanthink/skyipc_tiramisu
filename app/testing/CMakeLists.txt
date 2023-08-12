@@ -1,25 +1,35 @@
-#aux_source_directory(. DIR_APP_SRC)
+aux_source_directory(. DIR_APP_SRC)
 
-add_library(testing ${DIR_APP_SRC} testing.cpp)
+add_library(testing ${DIR_APP_SRC})
 
 include_directories(
+	../system/sensor
+	../system/vif
+	../system/vpe
+	../system/isp
 	../system/venc
+	../system/sys
 	../system/audio_ai
 	../system/audio_ao
 	../system/rgn
 	../system/rgn/st_rgn
-	../aac
-	../aad
-	../avtp
-	../wifi
-	../wifi/include
+	../system/common
+	../system/ircut
+	#../aac
+	#../aad
+	#../avtp
+	#../wifi
+	#../wifi/include
 	../ffmpeg
-	../queue
+	../mylib/myfifo
+	../mylib/myqueue
 	../live555rtsp
-	../spipanel
-	../ethernet
-	../sky_avtp
+	#../spipanel
+	#../ethernet
+	#../sky_avtp
+	../../soc_sdk/include/isp
 )
 
-target_link_libraries(testing aac aad ai ao)
+target_link_libraries(testing 
+)
 

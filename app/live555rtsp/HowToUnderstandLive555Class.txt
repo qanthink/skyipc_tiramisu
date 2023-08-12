@@ -1,0 +1,85 @@
+1. 通过自己实现H.264、H.265、MJPEG推流，发现Live555 来来回回就那么几个基类，然后就是继承。
+现在想更加深入理解并记住几个类。
+
+
+2.BasicUsageEnvironment
+可以理解为控制台应用程序，处理输入、输出事件的，里面用了select().
+
+UsageEnvironment* mEnv = NULL;
+TaskScheduler* mScheduler = NULL;
+mScheduler = BasicTaskScheduler::createNew();
+mEnv = BasicUsageEnvironment::createNew(*mScheduler);
+
+
+3.UsageEnvironment
+用于调度延迟时间，为异步读取事件分配处理方案、输出错误信息、警告等。
+
+UsageEnvironment& mEnv = pRtspServer->envir();
+mEnv << "Play this stream using the URL \"" << url << "\"\n";
+
+
+4.groupsock
+与Socket 套接字的单播、多播相关。
+
+5.liveMedia
+该目录中有一系列类，基类是Medium.
+这些类针对不同的流媒体类型和编码，这是Live555的核心部分。
+我们可以看到，H.264、H.265、JPEG 的基类都是Medium.
+
+class MediaSource: 						public Medium
+class ServerMediaSession: 				public Medium
+class MPEG2TransportStreamIndexFile: 	public Medium
+class OggFileServerDemux: 				public Medium
+
+class H264or5VideoStreamFramer: 	public MPEGVideoStreamFramer
+class MPEGVideoStreamFramer: 		public FramedFilter
+class FramedFilter: 				public FramedSource
+class FramedSource: 				public MediaSource
+class MediaSource:					public Medium
+
+6.liveMedia的运转
+1）Source和Sink
+
+	Source 是数据的生产者，例如从从文件流、字节流中读取数据。MediaSource是所有Source的基类。
+	Sink 是数据的消费者，例如把接收到的数据存到本地。MediaSink是所有Sink的基类。
+
+2）数据流
+	Source -> Source(filters) -> Sink
+
+	Source 可以传递，从其它Source 接收数据的source 也叫做filters.
+	数据接收的终点是Sink 类，Sink 类通过实现纯虚函数continuePlaying() 来消费数据。
+	通常情况下，continuePlaying 调用getNextFrame 来为Source 设置数据缓冲区，处理数据的回调函数等。常遇到，H.26x、MJPEG
+	不通常的情况下调用processBuffer，从接下来的socket writable或incoming data处理数据。不常遇到。
+
+3）基于liveMedia的应用程序的控制流程
+
+基于liveMedia的应用程序是事件驱动的，使用如下方式的循环：
+
+while(1)
+{
+    //查找度网络句柄的列表和延迟队列，发现需要完成的任务；
+	//完成任务
+}
+
+	对于每个sink，在进入这个循环之前，应用程序通常调用下面的方法来启动需要做的生成任务： SinkObject->startPlaying()。
+	任何时候，一个Module 需要获取数据都通过调用刚好在它之前的那个Module 的getNextFrame() 方法。
+
+
+补充6:
+liveMedia模块
+实现RTSP Server的类，还包含了针对不同流媒体类型（如TS流、PS流等）编码的类。
+在该库中，基类是Medium，层次关系非常清晰。
+在该库中，有几个很重要的类，如:
+RTSPServer、ServerMediaSession、RTPSink、RTPInterface、FramedSource等。
+
+RTSPClient：该类实现RTSP请求的发送和响应的解析，同时根据解析的结果创建对应的RTP会话。
+MediaSession：用于表示一个RTP会话，一个MediaSession可能包含多个子会话(MediaSubSession)，子会话可以是音频子会话、视频子会话等。
+RTCPInstance：该类实现RTCP协议的通信。
+Source和Sink：这两个概念类似DirectShow中的Filter。
+			Source抽象了数据源，比如通过RTP读取数据。
+			Sink是数据消费者的抽象，比如把接收到数据存储到文件，该文件就是一个Sink.
+			数据的流动可能经过多个Source和Sink。
+			MediaSink是各种类型的Sink的基类，MediaSource是各种类型Source的基类，各种类型的流媒体格式和编码的支持即是通过对这两个类的派生实现的。
+			Source和Sink通过RTP子会话(MediaSubSession)联系在一起。
+
+

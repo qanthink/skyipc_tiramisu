@@ -8,6 +8,7 @@ xxx版权所有。
 
 #include "mi_ai.h"
 
+#define USE_AED 0
 // Do not use typedef
 struct stAIFrame_t
 {
@@ -27,7 +28,7 @@ public:
 	int enable();
 	int disable();	
 
-	int setVolume(int volumeDb);	// 设置音量
+	int setVolume(int volumeDb);		// 设置音量
 	int recvStream(stAIFrame_t *pAudioFrame);		// 获取一帧音频数据
 	
 	int enableDev();					// 启用AI 设备
@@ -57,8 +58,11 @@ private:
 	const MI_AUDIO_BitWidth_e eBitWidth = E_MI_AUDIO_BIT_WIDTH_16;		// 位宽
 	const MI_AUDIO_SampleRate_e eSample = E_MI_AUDIO_SAMPLE_RATE_16000;	// 采样率
 	const MI_AUDIO_SoundMode_e eSoundmode = E_MI_AUDIO_SOUND_MODE_MONO;	// 单声道和立体声。
-	const unsigned int u32PtNumPerFrm = 160;	// 每一帧的采样点数，可以不必128 字对齐
-	//const unsigned int u32PtNumPerFrm = 1024;	// 每一帧的采样点数，可以不必128 字对齐
-	const int defVol = 19;				// 默认音量
+	
+	/* 2023.4.16 遇到问题，官方原厂SDK 中使用u32PtNumPerFrm = 160, 但prog_audio_all_test_case 中为100.
+	   然后文档中又建议设置为128*1, 128*2...128*N. 三处都不对齐 */
+	//const unsigned int u32PtNumPerFrm = 160;		// 每一帧的采样点数，可以不必128 字对齐
+	const unsigned int u32PtNumPerFrm = 128 * 8;	// 每一帧的采样点数，可以不必128 字对齐
+	const int volume = 10;							// 默认音量
 };
 

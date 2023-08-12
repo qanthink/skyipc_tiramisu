@@ -8,330 +8,332 @@ xxx版权所有。
 	本文件基于live555库，开发了rtspserver.
 */
 
-/*
-	=================RTSP Server推本地流的方法=================
-	第一步：
-	在程序的开始处，创建任务调度器、使用环境、RTSP服务器；
-	在结束处，开始任务调度。
-	
-	TaskScheduler *scheduler = BasicTaskScheduler::createNew();
-	UsageEnvironment *env = BasicUsageEnvironment::createNew(*scheduler);
-	RTSPServer *rtspServer = RTSPServer::createNew(*env, ourPort);
-	...
-	env->taskScheduler().doEventLoop();
-	
-	第二步（可选项）：
-	打印服务器地址信息。
-	*env << rtspServer->rtspURLPrefix();
-
-	第三步：
-	创建ServerMediaSession服务器主会话，指定会话名称，并添加视频子会话和音频子会话。
-	ServerMediaSession *sms = ServerMediaSession::createNew(*env, "sessionName");
-	sms->addSubsession(H265VideoFileServerMediaSubsession::createNew(*env, "test.265", reuseFirstSource));
-
-	第四步：
-	将主会话加入RTSP Server.
-	rtspServer->addServerMediaSession(sms);
-*/
-
-/*
-	======================= 熟悉live555的类 =======================
-	参考本路径下"classOnDemandServerMediaSubsession__inherit__graph.png",
-	或"http://www.live555.com/liveMedia/doxygen/html/classOnDemandServerMediaSubsession.html".
-	有如下继承关系：
-	Medium <-- ServerMediaSession <-- OnDemandServerMediaSubsession <-- FileServerMediaSubsession <-- H265VideoFileServerMediaSubsession
-	
-	重点关注 OnDemandServerMediaSubsession类，该类是ServermediaSubSession 的一个中间实现，定义了一些点播服务的特性。
-	我们推文件流、实时流的方法，都要通过继承该类来实现。
-	参考代码推文件流，继承该类后定义的新类是H265VideoFileServerMediaSubsession.
-	我们推实时流，继承该类后定义的新类为H265VideoLiveServerMediaSubssion.
-*/
-
-/*
-	学习资料：
-	https://www.jianshu.com/p/60fcc41c2369
-	https://blog.csdn.net/marcosun_sw/article/details/86149356
-	https://www.cnblogs.com/weixinhum/p/3916676.html	最有用！！！
-*/
-
 #include "live555rtsp.h"
 #include <iostream>
+#include <thread>
+
+#include "../system/venc/venc.h"
+#include "JPEGVideoServerMediaSubsession.hh"
 
 using namespace std;
 
-Live555Rtsp::Live555Rtsp()
+void *openStream(char const *szStreamName)
 {
-	enable();
-	bEnable = true;
+	cout <<"openStream" << endl;
+	return NULL;
 }
 
-Live555Rtsp::~Live555Rtsp()
+int closeStream(void *arg)
 {
-	bEnable = false;
-	disable();
-}
-
-/*  ---------------------------------------------------------------------------
-描--述：VENC 模块获取实例的唯一入口
-参--数：
-返回值：
-注--意：
------------------------------------------------------------------------------*/
-Live555Rtsp* Live555Rtsp::getInstance()
-{
-	static Live555Rtsp live555Rtsp;
-	return &live555Rtsp;
-}
-
-/* ---------------------------------------------------------------------------
-描--述：
-参--数：
-返回值：
-注--意：
------------------------------------------------------------------------------*/
-int Live555Rtsp::enable()
-{
-	cout << "Call Live555Rtsp::enable()." << endl;
-
-	if(bEnable)
-	{
-		cerr << "Fail to call Live555Rtsp::enable(). Module has been initialized." << endl;
-		return -1;
-	}
-
-	pTh = make_shared<thread>(thRouteLiveStream, this);
-	bEnable = true;
-	
-	cout << "Call Live555Rtsp::enable() end." << endl;
+	cout <<"closeStream" << endl;
 	return 0;
 }
 
+int videoReadStream(unsigned char *ucpBuf, int BufLen, struct timeval *p_Timestamp)
+{
+	Venc *pVenc = Venc::getInstance();
+	MI_VENC_Stream_t stStream;
+	int s32Ret = 0;
+	memset(&stStream, 0, sizeof(MI_VENC_Stream_t));
+	pVenc->rcvStream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencJpegChn, &stStream);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call pVenc->rcvStream(). s32Ret = " << s32Ret << endl;
+		return 0;
+	}
+	if(0 == stStream.u32PackCount)
+	{
+		cerr << "Fail to call pVenc->rcvStream(). u32PackCount = " << stStream.u32PackCount << endl;
+		return 0;
+	}
+	
+	memcpy((char *)ucpBuf, stStream.pstPack[0].pu8Addr, stStream.pstPack[0].u32Len);
+	s32Ret = MI_VENC_ReleaseStream(0, Venc::vencJpegChn, &stStream);
+	//cout << s32Ret << endl;
+	
+	return stStream.pstPack[0].u32Len;
+}
+
+using namespace std;
+
 /*-----------------------------------------------------------------------------
-描--述：
+描--述：打印流信息。
 参--数：
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int Live555Rtsp::disable()
+static void announceStream(RTSPServer* pRtspServer, ServerMediaSession* sms, 
+								char const* streamName, char const* inputFilePath)
 {
-	cout << "Call Live555Rtsp::disable()." << endl;
-
-	
-	bRunning = false;
-	condVar.notify_all();
-	if(NULL != rtspServer)
-	{
-		cout << "close(RTSPServer)." << endl;
-		Medium::close(rtspServer);
-		rtspServer = NULL;
-	}
-	bEnable = false;
-
-	cout << "Call Live555Rtsp::disable() end." << endl;
-	return 0;
-}
-
-/*-----------------------------------------------------------------------------
-描--述：显示RTSP流信息。
-参--数：rtspServer 指向RTSP服务器对象的指针；sms 指向会话的指针；streamName 流的名称
-返回值：无
-注--意：
------------------------------------------------------------------------------*/
-void Live555Rtsp::announceStream(RTSPServer* rtspServer, ServerMediaSession* sms,char const* streamName)
-{
-	char *url = rtspServer->rtspURL(sms);
-	UsageEnvironment &env = rtspServer->envir();
-	env << streamName << "\n";
-	env << "Play this stream using the URL \"" << url << "\"\n";
+	char *url = pRtspServer->rtspURL(sms);
+	UsageEnvironment& mEnv = pRtspServer->envir();
+	mEnv << "\n\"" << streamName << "\" stream, from the file \"" << inputFilePath << "\"\n";
+	mEnv << "Play this stream using the URL \"" << url << "\"\n";
 	delete[] url;
 }
 
 /*-----------------------------------------------------------------------------
-描--述：显示RTSP流信息。
-参--数：rtspServer 指向RTSP服务器对象的指针；sms 指向会话的指针；streamName 流的名称
-返回值：无
-注--意：
------------------------------------------------------------------------------*/
-int Live555Rtsp::sendH26xFrame(const unsigned char *const dataBuff, const unsigned int dataSize)
-{
-	//cout << "Call Live555Rtsp::sendH26xFrame()." << endl;
-	if(!bRunning)
-	{
-		return -1;
-	}
-	
-	std::unique_lock<std::mutex> lock(mutex);
-	mDataBuff = dataBuff;
-	mDataSize = dataSize;
-	lock.unlock();
-	condVar.notify_one();
-
-	//cout << "End of call Live555Rtsp::sendH26xFrame()." << endl;	
-	return 0;
-}
-
-/*-----------------------------------------------------------------------------
-描--述：显示RTSP流信息。
-参--数：rtspServer 指向RTSP服务器对象的指针；sms 指向会话的指针；streamName 流的名称
-返回值：无
-注--意：
------------------------------------------------------------------------------*/
-int Live555Rtsp::sendH26xFrame_block(const unsigned char *const dataBuff, const unsigned int dataSize)
-{
-	//cout << "Call Live555Rtsp::sendH26xFrame()." << endl;
-	if(!bRunning)
-	{
-		return -1;
-	}
-
-	std::unique_lock<std::mutex> lock(mutex);
-	while(bRunning && 0 != mDataSize)
-	{
-		condVar.wait(lock);
-	}
-	mDataBuff = dataBuff;
-	mDataSize = dataSize;
-	lock.unlock();
-	condVar.notify_one();
-
-	//cout << "End of call Live555Rtsp::sendH26xFrame()." << endl;	
-	return 0;
-}
-
-/*-----------------------------------------------------------------------------
-描--述：live555Rtsp 获取H.26X 数据。
+描--述：构造Live555RTSP服务器
 参--数：
-返回值：无
+返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int Live555Rtsp::recvH26xFrame(unsigned char *const dataBuff, const unsigned int dataSize)
+Live555Rtsp::Live555Rtsp()
 {
-	//cout << "Call Live555Rtsp::recvH26xFrame()." << endl;
-	std::unique_lock<std::mutex> lock(mutex);
-	while(bRunning && 0 == mDataSize)
+	cout << "Call Live555Rtsp::Live555Rtsp()." << endl;
+	mScheduler = BasicTaskScheduler::createNew();
+	mEnv = BasicUsageEnvironment::createNew(*mScheduler);
+
+	UserAuthenticationDatabase* authDB = NULL;
+	#if 0
+	// To implement client access control to the RTSP server, do the following:
+	authDB = new UserAuthenticationDatabase;
+	authDB->addUserRecord("username1", "password1"); // replace these with real strings
+	// Repeat the above with each <username>, <password> that you wish to allow access to the server.
+	#endif
+
+	pRtspServer = RTSPServer::createNew(*mEnv, mPort, authDB);
+	if(NULL == pRtspServer)
 	{
-		condVar.wait(lock);
+		*mEnv << "Failed to create RTSP server: " << mEnv->getResultMsg() << "\0";
+		return;
 	}
-	
-	int realSize = 0;
-	realSize = (dataSize > mDataSize) ? mDataSize : dataSize;
-	memcpy(dataBuff, mDataBuff, realSize);
-	mDataSize = 0;
-	lock.unlock();
 
-	//cout << "End of call Live555Rtsp::recvH26xFrame()." << endl;	
-	return realSize;
-}
+	#if 0
+	const char *descString = "Session streamed by \"testOnDemandRTSPServer\"";
 
-/*-----------------------------------------------------------------------------
-描--述：创建RTSP服务器推本地H265流。
-参--数：h265FilePath 本地265文件路径。
-返回值：无
-注--意：
------------------------------------------------------------------------------*/
-void *createRtspServerBy265LocalFile(void *h265FilePath)
-{
-	OutPacketBuffer::maxSize = 2880000;	// for debug
-	
-	// step1: 创建任务调度器、使用环境、RTSP服务器。
-	TaskScheduler *scheduler = BasicTaskScheduler::createNew();
-	UsageEnvironment *env = BasicUsageEnvironment::createNew(*scheduler);
-	Port ourPort = 544;
-	RTSPServer *rtspServer = RTSPServer::createNew(*env, ourPort);
+	// Set up each of the possible streams that can be served by the
+	// RTSP server.  Each such stream is implemented using a
+	// "ServerMediaSession" object, plus one or more
+	// "ServerMediaSubsession" objects for each audio/video substream.
 
-	// step2: 打印Server IP address.
-	*env << "RTSP Address:\n"
-		<< rtspServer->rtspURLPrefix() << "sessionName\n";
+	// A H.264 video elementary stream:
+	const char *streamName = "stream";
+	ServerMediaSession* sms = ServerMediaSession::createNew(*mEnv, streamName, streamName, descString);
 	
-	// step3: 创建服务器会话，指定推流的文件，并添加视频子会话。
 	Boolean reuseFirstSource = false;
-	ServerMediaSession *sms = ServerMediaSession::createNew(*env, "localfile");	// 注意第二个参数"localfile"不要用大写字母。
-	sms->addSubsession(H265VideoFileServerMediaSubsession::createNew(*env, (const char *)h265FilePath, reuseFirstSource));
-
-	// step4: 将会话加入RTPS Server.
-	rtspServer->addServerMediaSession(sms);
-	cout << "File name = " << (const char *)h265FilePath << endl;
-	//announceStream(rtspServer, sms, main_stream);
-	env->taskScheduler().doEventLoop();
-	return (void *)0;
-}
-
-/*-----------------------------------------------------------------------------
-描--述：
-参--数：
-返回值：无
-注--意：
------------------------------------------------------------------------------*/
-void *Live555Rtsp::thRouteLiveStream(void *arg)
-{
-	Live555Rtsp *pThis = (Live555Rtsp *)arg;
-	return pThis->routeLiveStream(NULL);
-}
-
-/*-----------------------------------------------------------------------------
-描--述：
-参--数：
-返回值：无
-注--意：
------------------------------------------------------------------------------*/
-void *Live555Rtsp::routeLiveStream(void *arg)
-{
-	bRunning = true;
-
-	cout << "Call Live555Rtsp::routeLiveStream()." << endl;
-	OutPacketBuffer::maxSize = 128 * 1024;	// for debug
+	sms->addSubsession(H265VideoFileServerMediaSubsession::createNew(*mEnv, filePath, reuseFirstSource));
+	pRtspServer->addServerMediaSession(sms);
+	announceStream(pRtspServer, sms, streamName, filePaht);
 	
-	// 循环事件中需要使用BasicTaskScheduler0 类型的调度对象。
-	BasicTaskScheduler0* basicscheduler = NULL;
-	basicscheduler = BasicTaskScheduler::createNew();
+	mEnv->taskScheduler().doEventLoop(); // does not return
+	#endif
 
-	// 创建RTSP服务器的过程中使用的是TaskScheduler 类型的任务调度对象。故而需要类型转换。
-	TaskScheduler* scheduler = NULL;
-	scheduler = basicscheduler;
-
-	// 创建RTSP环境。
-	UsageEnvironment* env = NULL;
-	env = BasicUsageEnvironment::createNew(*scheduler);
-
-	// 设置端口号
-	Port ourPort = 554;		// Port为0意味着让RTSP服务器自己选择端口。
-	UserAuthenticationDatabase* authDB = NULL;	// 无认证。
-	rtspServer = RTSPServer::createNew(*env, ourPort, authDB);
-	if(NULL == rtspServer)
-	{
-		*env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
-		return (void *)-1;
-	}
-
-	// 建立名为streamName的RTSP流。
-	char const* streamName = "livestream";
-	ServerMediaSession* sms = ServerMediaSession::createNew(*env, streamName);
-
-	// 添加会话。
-	Boolean reuseFirstSource = true;
-	sms->addSubsession(H265VideoLiveServerMediaSubssion::createNew(*env, reuseFirstSource));
-	rtspServer->addServerMediaSession(sms);
-
-	// 打印RTSP服务器信息，流信息；然后执行循环事件。
-	announceStream(rtspServer, sms, streamName);
-	doEventLoop(basicscheduler);
-
-	cout << "Call Live555Rtsp::routeLiveStream() end." << endl;
-	return (void *)0;
+	cout << "Call Live555Rtsp::Live555Rtsp() end." << endl;
 }
 
 /*-----------------------------------------------------------------------------
-描--述：
+描--述：析构Live555RTSP服务器
 参--数：
-返回值：无
+返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-void Live555Rtsp::doEventLoop(BasicTaskScheduler0 *Basicscheduler)
+Live555Rtsp::~Live555Rtsp()
 {
-	bRunning = true;
-	while(bRunning)
+	cout << "Call Live555Rtsp::~Live555Rtsp()." << endl;
+
+	auto it = streamMap.begin();
+	for(it = streamMap.begin(); streamMap.end() != it; ++it)
 	{
-		Basicscheduler->SingleStep();
+		cout << "Remove " << it->first;
+		//it->second->deleteAllSubsessions();
+		//pRtspServer->deleteServerMediaSession(it->first.c_str());
+		pRtspServer->deleteServerMediaSession(it->second);
+		streamMap.erase(it);
 	}
+	#if 1
+
+	if(NULL != pRtspServer)
+	{
+		mEnv = NULL;
+		//sleep(0.125);
+		//sleep(0.625);
+		mScheduler = NULL;
+		pRtspServer = NULL;
+	}
+	#endif
+	cout << "Call Live555Rtsp::~Live555Rtsp() end." << endl;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：增加服务器子会话
+参--数：filePath, 本地文件名；streamName, 网络流的名字; emEncType, 编码类型26x
+返回值：成功，返回0. 失败，返回错误码：
+        -1, 入参错误；
+        -2, RTSP 服务器未建立。
+        -3, 编码类型未识别。
+        -4, 会话已存在。
+注--意：
+-----------------------------------------------------------------------------*/
+int Live555Rtsp::addStream(const char *filePath, const char *streamName, emEncType_t emEncType)
+{
+	cout << "Call Live555Rtsp::addStream()." << endl;
+	if(NULL == filePath || NULL == streamName)
+	{
+		cerr << "Fail to call Live555Rtsp::addStream(). Argument has null value." << endl;
+		return -1;
+	}
+
+	if(NULL == mEnv || NULL == mScheduler || NULL == pRtspServer)
+	{
+		cerr << "Fail to call Live555Rtsp::addStream(). Rtsp server is not created." << endl;
+		return -2;
+	}
+
+	const char *descString = "rtsp description string";	// 不清楚干嘛的。
+	
+	// Set up each of the possible streams that can be served by the
+	// RTSP server.  Each such stream is implemented using a
+	// "ServerMediaSession" object, plus one or more
+	// "ServerMediaSubsession" objects for each audio/video substream.
+
+	/* 超大I 帧Size. 解决 The input frame data was too large for our buffer size (60972). */
+	OutPacketBuffer::maxSize = 512 * 1024;
+
+	#if 0
+	// 创建媒体会话。
+	ServerMediaSession* sms = ServerMediaSession::createNew(*mEnv, streamName, streamName, descString);
+
+	// 增加子会话。
+	Boolean reuseFirstSource = False;
+	if(emEncTypeH264 == emEncType)
+	{
+		sms->addSubsession(H264VideoFileServerMediaSubsession::createNew(*mEnv, filePath, reuseFirstSource));
+	}
+	else if(emEncTypeH265 == emEncType)
+	{
+		sms->addSubsession(H265VideoFileServerMediaSubsession::createNew(*mEnv, filePath, reuseFirstSource));
+	}
+	else if(emEncTypeJpeg == emEncType)
+	{
+		sms->addSubsession(JPEGVideoServerMediaSubsession::createNew(*mEnv, filePath, reuseFirstSource));
+	}
+	else
+	{
+		cerr << "In Live555Rtsp::addStream(), can not recognize emEncType." << endl;
+		return -3;
+	}
+
+	// 讲子会话加入到RTSP 服务器。
+	pRtspServer->addServerMediaSession(sms);
+
+	// 打印流信息。
+	announceStream(pRtspServer, sms, streamName, (const char *)filePath);
+	#else
+	// 创建媒体会话。
+	ServerMediaSession* sms = ServerMediaSession::createNew(*mEnv, streamName, streamName, descString);
+	// 增加子会话。
+	Boolean reuseFirstSource = False;
+	if(emEncTypeH264 == emEncType)
+	{
+		sms->addSubsession(H264VideoFileServerMediaSubsession::createNew(*mEnv, filePath, reuseFirstSource));
+	}
+	else if(emEncTypeH265 == emEncType)
+	{
+		sms->addSubsession(H265VideoFileServerMediaSubsession::createNew(*mEnv, filePath, reuseFirstSource));
+	}
+	else if(emEncTypeJpeg == emEncType)
+	{
+		sms->addSubsession(JPEGVideoServerMediaSubsession::createNew(*mEnv, filePath, reuseFirstSource));
+	}
+	else
+	{
+		cerr << "In Live555Rtsp::addStream(), can not recognize emEncType." << endl;
+		return -3;
+	}
+
+	//int i = 0;
+	auto streamPair = make_pair(streamName, sms);
+	pair<map<string, ServerMediaSession*>::iterator, bool> ret;
+	ret = streamMap.insert(streamPair);
+	if(false == ret.second)
+	{
+		cerr << "Fail to call insert() in Live555Rtsp::addStream(). ServerMediaSession exist." << endl;
+		return -4;
+	}
+
+	// 讲子会话加入到RTSP 服务器。
+	pRtspServer->addServerMediaSession(sms);
+
+	// 打印流信息。
+	announceStream(pRtspServer, sms, streamName, (const char *)filePath);
+
+	#endif
+
+	// 进入循环事件。
+	//mEnv->taskScheduler().doEventLoop();	// no return;
+
+	#if 1
+	// Lambda表达式，捕捉值[=]。详见：https://blog.csdn.net/zhang_si_hang/article/details/127117260
+	//thread th([=](){sessionLoopRoute(filePath, streamName);});
+	//th.detach();
+	#endif
+	
+	cout << "Call Live555Rtsp::addStream() end." << endl;
+	return 0;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：删除服务器子会话
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
+int Live555Rtsp::removeStream(const char *streamName)
+{
+	cout << "Call Live555Rtsp::removeStream()." << endl;
+	pRtspServer->deleteServerMediaSession(streamName);
+	streamMap.erase(streamName);
+	cout << "Call Live555Rtsp::removeStream() end." << endl;
+	return 0;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：服务器子会话线程
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
+void Live555Rtsp::eventLoop()
+{
+	cout << "Call Live555Rtsp::eventLoop()." << endl;
+
+	#if 0
+	const char *descString = "Session streamed by \"testOnDemandRTSPServer\"";	// 不清楚干嘛的。
+
+	// Set up each of the possible streams that can be served by the
+	// RTSP server.  Each such stream is implemented using a
+	// "ServerMediaSession" object, plus one or more
+	// "ServerMediaSubsession" objects for each audio/video substream.
+
+	// 创建媒体会话。
+	ServerMediaSession* sms = ServerMediaSession::createNew(*mEnv, streamName, streamName, descString);
+
+	// 增加子会话。
+	Boolean reuseFirstSource = False;
+	sms->addSubsession(H265VideoFileServerMediaSubsession::createNew(*mEnv, filePath, reuseFirstSource));
+
+	// 讲子会话加入到RTSP 服务器。
+	pRtspServer->addServerMediaSession(sms);
+
+	// 打印流信息。
+	announceStream(pRtspServer, sms, streamName, filePath);
+
+	// 进入循环事件。
+	//mEnv->taskScheduler().doEventLoop();	// no return;
+	#else
+	if(NULL == mEnv || NULL == mScheduler || NULL == pRtspServer)
+	{
+		cerr << "Fail to call Live555Rtsp::eventLoop(). Rtsp server is not created." << endl;
+		return;
+	}
+	else
+	{
+		mEnv->taskScheduler().doEventLoop();	// no return;
+	}
+	#endif
+	
+	cout << "Call Live555Rtsp::eventLoop() end." << endl;
+	return;
 }
 
