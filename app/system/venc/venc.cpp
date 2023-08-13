@@ -64,11 +64,71 @@ MI_S32 Venc::disable()
 	cout << "Call Venc::disable()." << endl;
 
 	bEnable = false;
-	
-	//stopRecvPic(vencSubChn);
-	//destroyChn(vencSubChn);
-	//stopRecvPic(vencMainChn);
-	//destroyChn(vencMainChn);
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_VENC_StopRecvPic(MI_VENC_DEV_ID_JPEG_0, vencJpegChn);
+	if(0 != s32Ret)
+	{
+		cerr << "vencChn = " << vencJpegChn << endl;
+		cerr << "Fail to call MI_VENC_StopRecvPic() in Venc::disable(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	s32Ret = MI_VENC_StopRecvPic(MI_VENC_DEV_ID_H264_H265_0, vencSubChn);
+	if(0 != s32Ret)
+	{
+		cerr << "vencChn = " << vencSubChn << endl;
+		cerr << "Fail to call MI_VENC_StopRecvPic() in Venc::disable(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	s32Ret = MI_VENC_StopRecvPic(MI_VENC_DEV_ID_H264_H265_0, vencMainChn);
+	if(0 != s32Ret)
+	{
+		cerr << "vencChn = " << vencMainChn << endl;
+		cerr << "Fail to call MI_VENC_StopRecvPic() in Venc::disable(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	s32Ret = MI_VENC_DestroyChn(MI_VENC_DEV_ID_JPEG_0, vencJpegChn);
+	if(0 != s32Ret)
+	{
+		cerr << "vencChn = " << vencJpegChn << endl;
+		cerr << "Fail to call MI_VENC_DestroyChn() in Venc::disable(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	s32Ret = MI_VENC_DestroyChn(MI_VENC_DEV_ID_H264_H265_0, vencSubChn);
+	if(0 != s32Ret)
+	{
+		cerr << "vencChn = " << vencSubChn << endl;
+		cerr << "Fail to call MI_VENC_DestroyChn() in Venc::disable(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	s32Ret = MI_VENC_DestroyChn(MI_VENC_DEV_ID_H264_H265_0, vencMainChn);
+	if(0 != s32Ret)
+	{
+		cerr << "vencChn = " << vencMainChn << endl;
+		cerr << "Fail to call MI_VENC_DestroyChn() in Venc::disable(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	s32Ret = MI_VENC_DestroyDev(MI_VENC_DEV_ID_JPEG_0);
+	if(0 != s32Ret)
+	{
+		cerr << "vencDev = " << MI_VENC_DEV_ID_JPEG_0 << endl;
+		cerr << "Fail to call MI_VENC_DestroyDev() in Venc::disable(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	s32Ret = MI_VENC_DestroyDev(MI_VENC_DEV_ID_H264_H265_0);
+	if(0 != s32Ret)
+	{
+		cerr << "vencDev = " << MI_VENC_DEV_ID_H264_H265_0 << endl;
+		cerr << "Fail to call MI_VENC_DestroyDev() in Venc::disable(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
 
 	cout << "Call Venc::disable() end." << endl;
 	return 0;

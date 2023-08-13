@@ -127,7 +127,37 @@ int Isp::enable()
 
 int Isp::disable()
 {
-	cout << "Call Isp::disable() end." << endl;
+	cout << "Call Isp::disable()." << endl;
+	
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_ISP_DisableOutputPort(ispDevId, ispChnId, ispPortId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_DisableOutputPort() in Isp::disable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	s32Ret = MI_ISP_StopChannel(ispDevId, ispChnId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_StopChannel() in Isp::disable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	s32Ret = MI_ISP_DestroyChannel(ispDevId, ispChnId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_DestroyChannel() in Isp::disable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	s32Ret = MI_ISP_DestoryDevice(ispDevId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_DestoryDevice() in Isp::disable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+	
 	cout << "Call Isp::disable() end." << endl;
 	return 0;
 }

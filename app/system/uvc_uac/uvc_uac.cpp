@@ -21,22 +21,22 @@ using namespace std;
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-UvcUac* UvcUac::getInstance()
+UacUvc* UacUvc::getInstance()
 {
-	static UvcUac uacUvc;
+	static UacUvc uacUvc;
 	return &uacUvc;
 }
 
-UvcUac::UvcUac()
+UacUvc::UacUvc()
 {
-	cout << "Call UvcUac::UvcUac()." << endl;
-	cout << "Call UvcUac::UvcUac() end." << endl;
+	cout << "Call UacUvc::UacUvc()." << endl;
+	cout << "Call UacUvc::UacUvc() end." << endl;
 }
 
-UvcUac::~UvcUac()
+UacUvc::~UacUvc()
 {
-	cout << "Call UvcUac::~UvcUac()." << endl;
-	cout << "Call UvcUac::~UvcUac() end." << endl;
+	cout << "Call UacUvc::~UacUvc()." << endl;
+	cout << "Call UacUvc::~UacUvc() end." << endl;
 }
 
 /*-----------------------------------------------------------------------------
@@ -483,9 +483,9 @@ static void UVC_ForceIdr(void *uvc)
 返回值：返回0.
 注--意：
 -----------------------------------------------------------------------------*/
-int UvcUac::startUvc()
+int UacUvc::startUvc()
 {
-	cout << "Call UvcUac::startUvc()." << endl;
+	cout << "Call UacUvc::startUvc()." << endl;
 	// step 1
 	MI_S32 trace_level = UVC_DBG_ERR;
 	ST_UVC_SetTraceLevel(trace_level);
@@ -523,7 +523,7 @@ int UvcUac::startUvc()
 	ST_UVC_CreateDev(stUvcDev.handle, &stUvcChAttr);
 	ST_UVC_StartDev(stUvcDev.handle);
 	
-	cout << "Call UvcUac::startUvc() end." << endl;
+	cout << "Call UacUvc::startUvc() end." << endl;
 	return 0;
 }
 
@@ -533,9 +533,9 @@ int UvcUac::startUvc()
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int UvcUac::stopUvc()
+int UacUvc::stopUvc()
 {
-	cout << "Call UvcUac::stopUvc()." << endl;
+	cout << "Call UacUvc::stopUvc()." << endl;
 
 	//Vpe *pVpe = Vpe::getInstance();
 	Venc *pVenc = Venc::getInstance();
@@ -552,7 +552,7 @@ int UvcUac::stopUvc()
 	ST_UVC_DestroyDev(stUvcDev.handle);
 	ST_UVC_Uninit(stUvcDev.handle);
 
-	cout << "Call UvcUac::stopUvc() end." << endl;
+	cout << "Call UacUvc::stopUvc() end." << endl;
 	return 0;
 }
 

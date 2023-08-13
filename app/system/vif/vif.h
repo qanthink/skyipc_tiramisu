@@ -19,8 +19,8 @@ private:
 	Vif& operator=(const Vif&);
 
 public:
-	const static MI_VIF_DEV vifDevID = 0;
-	const static MI_VIF_DEV vifChnID = 0;
+	const static MI_VIF_DEV vifDevId = 0;
+	const static MI_VIF_DEV vifChnId = 0;
 	const static MI_VIF_PORT vifPortId = 0;
 
 	MI_S32 enable();

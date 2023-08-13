@@ -104,7 +104,7 @@ int main(int argc, const char *argv[])
 
 	// ISP 初始化，并绑定前级VIF.
 	Isp *pIsp = Isp::getInstance();
-	pSys->bindVif2Isp(Vif::vifDevID, Isp::ispDevId, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+	pSys->bindVif2Isp(Vif::vifChnId, Isp::ispDevId, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 
 	// SCL 初始化，并绑定前级ISP.
 	Scl *pScl = Scl::getInstance();
@@ -359,7 +359,7 @@ int main(int argc, const char *argv[])
 	pIsp->closeIqServer();
 	#endif
 
-	cout << "Sleep()" << endl;
+	cout << "End of main(), sleep() for exit." << endl;
 	this_thread::sleep_for(chrono::milliseconds(500));
 	
 	return 0;

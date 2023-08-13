@@ -41,15 +41,15 @@ typedef struct{
 	ST_UvcSetting_Attr_T setting;
 }ST_UvcDev_t;
 
-class UvcUac{
+class UacUvc{
 public:
-	static UvcUac *getInstance();
+	static UacUvc *getInstance();
 
 private:
-	UvcUac();
-	~UvcUac();
-	UvcUac(const UvcUac&);
-	UvcUac& operator=(const UvcUac&);
+	UacUvc();
+	~UacUvc();
+	UacUvc(const UacUvc&);
+	UacUvc& operator=(const UacUvc&);
 
 public:
 	int startUvc();

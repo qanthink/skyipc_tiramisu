@@ -14,13 +14,17 @@ using namespace std;
 
 Scl::Scl()
 {
+	cout << "Call Scl::Scl()." << endl;
 	enable();
+	cout << "Call Scl::Scl() end." << endl;
 }
 
 Scl::~Scl()
 {
+	cout << "Call Scl::~Scl()." << endl;
 	disable();
 	bEnable = false;
+	cout << "Call Scl::~Scl() end." << endl;
 }
 
 /*-----------------------------------------------------------------------------
@@ -110,7 +114,40 @@ MI_S32 Scl::disable()
 {
 	cout << "Call Scl::disable()." << endl;
 
-	//disableChnPort(vifPort);
+	int i = 0;
+	MI_S32 s32Ret = 0;
+	for(i = 0; i < 6; ++i)	// tiramisu 平台，总共6个PORT.
+	{
+		s32Ret = MI_SCL_EnableOutputPort(sclDevId, sclChnId, i);
+		if(0 != s32Ret)
+		{
+			cerr << "PortID = " << i <<endl;
+			cerr << "Fail to call MI_SCL_EnableOutputPort() in Scl::disable(). " 
+				<< "errno = 0x" << hex << s32Ret << dec << endl;
+		}
+	}
+	
+	s32Ret = MI_SCL_StopChannel(sclDevId, sclChnId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_StopChannel() in Scl::disable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+	
+	s32Ret = MI_SCL_DestroyChannel(sclDevId, sclChnId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_DestroyChannel() in Scl::disable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	s32Ret = MI_SCL_DestroyDevice(sclDevId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_DestroyDevice() in Scl::disable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+	
 	bEnable = false;
 
 	cout << "Call Scl::disable() end." << endl;
