@@ -17,10 +17,15 @@ public:
 
 	const static MI_SCL_DEV sclDevId = 0;
 	const static MI_SCL_CHANNEL sclChnId = 0;
-	const static MI_SCL_PORT sclPortId = 0;
-
+	const static MI_SCL_PORT sclPortMain = 0;
+	const static MI_SCL_PORT sclPortSub = 1;
+	const static MI_SCL_PORT sclPortJpeg = 2;
+	
 	MI_S32 enable();
 	MI_S32 disable();
+
+	int createPort(MI_SCL_PORT sclPortId, unsigned int widthOut, unsigned int heightOut);
+	int destoryPort(MI_SCL_PORT sclPortId);
 
 private:
 	Scl();

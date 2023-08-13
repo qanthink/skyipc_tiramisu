@@ -16,8 +16,8 @@ xxx版权所有。
 class Venc{
 public:
 	// 主码流和子码流的通道号。
-	const static MI_VENC_CHN vencSubChn = 0;
-	const static MI_VENC_CHN vencMainChn = 1;
+	const static MI_VENC_CHN vencMainChn = 0;
+	const static MI_VENC_CHN vencSubChn = 1;
 	const static MI_VENC_CHN vencJpegChn = 2;
 	const static bool bUseSliceMode = false;
 
