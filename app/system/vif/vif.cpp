@@ -161,12 +161,11 @@ MI_S32 Vif::enable()
 	}
 
 	MI_SYS_ChnPort_t stChnPort;
-	MI_VIF_DEV vifChnId = 0;
 	memset(&stChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 	
 	stChnPort.eModId = E_MI_MODULE_ID_VIF;
 	stChnPort.u32DevId = vifDevId;
-	stChnPort.u32ChnId = vifChnId;
+	//stChnPort.u32ChnId = vifChnId;
 	stChnPort.u32PortId = vifPortId;
 	s32Ret = MI_SYS_SetChnOutputPortDepth(Sys::u16SocId, &stChnPort, 0, 3 + 3);	// 此处可优化。
 	if(0 != s32Ret)
@@ -441,7 +440,7 @@ MI_S32 Vif::enableChnPort(MI_VIF_PORT u32ChnPort)
 	
 	stChnPort.eModId = E_MI_MODULE_ID_VIF;
 	stChnPort.u32DevId = vifDevId;
-	stChnPort.u32ChnId = vifChnId;
+	//stChnPort.u32ChnId = vifChnId;
 	stChnPort.u32PortId = u32ChnPort;
 	//s32Ret = MI_SYS_SetChnOutputPortDepth(&stChnPort, 0, 6);
 	if(0 != s32Ret)
@@ -449,9 +448,7 @@ MI_S32 Vif::enableChnPort(MI_VIF_PORT u32ChnPort)
 		cerr << "Fail to call MI_SYS_SetChnOutputPortDepth(), errno = " << s32Ret << endl;
 	}
 	
-	//MI_S32 MI_VIF_EnableChnPort(MI_VIF_CHN u32VifChn, MI_VIF_PORT u32ChnPort);
-
-	s32Ret = MI_VIF_EnableOutputPort(vifChnId, u32ChnPort);
+	s32Ret = MI_VIF_EnableOutputPort(vifDevId, u32ChnPort);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VIF_EnableChnPort(), errno = " << s32Ret << endl;
@@ -474,7 +471,7 @@ MI_S32 Vif::disableChnPort(MI_VIF_PORT u32ChnPort)
 	// MI_S32 MI_VIF_DisableChnPort(MI_VIF_CHN u32VifChn, MI_VIF_PORT u32ChnPort);
 	MI_S32 s32Ret = 0;
 
-	s32Ret = MI_VIF_DisableOutputPort(vifChnId, u32ChnPort);
+	s32Ret = MI_VIF_DisableOutputPort(vifDevId, u32ChnPort);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VIF_DisableChnPort(), errno = " << s32Ret << endl;

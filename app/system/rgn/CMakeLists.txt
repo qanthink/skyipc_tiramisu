@@ -4,7 +4,6 @@ aux_source_directory(. DIR_APP_SRC)
 
 include_directories(
 	st_rgn
-	../vpe
 	../common
 )
 

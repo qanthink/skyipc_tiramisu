@@ -20,7 +20,6 @@ private:
 
 public:
 	const static MI_VIF_DEV vifDevId = 0;
-	const static MI_VIF_DEV vifChnId = 0;
 	const static MI_VIF_PORT vifPortId = 0;
 
 	MI_S32 enable();
@@ -35,6 +34,7 @@ public:
 	MI_S32 enableChnPort(MI_VIF_PORT u32ChnPort);				// 启用通道端口
 	MI_S32 disableChnPort(MI_VIF_PORT u32ChnPort);				// 禁用通道端口
 
+private:
 	bool bEnable = false;
 };
 

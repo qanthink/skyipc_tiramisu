@@ -118,7 +118,7 @@ Live555Rtsp::~Live555Rtsp()
 		streamMap.erase(it);
 		it = streamMap.begin();		// 注意迭代器失效问题。
 	}
-	#else
+	#else		// 如下没注意迭代器失效，是错误的。
 	for(it = streamMap.begin(); it != streamMap.end(); ++it)
 	{
 		cout << "Remove " << it->first << endl;
@@ -142,23 +142,6 @@ Live555Rtsp::~Live555Rtsp()
 	}
 	cout << "Call Live555Rtsp::~Live555Rtsp() end." << endl;
 }
-
-#if 0
-map<string,int>tmp;
-auto i = tmp.begin();
-while（i!=tmp.end()）
-{
-	for(int j = 0;j<tmp->first;++j)
-	{
-		if(tmp->first[j] == 10)
-		{
-			i = tmp.erase(i); //erase之后返回指向删除元素之后元素的迭代器i--; //这里要是不-1的话，跳出这个循环后又要+1,就会使得i加了2！！！
-			break;
-		}
-	}
-	i++;
-}
-#endif
 
 /*-----------------------------------------------------------------------------
 描--述：增加服务器子会话

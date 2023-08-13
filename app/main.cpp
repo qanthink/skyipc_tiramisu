@@ -104,7 +104,7 @@ int main(int argc, const char *argv[])
 
 	// ISP 初始化，并绑定前级VIF.
 	Isp *pIsp = Isp::getInstance();
-	pSys->bindVif2Isp(Vif::vifChnId, Isp::ispDevId, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+	pSys->bindVif2Isp(Vif::vifDevId, Isp::ispDevId, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 
 	// SCL 初始化，并绑定前级ISP.
 	Scl *pScl = Scl::getInstance();
@@ -185,7 +185,7 @@ int main(int argc, const char *argv[])
 	#endif
 
 	/*
-		至此，SENSOR, VIF, ISP, VENC, AI, AO, OSD 均已初始化完成。
+		至此，SENSOR, VIF, VPE(ISP), VENC, AI, AO, OSD 均已初始化完成。
 	*/
 
 	/* ==================== 第二部分，应用初始化 ==================== */

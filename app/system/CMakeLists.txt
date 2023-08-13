@@ -2,7 +2,6 @@ add_subdirectory(sensor)
 add_subdirectory(vif)
 add_subdirectory(isp)
 add_subdirectory(scl)
-#add_subdirectory(vpe)
 #add_subdirectory(divp)
 add_subdirectory(venc)
 add_subdirectory(sys)
@@ -17,7 +16,6 @@ aux_source_directory(sensor DIR_APP_SRC)
 aux_source_directory(vif DIR_APP_SRC)
 aux_source_directory(isp DIR_APP_SRC)
 aux_source_directory(scl DIR_APP_SRC)
-#aux_source_directory(vpe DIR_APP_SRC)
 aux_source_directory(venc DIR_APP_SRC)
 aux_source_directory(sys DIR_APP_SRC)
 aux_source_directory(common DIR_APP_SRC)
@@ -31,7 +29,6 @@ include_directories(
 	sensor
 	isp
 	scl
-	#vpe
 	rgn/st_rgn
 	#uvc_uac/st_uvc
 	common
@@ -44,7 +41,7 @@ target_link_libraries(system
 	sensor vif 
 	isp
 	scl
-	#vpe divp
+	#divp
 	venc 
 	sys 
 	common

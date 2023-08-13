@@ -5,7 +5,6 @@ xxx版权所有。
 ----------------------------------------------------------------*/
 
 #include "venc.h"
-//#include "st_common.h"
 #include <iostream>
 #include <string.h>
 
@@ -266,7 +265,6 @@ MI_S32 Venc::setCrop(MI_VENC_CHN vencChn, MI_U32 x, MI_U32 y, MI_U32 w, MI_U32 h
 }
 #endif
 
-#if 1
 /*-----------------------------------------------------------------------------
 描--述：改变比特率。
 参--数：vencChn VENC通道号；
@@ -326,7 +324,6 @@ MI_S32 Venc::changeBitrate(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_U32 u32B
 	cout << "Call Venc::changeBitrate() end." << endl;
 	return s32Ret;
 }
-#endif
 
 /*-----------------------------------------------------------------------------
 描--述：销毁通道。

@@ -321,17 +321,6 @@ MI_S32 Sys::bindVpe2Venc(MI_U32 u32VpePortID, MI_U32 u32VencChnID, MI_U32 u32Src
 	// 获取VENC 设备ID.
 	MI_S32 s32Ret = 0;
 	MI_U32 u32DevId = -1;
-	#if 0
-	s32Ret = MI_VENC_GetChnDevid(u16SocId, u32VencChnID, &u32DevId);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call MI_VENC_GetChnDevid() in Sys::bindVpe2Venc(). s32Ret = " << s32Ret << endl;
-		return s32Ret;
-	}
-	cout << "In Sys::bindVpe2Venc(), u32DevId = " << u32DevId << endl;
-	#else
-	u32DevId = MI_VENC_DEV_ID_H264_H265_0;
-	#endif
 	
 	MI_SYS_ChnPort_t stDstChnPort;
 	memset(&stDstChnPort, 0, sizeof(MI_SYS_ChnPort_t));
@@ -405,17 +394,7 @@ MI_S32 Sys::bindDivp2Venc(MI_U32 u32DivpPortID, MI_U32 u32VencChnID, MI_U32 u32S
 	// 获取VENC 设备ID.
 	MI_S32 s32Ret = 0;
 	MI_U32 u32DevId = -1;
-	#if 0
-	s32Ret = MI_VENC_GetChnDevid(u16SocId, u32VencChnID, &u32DevId);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call MI_VENC_GetChnDevid() in Sys::bindVpe2Venc(). s32Ret = " << s32Ret << endl;
-		return s32Ret;
-	}
-	cout << "In Sys::bindVpe2Venc(), u32DevId = " << u32DevId << endl;
-	#else
 	u32DevId = MI_VENC_DEV_ID_H264_H265_0;
-	#endif
 	
 	MI_SYS_ChnPort_t stDstChnPort;
 	memset(&stDstChnPort, 0, sizeof(MI_SYS_ChnPort_t));

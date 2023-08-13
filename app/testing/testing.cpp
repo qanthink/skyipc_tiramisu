@@ -17,8 +17,8 @@ xxx版权所有。
 
 #include "testing.h"
 #include "sensor.h"
-#include "isp.h"
 #include "scl.h"
+#include "isp.h"
 #include "venc.h"
 #include "sys.h"
 
