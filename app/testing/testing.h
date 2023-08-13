@@ -68,16 +68,16 @@ xxx版权所有。
 #if (1 == (USE_IPC))
 // venc
 #define USE_VENC_MAIN		1
-#define USE_VENC_SUB		1
-#define USE_VENC_JPEG		0
+#define USE_VENC_SUB		0
+#define USE_VENC_JPEG		1
 #define USE_VENC_SAVE_LOCAL_FILE	0
 #define SAVE_TIME_SECONDS	10
 
 // rtsp
 #define USE_RTSPSERVER_LOCALFILE	0
 #define USE_RTSPSERVER_LIVESTREAM_MAIN	1
-#define USE_RTSPSERVER_LIVESTREAM_SUB	1
-#define USE_RTSPSERVER_LIVESTREAM_JPEG	0
+#define USE_RTSPSERVER_LIVESTREAM_SUB	0
+#define USE_RTSPSERVER_LIVESTREAM_JPEG	1
 #endif
 
 #if (1 == (USE_UVC))
@@ -122,7 +122,7 @@ extern Live555Rtsp *pLive555Rtsp;
 void *routeAi(void *arg);
 void *routeAoFromFile(void *arg);
 void *routeAoNetPcm(void *arg);
-void *routeVideo(void *arg);
+void *routeVideo(int vencDev, int vencCh);
 void *routeOsd(void *arg);
 void *routeSpiPanel(void *arg);
 void recvAudio(unsigned char* buf, unsigned short len);

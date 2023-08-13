@@ -440,8 +440,6 @@ int main(int argc, const char *argv[])
 	unsigned int subW = 1280;
 	unsigned int subH = 720;
 	Scl *pScl = Scl::getInstance();
-	pScl->createPort(Scl::sclPortMain, snrW, snrH);
-	pScl->createPort(Scl::sclPortSub, subW, subH);
 	pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 	sleep(2);
 
@@ -457,6 +455,7 @@ int main(int argc, const char *argv[])
 	sleep(2);
 	// 创建主码流
 	#if (1 == (USE_VENC_MAIN))
+	pScl->createPort(Scl::sclPortMain, snrW, snrH);
 	pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, snrW, snrH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, 1 * 1024);
 	pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
@@ -469,6 +468,7 @@ int main(int argc, const char *argv[])
 
 	// 创建子码流
 	#if (1 == (USE_VENC_SUB))
+	pScl->createPort(Scl::sclPortSub, subW, subH);
 	pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, subW, subH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 0.25 * 1024);
 	pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE);
@@ -476,16 +476,17 @@ int main(int argc, const char *argv[])
 	pSys->bindScl2Venc(Scl::sclPortSub, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, snrH);
 	#endif
 
+	sleep(2);
 	// 创建jpeg码流
 	#if (1 == (USE_VENC_JPEG))
-	//pVpe->createPort(Vpe::vpeMainPort, snrW, snrH);
-	pVenc->createJpegStream(Venc::vencJpegChn, snrW, snrH);
-	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 10);
-	pSys->bindVpe2Venc(Vpe::vpeMainPort, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
-	#endif
-
-	// VENC 也可以实现图像的Crop 和Scale, 但是建议在VPE 中做。
-	//pVenc->setCrop(Venc::vencMainChn, (2560 - 1920) / 2, (1440 - 1080) / 2, 1920, 1080);
+	pScl->createPort(Scl::sclPortJpeg, snrW, snrH);
+	sleep(2);
+	pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, snrW, snrH);
+	sleep(2);
+	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 1 * 1024);;
+	pSys->bindScl2Venc(Scl::sclPortJpeg, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+	sleep(2);
+	#endif	// End of USE_VENC_JPEG
 	#endif	// End of USE_UVC
 
 	#if(1 == (USE_IQ_SERVER))
@@ -580,19 +581,19 @@ int main(int argc, const char *argv[])
 	// 测试主码流
 	#if (1 == (USE_VENC_MAIN))
 	cout << "routeVideoMain" << endl;
-	thread thVideoMain(routeVideo, (void *)Venc::vencMainChn);
+	thread thVideoMain(routeVideo, (int)MI_VENC_DEV_ID_H264_H265_0, (int)Venc::vencMainChn);
 	#endif
 
 	// 测试子码流
 	#if (1 == (USE_VENC_SUB))
 	cout << "routeVideoSub" << endl;
-	thread thVideoSub(routeVideo, (void *)Venc::vencSubChn);
+	thread thVideoSub(routeVideo, (int)MI_VENC_DEV_ID_H264_H265_0, (int)Venc::vencSubChn);
 	#endif
 
 	// 测试JPEG 码流
 	#if (1 == (USE_VENC_JPEG))
 	cout << "routeVideoJpeg" << endl;
-	thread thVideoJpeg(routeVideo, (void *)Venc::vencJpegChn);
+	thread thVideoJpeg(routeVideo, (int)MI_VENC_DEV_ID_JPEG_0, (int)Venc::vencJpegChn);
 	#endif
 
 	int ret = 0;

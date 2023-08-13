@@ -39,12 +39,12 @@ public:
 	MI_S32 setCrop(MI_VENC_CHN vencChn, MI_U32 x, MI_U32 y, MI_U32 w, MI_U32 h);
 
 	MI_S32 createStreamWithAttr(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr);
-	MI_S32 createH264Stream(MI_VENC_DEV venvDev, MI_VENC_CHN vencChn, unsigned int width, unsigned int height);
-	MI_S32 createH265Stream(MI_VENC_DEV venvDev, MI_VENC_CHN vencChn, unsigned int width, unsigned int height);
-	MI_S32 createJpegStream(MI_VENC_DEV venvDev, MI_VENC_CHN vencChn, unsigned int width, unsigned int height);
+	MI_S32 createH264Stream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned int width, unsigned int height);
+	MI_S32 createH265Stream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned int width, unsigned int height);
+	MI_S32 createJpegStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned int width, unsigned int height);
 	MI_S32 setH264SliceSplit(MI_VENC_CHN vencChn, MI_VENC_ParamH264SliceSplit_t *pstSliceSplit);
 	MI_S32 setH265SliceSplit(MI_VENC_CHN vencChn, MI_VENC_ParamH265SliceSplit_t *pstSliceSplit);
-	MI_S32 setInputBufMode(MI_VENC_DEV venvDev, MI_VENC_CHN vencChn,
+	MI_S32 setInputBufMode(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn,
 			MI_VENC_InputSrcBufferMode_e eVencBufMode);
 	
 	MI_S32 createChn(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr);

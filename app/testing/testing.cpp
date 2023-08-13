@@ -334,15 +334,9 @@ void *routeAoNetPcm(void *arg)
 返回值：
 注--意：数据保存的路径为/customer/video.h265
 -----------------------------------------------------------------------------*/
-void *routeVideo(void *arg)
+void *routeVideo(int vencDev, int vencCh)
 {
 	cout << "Call routeVideo()." << endl;
-	const unsigned int u32VencChn = (MI_U32)arg;
-	if(Venc::vencMainChn != u32VencChn && Venc::vencSubChn != u32VencChn && Venc::vencJpegChn != u32VencChn)
-	{
-		cerr << "Fail to call routeVideo(), invalid chanel!" << endl;
-		return NULL;
-	}
 
 	/* sava to local file. */
 	#if (1 == (USE_VENC_SAVE_LOCAL_FILE))
@@ -365,11 +359,11 @@ void *routeVideo(void *arg)
 	const size_t nameSize = 8;
 	char videoName[nameSize] = "";
 	const char *streamName = videoName;
-	auto vesType = Venc::getInstance()->getVesType(MI_VENC_DEV_ID_H264_H265_0, u32VencChn);
+	auto vesType = Venc::getInstance()->getVesType(vencDev, vencCh);
 
 	#if ((1 == (USE_RTSPSERVER_LIVESTREAM_MAIN)) || (1 == (USE_RTSPSERVER_LIVESTREAM_SUB)) \
 		|| (1 == (USE_RTSPSERVER_LIVESTREAM_JPEG)))
-	snprintf(videoName, nameSize, "%s%d", "video", u32VencChn);
+	snprintf(videoName, nameSize, "%s%d", "video", vencCh);
 	cout << "live555 rtsp file : " << videoName << endl;
 	unlink(videoName);
 	MyNameFifo myNameFifo(videoName, Venc::superMaxISize);
@@ -405,7 +399,7 @@ void *routeVideo(void *arg)
 		MI_S32 s32Ret = 0;
 		MI_VENC_Stream_t stStream;
 		Venc *pVenc = Venc::getInstance();
-		s32Ret = pVenc->rcvStream(MI_VENC_DEV_ID_H264_H265_0, u32VencChn, &stStream);
+		s32Ret = pVenc->rcvStream(vencDev, vencCh, &stStream);
 		if(0 != s32Ret)
 		{
 			cerr << "Fail to call pVenc->rcvStream(). s32Ret = " << s32Ret << endl;
@@ -497,7 +491,7 @@ void *routeVideo(void *arg)
 			#endif
 		}
 
-		s32Ret = pVenc->releaseStream(MI_VENC_DEV_ID_H264_H265_0, u32VencChn, &stStream);
+		s32Ret = pVenc->releaseStream(vencDev, vencCh, &stStream);
 		if(0 != s32Ret)
 		{
 			cerr << "Fail to call Venc::releaseStream(), errno = " << s32Ret << endl;;
