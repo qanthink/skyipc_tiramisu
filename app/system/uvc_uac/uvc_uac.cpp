@@ -318,7 +318,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 			cout << "V4L2 pixel format = V4L2_PIX_FMT_MJPEG" << endl;
 			vencCh = Venc::vencJpegChn;
 			//pVpe->createPort(Vpe::vpeMainPort, format.width, format.height);
-			pVenc->createJpegStream(vencCh, format.width, format.height);
+			pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, vencCh, format.width, format.height);
 			pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, vencCh, 1 * 1024);
 			//pSys->bindVpe2Venc(Vpe::vpeMainPort, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 			break;
@@ -328,7 +328,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 			cout << "V4L2 pixel format = V4L2_PIX_FMT_H264" << endl;
 			vencCh = Venc::vencMainChn;
 			//pVpe->createPort(Vpe::vpeMainPort, format.width, format.height);
-			pVenc->createH264Stream(vencCh, format.width, format.height);
+			pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, vencCh, format.width, format.height);
 			pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, vencCh, 1 * 1024);
 			//pSys->bindVpe2Venc(Vpe::vpeMainPort, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 			break;
@@ -338,7 +338,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 			cout << "V4L2 pixel format = V4L2_PIX_FMT_H265" << endl;
 			vencCh = Venc::vencMainChn;
 			//pVpe->createPort(Vpe::vpeMainPort, format.width, format.height);
-			pVenc->createH265Stream(vencCh, format.width, format.height);
+			pVenc->createH265Stream(MI_VENC_DEV_ID_H264_H265_0, vencCh, format.width, format.height);
 			pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, vencCh, 1 * 1024);
 			//pSys->bindVpe2Venc(Vpe::vpeMainPort, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 			break;

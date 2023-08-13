@@ -457,24 +457,23 @@ int main(int argc, const char *argv[])
 	sleep(2);
 	// 创建主码流
 	#if (1 == (USE_VENC_MAIN))
-	pVenc->createH264Stream(Venc::vencMainChn, snrW, snrH);
+	pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, snrW, snrH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, 1 * 1024);
-	sleep(2);
-	//pSys->bindScl2Venc(Scl::sclPortId + 1, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_HW_RING, snrH);
+	pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
+	pVenc->startRecvPic(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn);
 	pSys->bindScl2Venc(Scl::sclPortMain, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_HW_RING, snrH);
 	#if (1 == (USE_DIVP))
-	pSys->bindVpe2Divp(Vpe::vpeMainPort, Divp::divpChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
-	pSys->bindDivp2Venc(Divp::divpChn, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 	#else
-	//pSys->bindVpe2Venc(Vpe::vpeMainPort, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 	#endif	// End of USE_DIVP
 	#endif	// End of USE_VENC_MAIN
 
 	// 创建子码流
 	#if (1 == (USE_VENC_SUB))
-	pVenc->createH264Stream(Venc::vencSubChn, subW, subH);
+	pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, subW, subH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 0.25 * 1024);
-	pSys->bindScl2Venc(Scl::sclPortSub, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, subH);
+	pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE);
+	pVenc->startRecvPic(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn);
+	pSys->bindScl2Venc(Scl::sclPortSub, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, snrH);
 	#endif
 
 	// 创建jpeg码流
