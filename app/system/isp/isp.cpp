@@ -91,6 +91,27 @@ int Isp::enable()
 		return s32Ret;
 	}
 
+	MI_ISP_OutPortParam_t stIspOutputParam;
+	memset(&stIspOutputParam, 0x0, sizeof(MI_ISP_OutPortParam_t));
+	s32Ret = MI_ISP_GetInputPortCrop(ispDevId, ispChnId, &stIspOutputParam.stCropRect);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_StartChannel() in Isp::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	// JPEG 需要YUV422, H.26X 需要YUV420. 但此处ISP 可以都输出YUV422, 在VENC 的前级调整即可。
+	stIspOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV422_YUYV;
+	//stIspOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
+	s32Ret = MI_ISP_SetOutputPortParam(ispDevId, ispChnId, ispPortId, &stIspOutputParam);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_StartChannel() in Isp::enable(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
 	s32Ret = MI_ISP_EnableOutputPort(ispDevId, ispChnId, ispPortId);
 	if(0 != s32Ret)
 	{

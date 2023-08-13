@@ -24,7 +24,7 @@ public:
 
 	MI_S32 bindVif2Isp(MI_U32 u32VifDevID, MI_U32 u32IspDevID, MI_U32 u32SrcFrmrate, MI_U32 u32DstFrmrate, MI_SYS_BindType_e eBindType, MI_U32 u32BindParam);
 	MI_S32 bindIsp2Scl(MI_U32 u32IspDevID, MI_U32 u32SclDevID, MI_U32 u32SrcFrmrate, MI_U32 u32DstFrmrate, MI_SYS_BindType_e eBindType, MI_U32 u32BindParam);
-	MI_S32 bindScl2Venc(MI_U32 u32SclDevID, MI_U32 u32VencCh, MI_U32 u32SrcFrmrate, MI_U32 u32DstFrmrate, MI_SYS_BindType_e eBindType, MI_U32 u32BindParam);
+	MI_S32 bindScl2Venc(MI_U32 u32SclDevID, MI_U32 u32VencDev, MI_U32 u32VencCh, MI_U32 u32SrcFrmrate, MI_U32 u32DstFrmrate, MI_SYS_BindType_e eBindType, MI_U32 u32BindParam);
 	
 	MI_S32 bindIsp2Venc(MI_U32 u32IspDevID, MI_U32 u32VencCh, MI_U32 u32SrcFrmrate, MI_U32 u32DstFrmrate, MI_SYS_BindType_e eBindType, MI_U32 u32BindParam);
 	

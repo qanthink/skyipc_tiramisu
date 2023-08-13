@@ -934,7 +934,7 @@ MI_S32 Venc::createH265Stream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned
 -----------------------------------------------------------------------------*/
 MI_S32 Venc::createJpegStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned int width, unsigned int height)
 {
-	cout << "Call Venc::createJpegStream() end." << endl;
+	cout << "Call Venc::createJpegStream()." << endl;
 
 	MI_VENC_ChnAttr_t stChnAttr;
 	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
@@ -962,6 +962,7 @@ MI_S32 Venc::createJpegStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned
 		return s32Ret;
 	}
 
+	#if 0
 	MI_VENC_InputSourceConfig_t stInputSource;
 	stInputSource.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE;
 	s32Ret = MI_VENC_SetInputSourceConfig(vencDev, vencChn, &stInputSource);
@@ -970,6 +971,7 @@ MI_S32 Venc::createJpegStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned
 		cerr << "Fail to call MI_VENC_SetInputSourceConfig() in Venc::createJpegStream(), s32Ret = " << s32Ret << endl;
 		return s32Ret;
 	}
+	#endif
 	
 	s32Ret = MI_VENC_SetMaxStreamCnt(vencDev, vencChn, 3);
 	if(0 != s32Ret)

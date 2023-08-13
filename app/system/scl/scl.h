@@ -24,7 +24,8 @@ public:
 	MI_S32 enable();
 	MI_S32 disable();
 
-	int createPort(MI_SCL_PORT sclPortId, unsigned int widthOut, unsigned int heightOut);
+	int createPort(MI_SCL_PORT sclPortId, 
+				unsigned int widthOut, unsigned int heightOut, bool bIsJpeg = false);
 	int destoryPort(MI_SCL_PORT sclPortId);
 
 private:

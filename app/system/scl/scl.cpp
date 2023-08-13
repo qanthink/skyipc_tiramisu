@@ -124,7 +124,7 @@ MI_S32 Scl::disable()
 返回值：
 注--意：
 -----------------------------------------------------------------------------*/
-int Scl::createPort(MI_SCL_PORT sclPortId, unsigned int widthOut, unsigned int heightOut)
+int Scl::createPort(MI_SCL_PORT sclPortId, unsigned int widthOut, unsigned int heightOut, bool bIsJpeg)
 {
 	cout << "Call Scl::createPort()." << endl;
 
@@ -161,7 +161,17 @@ int Scl::createPort(MI_SCL_PORT sclPortId, unsigned int widthOut, unsigned int h
 	stSclOutputParam.bMirror = FALSE;
 	stSclOutputParam.bFlip = FALSE;
 	stSclOutputParam.eCompressMode= E_MI_SYS_COMPRESS_MODE_NONE;
-	stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
+	// JPEG 需要YUV422, H.26X 需要YUV420.
+	//stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV422_YUYV;
+	//stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
+	if(bIsJpeg)
+	{
+		stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV422_YUYV;
+	}
+	else
+	{
+		stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
+	}
 	
 	s32Ret = MI_SCL_SetOutputPortParam(sclDevId, sclChnId, sclPortId, &stSclOutputParam);
 	if(0 != s32Ret)

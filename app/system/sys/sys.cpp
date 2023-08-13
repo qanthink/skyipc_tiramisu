@@ -267,7 +267,7 @@ MI_S32 Sys::bindIsp2Scl(MI_U32 u32IspDevID, MI_U32 u32SclDevID, MI_U32 u32SrcFrm
 	return 0;
 }
 
-MI_S32 Sys::bindScl2Venc(MI_U32 u32SclPortId, MI_U32 u32VencCh, MI_U32 u32SrcFrmrate, MI_U32 u32DstFrmrate, MI_SYS_BindType_e eBindType, MI_U32 u32BindParam)
+MI_S32 Sys::bindScl2Venc(MI_U32 u32SclPortId, MI_U32 u32VencDev, MI_U32 u32VencCh, MI_U32 u32SrcFrmrate, MI_U32 u32DstFrmrate, MI_SYS_BindType_e eBindType, MI_U32 u32BindParam)
 {
 	cout << "Call Sys::bindScl2Venc()." << endl;
 	MI_SYS_ChnPort_t stSrcChnPort;
@@ -280,7 +280,7 @@ MI_S32 Sys::bindScl2Venc(MI_U32 u32SclPortId, MI_U32 u32VencCh, MI_U32 u32SrcFrm
 	MI_SYS_ChnPort_t stDstChnPort;
 	memset(&stDstChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 	stDstChnPort.eModId = E_MI_MODULE_ID_VENC;
-	stDstChnPort.u32DevId = MI_VENC_DEV_ID_H264_H265_0;
+	stDstChnPort.u32DevId = u32VencDev;
 	stDstChnPort.u32ChnId = u32VencCh;		// 通道号暂且为0.
 	stDstChnPort.u32PortId = 0;
 
