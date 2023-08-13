@@ -13,12 +13,16 @@ using namespace std;
 
 Sys::Sys()
 {
+	cout << "Call Sys::Sys()." << endl;
 	MI_SYS_Init(u16SocId);
+	cout << "Call Sys::Sys() end." << endl;
 }
 
 Sys::~Sys()
 {
+	cout << "Call Sys::~Sys()." << endl;
 	MI_SYS_Exit(u16SocId);
+	cout << "Call Sys::~Sys() end." << endl;
 }
 
 /*-----------------------------------------------------------------------------

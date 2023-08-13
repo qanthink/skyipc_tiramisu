@@ -16,10 +16,14 @@ using namespace std;
 
 IrCutLed::IrCutLed()
 {
+	cout << "Call IrCutLed::IrCutLed()." << endl;
+	cout << "Call IrCutLed::IrCutLed() end." << endl;
 }
 
 IrCutLed::~IrCutLed()
 {
+	cout << "Call IrCutLed::~IrCutLed()." << endl;
+	cout << "Call IrCutLed::~IrCutLed() end." << endl;
 }
 
 IrCutLed* IrCutLed::getInstance()

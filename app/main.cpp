@@ -4,39 +4,66 @@ xxx 版权所有。
 时间：2020.7.10
 ----------------------------------------------------------------*/
 
+#include <thread>
 #include <iostream>
 #include <signal.h>
-#include <thread>
 
-#include "testing.h"
-#include "sys.h"
 #include "sensor.h"
 #include "vif.h"
 #include "isp.h"
-//#include "vpe.h"
 #include "scl.h"
+#include "venc.h"
+#include "sys.h"
+#include "testing.h"
+
+#if (1 == (USE_AI))
+#include "ai.hpp"
+#endif
+
+#if (1 == (USE_AO))
+#include "ao.hpp"
+#endif
+
+#if (1 == (USE_OSD))
+#include "rgn.h"
+#endif
 
 #if (1 == (USE_DIVP))
 #include "divp.h"
 #endif
 
-#include "venc.h"
-#include "ai.hpp"
-#include "ao.hpp"
-#include "rgn.h"
-
 #if (1 == (USE_UVC))
 #include "uvc_uac.h"
 #endif
 
-//#include "aac.h"
-//#include "aad.h"
-//#include "avtp.h"
+#if (1 == (USE_FAAC_FAAD))
+#include "aac.h"
+#include "aad.h"
+#endif
+
+#if (1 == (USE_AVTP_AUDIO) || 1 == (USE_AVTP_VIDEO))
+#include "avtp.h"
+#endif
+
+#if (1 == (TEST_IRCUT))
 #include "ircutled.h"
-//#include "spipanel.h"
-//#include "ethernet.h"
+#endif
+
+#if (1 == (USE_PANEL))
+#include "spipanel.h"
+#endif
+
+#if (1 == (USE_ETHERNET))
+#include "ethernet.h"
+#endif
+
+#if (1 == (USE_RTSP_LOCALFILE) || 1 == (USE_RTSP_LIVESTREAM))
 #include "live555rtsp.h"
-//#include "mp4container.h"
+#endif
+
+#if (1 == (USE_FFMPEG_SAVE_MP4))
+#include "mp4container.h"
+#endif
 
 using namespace std;
 
@@ -54,14 +81,17 @@ int main(int argc, const char *argv[])
 	signal(SIGINT, sigHandler);
 
 	/* ==================== 第一部分，系统初始化 ==================== */
+	#if (1 == (TEST_IRCUT))
 	IrCutLed *pIrCutLed = IrCutLed::getInstance();
 	IrCutLed::getInstance()->openFilter();
+	#endif
 
-	// 系统初始化
+	// SDK 系统初始化
 	Sys *pSys = Sys::getInstance();
 
-	// Sensor 初始化。数据流向：sensor -> vif -> vpe -> (DIVP) -> venc -> 应用处理。
-	Sensor *pSensor = Sensor::getInstance();	// sensor 初始化
+	// Sensor 初始化。
+	// 数据流向：sensor -> vif -> vpe(或ISP) -> (SCL) -> (DIVP) -> venc -> 应用处理。
+	Sensor *pSensor = Sensor::getInstance();
 	pSensor->setFps(30);
 
 	unsigned int snrW = 0;
@@ -77,12 +107,10 @@ int main(int argc, const char *argv[])
 	pSys->bindVif2Isp(Vif::vifDevID, Isp::ispDevId, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 
 	// SCL 初始化，并绑定前级ISP.
-	unsigned int subW = 1280;
-	unsigned int subH = 720;
 	Scl *pScl = Scl::getInstance();
 	pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 
-	// 创建DIVP 缩放、剪裁通道
+	// 创建DIVP 缩放、剪裁通道、格式转换
 	#if (1 == (USE_DIVP))
 	Divp *pDivp = Divp::getInstance();
 	pDivp->createChn(snrW, snrH, snrW, snrH);
@@ -90,7 +118,6 @@ int main(int argc, const char *argv[])
 
 	Venc *pVenc = Venc::getInstance();
 	#if (1 == (USE_IPC))
-
 	// 创建主码流
 	#if (1 == (USE_VENC_MAIN))
 	pScl->createPort(Scl::sclPortMain, snrW, snrH);
@@ -106,6 +133,8 @@ int main(int argc, const char *argv[])
 
 	// 创建子码流
 	#if (1 == (USE_VENC_SUB))
+	unsigned int subW = 1280;
+	unsigned int subH = 720;
 	pScl->createPort(Scl::sclPortSub, subW, subH);
 	pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, subW, subH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 0.25 * 1024);
@@ -114,17 +143,16 @@ int main(int argc, const char *argv[])
 	pSys->bindScl2Venc(Scl::sclPortSub, MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, snrH);
 	#endif
 
-	// 创建jpeg码流
+	// 创建JPEG 码流
 	#if (1 == (USE_VENC_JPEG))
 	pScl->createPort(Scl::sclPortJpeg, snrW, snrH, true);
 	pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, snrW, snrH);
-	//pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 1 * 1024);;
+	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 50);;
 	pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 	#endif	// End of USE_VENC_JPEG
-	#endif	// End of USE_UVC
+	#endif	// End of USE_IPC
 
 	#if(1 == (USE_IQ_SERVER))
-	//Isp *pIsp = Isp::getInstance();
 	pIsp->openIqServer();
 	char iqFilePath[128] = "/config/iqfile/335_imx291_day.bin";
 	pIsp->loadBinFile(iqFilePath);
@@ -150,6 +178,12 @@ int main(int argc, const char *argv[])
 	AudioOut *pAudioOut = AudioOut::getInstance();
 	#endif
 
+	// 测试UVC
+	#if (1 == (USE_UVC))
+	UvcUac *pUvcUac = UvcUac::getInstance();
+	pUvcUac->startUvc();
+	#endif
+
 	/*
 		至此，SENSOR, VIF, ISP, VENC, AI, AO, OSD 均已初始化完成。
 	*/
@@ -167,21 +201,19 @@ int main(int argc, const char *argv[])
 	thread thChangeBitrate(avtpChangeKbps, pAvtpVideoClient, 3);
 	#endif
 
-	// RTSP 推网络流
-	#if ((1 == (USE_RTSPSERVER_LOCALFILE)) || (1 == (USE_RTSPSERVER_LIVESTREAM_MAIN)) \
-			|| (1 == (USE_RTSPSERVER_LIVESTREAM_SUB)) || 1 == (USE_RTSPSERVER_LIVESTREAM_JPEG))
-	Live555Rtsp live555Rtsp;
-	pLive555Rtsp = &live555Rtsp;
-	#endif
-	
-	// RTSP 推本地流
-	#if (1 == (USE_RTSPSERVER_LOCALFILE))
+	// RTSP 推流
+	#if ((1 == (USE_RTSP_LOCALFILE)) || (1 == (USE_RTSP_LIVESTREAM)))
+	Live555Rtsp *pLive555Rtsp = Live555Rtsp::getInstance();
+	// 推本地流：
+	#if (1 == (USE_RTSP_LOCALFILE))
 	const char *filePath = NULL;
 	//filePath = "/mnt/linux/Downloads/videotest/1.mp4";
 	filePath = "/mnt/linux/Downloads/material/test.264";
 	const char *streamName = "stream";
 	pLive555Rtsp->addStream(filePath, streamName, emEncTypeH264);
-	#endif
+	#endif	// End of USE_RTSP_LOCALFILE
+	#endif	// 
+	
 
 	// FFMPEG 保存MP4.
 	#if (1 == (USE_FFMPEG_SAVE_MP4))
@@ -195,16 +227,17 @@ int main(int argc, const char *argv[])
 
 	// AO 音频测试
 	#if (1 == (USE_AO))
+	
 	// AO. 参数为本地音频文件的路径。写死的，16位宽 16000采样率
 	#if (1 == (USE_AO_LOCAL_FILE))
 	thread thAo(routeAoFromFile, (void *)"/mnt/linux/Audios/pcm/xiaopingguo_mono_16b_16000.pcm");
-	#endif
+	#endif	// End of USE_AO_LOCAL_FILE
 
 	// AO 音频测试，播放网络音频
 	#if (1 == (USE_AO_NET_PCM))
 	thread thAo(routeAoNetPcm, (void *)NULL);
-	#endif
-	#endif
+	#endif	// End of USE_AO_NET_PCM
+	#endif	// End of USE_AO
 
 	// OSD 功能
 	#if(1 == (USE_OSD))
@@ -231,8 +264,7 @@ int main(int argc, const char *argv[])
 
 	int ret = 0;
 	this_thread::sleep_for(chrono::microseconds(1));	// sleep for rtsp file read.
-	#if ((1 == (USE_RTSPSERVER_LOCALFILE)) || (1 == (USE_RTSPSERVER_LIVESTREAM_MAIN)) \
-		|| (1 == (USE_RTSPSERVER_LIVESTREAM_SUB)) || (1 == (USE_RTSPSERVER_LIVESTREAM_JPEG)))
+	#if ((1 == (USE_RTSP_LOCALFILE)) || (1 == (USE_RTSP_LIVESTREAM)))
 	thread thRtsp([&](){pLive555Rtsp->eventLoop();});		// lambda 表达式太好用啦！
 	thRtsp.detach();
 	#endif
@@ -247,12 +279,6 @@ int main(int argc, const char *argv[])
 	testEthernet();
 	Ethernet *pEthernet = pEthernet->getInstance();
 	pEthernet->showWlanInfOnPanel();
-	#endif
-
-	// 测试UVC
-	#if (1 == (USE_UVC))
-	UvcUac *pUvcUac = UvcUac::getInstance();
-	pUvcUac->startUvc();
 	#endif
 
 	g_bRunning = true;		// sigHandler() 对其取反。
@@ -278,8 +304,7 @@ int main(int argc, const char *argv[])
 	cout << "jump out from while(g_bRunning)" << endl;
 
 	/* ==================== 第三部分，应用析构 ==================== */
-	#if ((1 == (USE_RTSPSERVER_LOCALFILE)) || (1 == (USE_RTSPSERVER_LIVESTREAM_MAIN)) \
-		|| (1 == (USE_RTSPSERVER_LIVESTREAM_SUB)) || (1 == (USE_RTSPSERVER_LIVESTREAM_JPEG)))
+	#if ((1 == (USE_RTSP_LOCALFILE)) || (1 == (USE_RTSP_LIVESTREAM)))
 	//pLive555Rtsp->~Live555Rtsp();
 	cout << "rtsp join()" << endl;
 	//thRtsp.join();	// 前期做了detach.
@@ -331,11 +356,11 @@ int main(int argc, const char *argv[])
 	#endif
 
 	#if(1 == (USE_IQ_SERVER))
-	//pIsp->closeIqServer();
+	pIsp->closeIqServer();
 	#endif
 
 	cout << "Sleep()" << endl;
-	sleep(0.5);
+	this_thread::sleep_for(chrono::milliseconds(500));
 	
 	return 0;
 }

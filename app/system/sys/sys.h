@@ -12,6 +12,13 @@ class Sys{
 public:
 	static Sys *getInstance();
 
+private:
+	Sys();
+	~Sys();
+	Sys(const Sys&);
+	Sys& operator=(const Sys&);
+
+public:
 	static const MI_U16 u16SocId = 0;
 
 	MI_S32 bindChnPort(MI_SYS_ChnPort_t *pstSrcChnPort, MI_SYS_ChnPort_t *pstDstChnPort, MI_U32 u32SrcFrmrate, MI_U32 u32DstFrmrate);
@@ -39,11 +46,5 @@ public:
 
 	MI_S32 bindDivpChn2DispPort(MI_U32 u32SrcChnID, MI_U32 u32DstPortID);
 	MI_S32 bindDivpChn2DispPort_N(MI_U32 u32PortNum);
-	
-private:
-	Sys();
-	~Sys();
-	Sys(const Sys&);
-	Sys& operator=(const Sys&);
 };
 

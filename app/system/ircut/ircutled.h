@@ -22,6 +22,13 @@ class IrCutLed
 public:
 	static IrCutLed* getInstance();
 
+private:
+	IrCutLed();
+	~IrCutLed();
+	IrCutLed(const IrCutLed&);
+	IrCutLed& operator=(const IrCutLed&);
+
+public:
 	int openFilter();					// 打开滤波片
 	int closeFilter();					// 关闭滤波片
 	int resetFilter();					// 滤波片复位
@@ -35,11 +42,6 @@ public:
 	int getPhotoSensVal();				// 获取光敏电阻值
 
 private:
-	IrCutLed();
-	~IrCutLed();
-	IrCutLed(const IrCutLed&);
-	IrCutLed& operator=(const IrCutLed&);
-
 	int gpioGetVal(unsigned int gpioIndex, int *pVal);
 	int gpioSetVal(unsigned int gpioIndex, int val);
 

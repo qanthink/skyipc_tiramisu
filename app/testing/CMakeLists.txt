@@ -5,8 +5,8 @@ add_library(testing ${DIR_APP_SRC})
 include_directories(
 	../system/sensor
 	../system/vif
-	../system/vpe
 	../system/isp
+	../system/scl
 	../system/venc
 	../system/sys
 	../system/audio_ai
@@ -15,18 +15,16 @@ include_directories(
 	../system/rgn/st_rgn
 	../system/common
 	../system/ircut
-	#../aac
-	#../aad
-	#../avtp
-	#../wifi
-	#../wifi/include
+	../aac
+	../aad
+	../avtp
 	../ffmpeg
 	../mylib/myfifo
 	../mylib/myqueue
 	../live555rtsp
-	#../spipanel
-	#../ethernet
-	#../sky_avtp
+	../spipanel
+	../ethernet
+	../sky_avtp
 	../../soc_sdk/include/isp
 )
 

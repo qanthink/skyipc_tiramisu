@@ -5,11 +5,12 @@ xxx版权所有。
 ----------------------------------------------------------------*/
 
 #include "isp.h"
+#include "mi_isp_iq.h"
 #include "mi_iqserver.h"
+#include "mi_isp_cus3a_api.h"
 
 #include <iostream>
 #include <string.h>
-#include "st_common.h"
 
 using namespace std;
 
@@ -210,7 +211,6 @@ int Isp::getExposureLimit(MI_ISP_AE_EXPO_LIMIT_TYPE_t *pExpoLimit)
 }
 #endif
 
-#if 0
 /*-----------------------------------------------------------------------------
 描--述：设置自动曝光。
 参--数：
@@ -225,7 +225,7 @@ int Isp::setExpoAuto()
 
 	MI_ISP_AE_EXPO_LIMIT_TYPE_t expoLimit;
 	int ret = 0;
-	ret = MI_ISP_AE_GetExposureLimit(iSpCh, &expoLimit);
+	ret = MI_ISP_AE_GetExposureLimit(ispDevId, ispChnId, &expoLimit);
 	if(MI_ISP_FAILURE == ret)
 	{
 		cerr << "Fail to call MI_ISP_AE_GetExposureLimit() in Isp::setExpoAuto()." << endl;
@@ -235,7 +235,7 @@ int Isp::setExpoAuto()
 	expoLimit.u32MinShutterUS = 1;
 	expoLimit.u32MaxShutterUS = 1000000;
 
-	ret = MI_ISP_AE_SetExposureLimit(iSpCh, &expoLimit);
+	ret = MI_ISP_AE_SetExposureLimit(ispDevId, ispChnId, &expoLimit);
 	if(MI_ISP_FAILURE == ret)
 	{
 		cerr << "Fail to call MI_ISP_AE_SetExposureLimit() in Isp::setExpoAuto()." << endl;
@@ -243,6 +243,7 @@ int Isp::setExpoAuto()
 	}
 	
 	cout << "Call Isp::setExpoAuto() end." << endl;
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
@@ -259,7 +260,7 @@ int Isp::setExpoTimeUs(unsigned int expoTimeUs)
 
 	MI_ISP_AE_EXPO_LIMIT_TYPE_t expoLimit;
 	int ret = 0;
-	ret = MI_ISP_AE_GetExposureLimit(iSpCh, &expoLimit);
+	ret = MI_ISP_AE_GetExposureLimit(ispDevId, ispChnId, &expoLimit);
 	if(MI_ISP_FAILURE == ret)
 	{
 		cerr << "Fail to call MI_ISP_AE_GetExposureLimit() in Isp::setExpoTimeUs()." << endl;
@@ -269,7 +270,7 @@ int Isp::setExpoTimeUs(unsigned int expoTimeUs)
 	expoLimit.u32MinShutterUS = expoTimeUs;
 	expoLimit.u32MaxShutterUS = expoTimeUs;
 
-	ret = MI_ISP_AE_SetExposureLimit(iSpCh, &expoLimit);
+	ret = MI_ISP_AE_SetExposureLimit(ispDevId, ispChnId, &expoLimit);
 	if(MI_ISP_FAILURE == ret)
 	{
 		cerr << "Fail to call MI_ISP_AE_SetExposureLimit() in Isp::setExpoTimeUs()." << endl;
@@ -277,8 +278,8 @@ int Isp::setExpoTimeUs(unsigned int expoTimeUs)
 	}
 	
 	cout << "Call Isp::setExpoTimeUs() end." << endl;
+	return 0;
 }
-#endif
 
 #if 0	// ispahan
 /*-----------------------------------------------------------------------------
@@ -379,7 +380,6 @@ int Isp::setWDRParam(MI_ISP_IQ_WDR_TYPE_t *pWdrParam)
 }
 #endif
 
-#if 0
 /*-----------------------------------------------------------------------------
 描--述：使能WDR
 参--数：autoOrManual, 自动启用还是手动启用，0, 自动；1, 手动。
@@ -396,7 +396,7 @@ int Isp::enableWDR(int autoOrManual)
 	memset(&wdrParam, 0, sizeof(MI_ISP_IQ_WDR_TYPE_t));
 	
 	int ret = 0;
-	ret = MI_ISP_IQ_GetWDR(iSpCh, &wdrParam);
+	ret = MI_ISP_IQ_GetWDR(ispDevId, ispChnId, &wdrParam);
 	if(MI_ISP_OK != ret)
 	{
 		cerr << "Fail to call MI_ISP_IQ_GetWDR() in Isp::enableWDR()." << endl;
@@ -418,7 +418,7 @@ int Isp::enableWDR(int autoOrManual)
 		wdrParam.enOpType = SS_OP_TYP_AUTO;
 	}
 
-	ret = MI_ISP_IQ_SetWDR(iSpCh, &wdrParam);
+	ret = MI_ISP_IQ_SetWDR(ispDevId, ispChnId, &wdrParam);
 	if(MI_ISP_OK != ret)
 	{
 		cerr << "Fail to call MI_ISP_IQ_SetWDR() in Isp::enableWDR()." << endl;
@@ -445,7 +445,7 @@ int Isp::disableWDR()
 	memset(&wdrParam, 0, sizeof(MI_ISP_IQ_WDR_TYPE_t));
 	
 	int ret = 0;
-	ret = MI_ISP_IQ_GetWDR(iSpCh, &wdrParam);
+	ret = MI_ISP_IQ_GetWDR(ispDevId, ispChnId, &wdrParam);
 	if(MI_ISP_OK != ret)
 	{
 		cerr << "Fail to call MI_ISP_IQ_GetWDR() in Isp::disableWDR()." << endl;
@@ -453,7 +453,7 @@ int Isp::disableWDR()
 	}
 
 	wdrParam.bEnable = SS_FALSE;
-	ret = MI_ISP_IQ_SetWDR(iSpCh, &wdrParam);
+	ret = MI_ISP_IQ_SetWDR(ispDevId, ispChnId, &wdrParam);
 	if(MI_ISP_OK != ret)
 	{
 		cerr << "Fail to call MI_ISP_IQ_SetWDR() in Isp::disableWDR()." << endl;
@@ -463,7 +463,6 @@ int Isp::disableWDR()
 	cout << "Call Isp::disableWDR() end." << endl;
 	return 0;
 }
-#endif
 
 /*-----------------------------------------------------------------------------
 描--述：打开IQ Server

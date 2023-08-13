@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../out/liblibtinytest.a  CMakeFiles/libtinytest.dir/tinytest.c.o
-/usr/bin/ranlib ../out/liblibtinytest.a

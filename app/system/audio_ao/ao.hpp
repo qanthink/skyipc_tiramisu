@@ -11,6 +11,14 @@ qanthink 版权所有。
 class AudioOut{
 public:
 	static AudioOut *getInstance();			// 获取对象。
+	
+private:
+	AudioOut();
+	~AudioOut();
+	AudioOut(const AudioOut&);
+	AudioOut& operator=(const AudioOut&);
+
+public:
 	int sendStream(void *pDataBuf, const unsigned int dataLen);		// 送PCM 数据到AO 模块。
 	
 	int enable();
@@ -27,12 +35,6 @@ public:
 	int setVolume(int volumeDb);	// 设置音量
 
 private:
-	// 单例模式需要将如下4个函数声明为private 的。
-	AudioOut();
-	~AudioOut();
-	AudioOut(const AudioOut&);
-	AudioOut& operator=(const AudioOut&);
-	
 	bool bInitialized = false;
 	
 	const MI_AUDIO_DEV audioDev = 0;	// AO 设备号

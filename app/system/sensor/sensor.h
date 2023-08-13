@@ -11,6 +11,12 @@ xxx版权所有。
 class Sensor{
 public:
 	static Sensor *getInstance();
+	
+private:
+	Sensor();
+	~Sensor();
+	Sensor(const Sensor&);
+	Sensor& operator=(const Sensor&);
 
 public:
 	const static MI_SNR_PADID ePADId = 0;
@@ -25,12 +31,6 @@ public:
 	int getPlaneInfo(MI_SNR_PADID ePADId, MI_SNR_PlaneInfo_t *pstPlaneInfo);		// 获取sensor 通道信息
 
 	int getSnrWH(unsigned int *pSnrW, unsigned int *pSnrH);							// 获取sensor 宽高
-	
-private:
-	Sensor();
-	~Sensor();
-	Sensor(const Sensor&);
-	Sensor& operator=(const Sensor&);
 
 private:
 	bool bEnable = false;

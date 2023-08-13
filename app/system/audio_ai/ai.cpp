@@ -12,22 +12,38 @@ xxx版权所有。
 
 using namespace std;
 
+AudioIn::AudioIn()
+{
+	cout << "Call AudioIn::AudioIn()." << endl;
+	enable();
+	cout << "Call AudioIn::AudioIn() end." << endl;
+}
+
+AudioIn::~AudioIn()
+{
+	cout << "Call AudioIn::~AudioIn()." << endl;
+	disable();
+	cout << "Call AudioIn::~AudioIn() end." << endl;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
 AudioIn* AudioIn::getInstance()
 {
 	static AudioIn audioIn;
 	return &audioIn;
 };
 
-AudioIn::AudioIn()
-{
-	enable();
-}
-
-AudioIn::~AudioIn()
-{
-	disable();
-}
-
+/*-----------------------------------------------------------------------------
+描--述：
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
 int AudioIn::enable()
 {
 	setPubAttr();
@@ -42,6 +58,12 @@ int AudioIn::enable()
 	return 0;
 }
 
+/*-----------------------------------------------------------------------------
+描--述：
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
 int AudioIn::disable()
 {
 	disableAed();
@@ -80,6 +102,7 @@ MI_AUDIO_I2sConfig_t stI2sConfig;	设置I2S 工作属性
 -----------------------------------------------------------------------------*/
 int AudioIn::setPubAttr()
 {
+	cout << "Call AudioIn::setPubAttr()." << endl;
 	MI_AUDIO_Attr_t stAiAttr;
 	memset(&stAiAttr, 0, sizeof(MI_AUDIO_Attr_t));
 
@@ -103,8 +126,8 @@ int AudioIn::setPubAttr()
 		cerr << "Fail to call MI_AI_SetPubAttr(). s32Ret = 0x" << hex << s32Ret << endl;
 		return s32Ret;
 	}
-	cout << "Success to call MI_AI_SetPubAttr()." << endl;
-	
+
+	cout << "Call AudioIn::setPubAttr() end." << endl;
 	return s32Ret;
 }
 

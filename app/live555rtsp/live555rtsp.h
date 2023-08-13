@@ -25,9 +25,15 @@ typedef enum{
 
 class Live555Rtsp{
 public:
+	static Live555Rtsp *getInstance();
+
+private:
 	Live555Rtsp();
 	~Live555Rtsp();
+	Live555Rtsp(const Live555Rtsp&);
+	Live555Rtsp& operator=(const Live555Rtsp&);
 
+public:
 	int addStream(const char *filePath, const char *streamName, emEncType_t emEncType);
 	int removeStream(const char *streamName);
 	void eventLoop();
@@ -40,6 +46,4 @@ private:
 
 	std::map<std::string, ServerMediaSession*> streamMap;
 };
-
-int testMJPEG(int argc, char *argv);
 

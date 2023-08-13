@@ -7,7 +7,7 @@ xxx版权所有。
 #pragma once
 
 // 人机交互
-#define USE_INTERACTION		0
+#define USE_INTERACTION		1
 
 // 改变码率
 #define TEST_CHG_BITRATE	1
@@ -74,10 +74,8 @@ xxx版权所有。
 #define SAVE_TIME_SECONDS	10
 
 // rtsp
-#define USE_RTSPSERVER_LOCALFILE	0
-#define USE_RTSPSERVER_LIVESTREAM_MAIN	1
-#define USE_RTSPSERVER_LIVESTREAM_SUB	0
-#define USE_RTSPSERVER_LIVESTREAM_JPEG	0
+#define USE_RTSP_LOCALFILE	0
+#define USE_RTSP_LIVESTREAM	1
 #endif
 
 #if (1 == (USE_UVC))
@@ -89,10 +87,8 @@ xxx版权所有。
 #define SAVE_TIME_SECONDS	10
 
 // rtsp
-#define USE_RTSPSERVER_LOCALFILE	0
-#define USE_RTSPSERVER_LIVESTREAM_MAIN	0
-#define USE_RTSPSERVER_LIVESTREAM_SUB	0
-#define USE_RTSPSERVER_LIVESTREAM_JPEG	0
+#define USE_RTSP_LOCALFILE	0
+#define USE_RTSP_LIVESTREAM	0
 #endif
 
 // wifi and avtp
@@ -114,9 +110,8 @@ extern AvtpAudioClient *pAvtpAudioClient;
 extern AvtpVideoClient *pAvtpVideoClient;
 #endif
 
-#if (1 == (USE_RTSPSERVER_LOCALFILE) || 1 == (USE_RTSPSERVER_LIVESTREAM_MAIN) || 1 == (USE_RTSPSERVER_LIVESTREAM_SUB) || 1 == (USE_RTSPSERVER_LIVESTREAM_JPEG))
+#if (1 == (USE_RTSP_LOCALFILE) || 1 == (USE_RTSP_LIVESTREAM))
 #include "live555rtsp.h"
-extern Live555Rtsp *pLive555Rtsp;
 #endif
 
 void *routeAi(void *arg);

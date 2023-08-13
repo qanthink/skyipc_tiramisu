@@ -13,14 +13,18 @@ using namespace std;
 
 Venc::Venc()
 {
+	cout << "Call Venc::Venc()." << endl;
 	enable();
 	bEnable = true;
+	cout << "Call Venc::Venc() end." << endl;
 }
 
 Venc::~Venc()
 {
+	cout << "Call Venc::~Venc()." << endl;
 	bEnable = false;
 	disable();
+	cout << "Call Venc::~Venc() end." << endl;
 }
 
 /*  ---------------------------------------------------------------------------
@@ -226,19 +230,30 @@ MI_S32 Venc::changeBitrate(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_U32 u32B
 		return s32Ret;
 	}
 
-	if(E_MI_VENC_RC_MODE_MAX <= stChnAttr.stRcAttr.eRcMode)
+	switch(stChnAttr.stRcAttr.eRcMode)
 	{
-		cerr << "In Venc::changeBitrate(), unrecognized encoding format." << endl;
-		return -1;
-	}
-	else if(E_MI_VENC_RC_MODE_MJPEGCBR == stChnAttr.stRcAttr.eRcMode || 
-		E_MI_VENC_RC_MODE_MJPEGFIXQP == stChnAttr.stRcAttr.eRcMode)
-	{
-		stChnAttr.stRcAttr.stAttrMjpegCbr.u32BitRate = u32BitrateKb * 1024; // 转换为bps.
-	}
-	else
-	{
-		stChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = u32BitrateKb * 1024;	// 转换为bps.
+		case E_MI_VENC_RC_MODE_MJPEGCBR:
+		{
+			stChnAttr.stRcAttr.stAttrMjpegCbr.u32BitRate = u32BitrateKb * 1024; // 转换为bps.
+			break;
+		}
+		case E_MI_VENC_RC_MODE_MJPEGFIXQP:
+		{
+			stChnAttr.stRcAttr.stAttrMjpegFixQp.u32Qfactor = u32BitrateKb;		// 当Qfactor 用
+			break;
+		}
+		case E_MI_VENC_RC_MODE_H264CBR:
+		case E_MI_VENC_RC_MODE_H265CBR:
+		{
+			stChnAttr.stRcAttr.stAttrH264Cbr.u32BitRate = u32BitrateKb * 1024; // 转换为bps.
+			break;
+		}
+		default:
+		{
+			cerr << "In Venc::changeBitrate(), unrecognized encoding format." << endl;
+			break;
+		}
+		
 	}
 
 	s32Ret = MI_VENC_SetChnAttr(vencDev, vencChn, &stChnAttr);
@@ -305,21 +320,20 @@ MI_S32 Venc::startRecvPic(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn)
 	return s32Ret;
 }
 
-#if 0
 /*-----------------------------------------------------------------------------
 描--述：VENC停止接收图像。
 参--数：vencChn 通道号。
 返回值：成功，返回0; 失败，返回错误码。
 注--意：
 -----------------------------------------------------------------------------*/
-MI_S32 Venc::stopRecvPic(MI_VENC_CHN vencChn)
+MI_S32 Venc::stopRecvPic(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn)
 {
 	cout << "Call Venc::stopRecvPic()." << endl;
 
 	// MI_S32 MI_VENC_StopRecvPic(MI_VENC_CHN vencChn);
 	MI_S32 s32Ret = 0;
 
-	s32Ret = MI_VENC_StopRecvPic(vencChn);
+	s32Ret = MI_VENC_StopRecvPic(vencDev, vencChn);
 	switch(s32Ret)
 	{
 		case 0xA0022005:
@@ -335,7 +349,6 @@ MI_S32 Venc::stopRecvPic(MI_VENC_CHN vencChn)
 	cout << "Call Venc::stopRecvPic() end." << endl;
 	return s32Ret;
 }
-#endif
 
 /*-----------------------------------------------------------------------------
 描--述：查询VENC 状态。
@@ -854,8 +867,8 @@ MI_S32 Venc::createH265Stream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned
 	stChnAttr.stVeAttr.stAttrH264e.u32Profile = 1;
 	stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_H265E;
 	stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_H265CBR;
-	stChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = 1 * 1024 * 1024;
-	stChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateNum = 30;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32BitRate = 1 * 1024 * 1024;
+	stChnAttr.stRcAttr.stAttrH264Cbr.u32SrcFrmRateNum = 30;
 	stChnAttr.stRcAttr.stAttrH264Cbr.u32SrcFrmRateDen = 1;
 	stChnAttr.stRcAttr.stAttrH264Cbr.u32Gop = 30;
 	stChnAttr.stRcAttr.stAttrH264Cbr.u32FluctuateLevel = 0;
@@ -941,7 +954,7 @@ MI_S32 Venc::createJpegStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned
 
 	//stChnAttr.stVeAttr.stAttrJpeg.u32BufSize = 2 * width * height;	// 不小于最大宽高的乘积
 	stChnAttr.stVeAttr.stAttrJpeg.u32BufSize = ALIGN_UP(width*height*3/4, 16);
-	stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_MJPEGCBR;
+	stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_MJPEGFIXQP;
 	stChnAttr.stVeAttr.stAttrJpeg.u32PicWidth = width;
 	stChnAttr.stVeAttr.stAttrJpeg.u32PicHeight = height;
 	stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicWidth = width;
@@ -951,8 +964,7 @@ MI_S32 Venc::createJpegStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned
 	stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_JPEGE;
 	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateNum = 30;
 	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateDen = 1;
-	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32Qfactor = 20;
-
+	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32Qfactor = 45;	// [1, 90]
 	
 	MI_S32 s32Ret = 0;
 	s32Ret = MI_VENC_CreateChn(vencDev, vencChn, &stChnAttr);
@@ -1249,19 +1261,18 @@ int Venc::setResolution(MI_VENC_DEV vencDev, MI_VENC_CHN vencCh, int width, int 
 	return 0;
 }
 
-#if 0
 /*-----------------------------------------------------------------------------
 描--述：通道是否存在。
 参--数：vencChn VENC通道。
 返回值：1, 通道存在；0, 通道不存在；
 注--意：
 -----------------------------------------------------------------------------*/
-int Venc::isChannelExists(MI_VENC_CHN vencCh)
+int Venc::isChannelExists(MI_VENC_DEV vencDev, MI_VENC_CHN vencCh)
 {
 	cout << "Call Venc::isChannelExists()." << endl;
 	MI_S32 s32Ret = 0;
-	MI_U32 u32Devid = 0;
-	s32Ret = MI_VENC_GetChnDevid(vencCh, &u32Devid);
+	MI_VENC_ChnAttr_t vencChnAttr;
+	s32Ret = MI_VENC_GetChnAttr(vencDev, vencCh, &vencChnAttr);
 	if(0 == s32Ret)		// 正常返回，channel 存在。
 	{
 		cout << "Call Venc::isChannelExists() end." << endl;
@@ -1282,4 +1293,4 @@ int Venc::isChannelExists(MI_VENC_CHN vencCh)
 	cout << "Call Venc::isChannelExists() end." << endl;
 	return 0;
 }
-#endif
+

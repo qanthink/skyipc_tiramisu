@@ -1,1 +1,0 @@
-/usr/bin/cc     CMakeFiles/c_example1.dir/example1.c.o  -o ../../out/c_example1 -rdynamic ../../out/libconfig.so -Wl,-rpath,/home/linux/Workspace/mindsoft/mindcam/mindpub/libconfig/libconfig/out 

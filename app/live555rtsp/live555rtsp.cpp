@@ -17,41 +17,16 @@ xxx版权所有。
 
 using namespace std;
 
-void *openStream(char const *szStreamName)
+/*-----------------------------------------------------------------------------
+描--述：Sensor 模块获取实例的唯一入口函数。
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
+Live555Rtsp* Live555Rtsp::getInstance()
 {
-	cout <<"openStream" << endl;
-	return NULL;
-}
-
-int closeStream(void *arg)
-{
-	cout <<"closeStream" << endl;
-	return 0;
-}
-
-int videoReadStream(unsigned char *ucpBuf, int BufLen, struct timeval *p_Timestamp)
-{
-	Venc *pVenc = Venc::getInstance();
-	MI_VENC_Stream_t stStream;
-	int s32Ret = 0;
-	memset(&stStream, 0, sizeof(MI_VENC_Stream_t));
-	pVenc->rcvStream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencJpegChn, &stStream);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call pVenc->rcvStream(). s32Ret = " << s32Ret << endl;
-		return 0;
-	}
-	if(0 == stStream.u32PackCount)
-	{
-		cerr << "Fail to call pVenc->rcvStream(). u32PackCount = " << stStream.u32PackCount << endl;
-		return 0;
-	}
-	
-	memcpy((char *)ucpBuf, stStream.pstPack[0].pu8Addr, stStream.pstPack[0].u32Len);
-	s32Ret = MI_VENC_ReleaseStream(0, Venc::vencJpegChn, &stStream);
-	//cout << s32Ret << endl;
-	
-	return stStream.pstPack[0].u32Len;
+	static Live555Rtsp live555Rtsp;
+	return &live555Rtsp;
 }
 
 using namespace std;

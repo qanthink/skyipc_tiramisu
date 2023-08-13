@@ -12,10 +12,14 @@ using namespace std;
 
 Divp::Divp()
 {
+	cout << "Call Divp::Divp()." << endl;
+	cout << "Call Divp::Divp() end." << endl;
 }
 
 Divp::~Divp()
 {
+	cout << "Call Divp::~Divp()." << endl;
+	cout << "Call Divp::~Divp() end." << endl;
 }
 
 /*  ---------------------------------------------------------------------------

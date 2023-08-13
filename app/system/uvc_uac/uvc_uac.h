@@ -45,15 +45,17 @@ class UvcUac{
 public:
 	static UvcUac *getInstance();
 
-	int startUvc();
-	int stopUvc();
-
 private:
 	UvcUac();
 	~UvcUac();
 	UvcUac(const UvcUac&);
 	UvcUac& operator=(const UvcUac&);
 
+public:
+	int startUvc();
+	int stopUvc();
+
+private:
 	ST_UvcDev_t stUvcDev;
 	const static MI_U8 u8MaxBufCnt = 3;
 };

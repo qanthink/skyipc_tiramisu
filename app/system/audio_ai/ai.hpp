@@ -24,7 +24,14 @@ struct stAIFrame_t
 class AudioIn{
 public:
 	static AudioIn *getInstance();
-	
+
+private:
+	AudioIn();
+	~AudioIn();
+	AudioIn(const AudioIn&);
+	AudioIn& operator=(const AudioIn&);
+
+public:
 	int enable();
 	int disable();	
 
@@ -44,12 +51,6 @@ public:
 	int setChnOutputPortDepth(MI_U32 u32UserFrameDepth, MI_U32 u32BufQueueDepth);	// 设置输出端口队列深度
 	
 private:
-	// 单例模式需要将如下4个函数声明为private 的。
-	AudioIn();
-	~AudioIn();
-	AudioIn(const AudioIn&);
-	AudioIn& operator=(const AudioIn&);
-
 	bool bInitialized = false;
 
 	/* AI 初始化相关参数 */

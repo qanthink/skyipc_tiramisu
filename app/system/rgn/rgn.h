@@ -41,6 +41,15 @@ MI_S32 ST_OSD_Update(MI_RGN_HANDLE hHandle);
 
 class Rgn{
 public:
+	static Rgn *getInstance();
+
+private:
+	Rgn();
+	~Rgn();
+	Rgn(const Rgn&);
+	Rgn& operator=(const Rgn&);
+	
+public:
 	const static MI_RGN_HANDLE rgnHandle0 = 0;
 	const static MI_RGN_HANDLE rgnHandle1 = 1;
 	const static MI_RGN_HANDLE rgnHandle2 = 2;
@@ -50,9 +59,6 @@ public:
 	const static MI_RGN_HANDLE rgnHandle6 = 6;
 	const static MI_RGN_HANDLE rgnHandle7 = 7;
 
-public:
-	static Rgn *getInstance();
-	
 	MI_S32 enable();
 	MI_S32 disable();
 
@@ -98,13 +104,8 @@ public:
 	#endif
 	
 	int setText(MI_RGN_HANDLE hHandle, const char *str, MI_U32 u32Color, DMF_Font_Size_E enSize);
-	
-private:
-	Rgn();
-	~Rgn();
-	Rgn(const Rgn&);
-	Rgn& operator=(const Rgn&);
 
+private:
 	bool bEnable = false;
 	MI_U32 u32OsdUsedNum = 8;
 	const MI_U32 u32OsdMaxNum = 8;

@@ -16,6 +16,13 @@ class Isp{
 public:
 	static Isp* getInstance();
 
+private:
+	Isp();
+	~Isp();
+	Isp(const Isp&);
+	Isp& operator=(const Isp&);
+
+public:
 	const static MI_ISP_DEV ispDevId = 0;
 	const static MI_ISP_CHANNEL ispChnId = 0;
 	const static MI_ISP_PORT ispPortId = 0;
@@ -44,14 +51,5 @@ public:
 	int setIqServerDataPath(char *iqFilePath);
 
 	int loadBinFile(char* filepath);
-
-private:
-	Isp();
-	~Isp();
-	Isp(const Isp&);
-	Isp& operator=(const Isp&);
-
-private:
-	//const unsigned int iSpCh = 0;
 };
 

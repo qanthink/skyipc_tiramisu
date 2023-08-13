@@ -1,1 +1,0 @@
-/usr/bin/cc     CMakeFiles/libconfig_tests.dir/tests.c.o  -o ../out/libconfig_tests -rdynamic ../out/libconfig.so ../out/liblibtinytest.a -Wl,-rpath,/home/linux/Workspace/mindsoft/mindcam/mindpub/libconfig/libconfig/out 

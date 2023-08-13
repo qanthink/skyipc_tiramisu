@@ -14,27 +14,61 @@ xxx版权所有。
 #include <string.h>
 #include <fcntl.h>
 #include <thread>
-//#include <unistd.h>
 
 #include "testing.h"
 #include "sensor.h"
 #include "isp.h"
+#include "scl.h"
 #include "venc.h"
 #include "sys.h"
+
+#if (1 == (USE_AI))
 #include "ai.hpp"
+#endif
+
+#if (1 == (USE_AO))
 #include "ao.hpp"
+#endif
+
+#if (1 == (TEST_IRCUT))
 #include "ircutled.h"
-//#include "aac.h"
-//#include "aad.h"
+#endif
+
+#if (1 == (USE_FAAC_FAAD))
+#include "aac.h"
+#include "aad.h"
+#endif
+
+#if (1 == (USE_OSD))
 #include "rgn.h"
-//#include "avtp.h"
-//#include "wifi.h"
+#endif
+
+#if (1 == (USE_AVTP_AUDIO) || 1 == (USE_AVTP_VIDEO))
+#include "avtp.h"
+#if (1 == (USE_AVTP_AUDIO))
+#include "atp_client.h"
+#endif
+#if (1 == (USE_AVTP_VIDEO))
+#include "vtp_client.h"
+#endif
+#endif
+
+#if (1 == (USE_RTSP_LOCALFILE) || 1 == (USE_RTSP_LIVESTREAM))
+#include "live555rtsp.h"
+#endif
+
 #include "myfifo.h"
-//#include "mp4container.h"
-//#include "spipanel.h"
-//#include "ethernet.h"
-//#include "atp_client.h"
-//#include "vtp_client.h"
+#if (1 == (USE_FFMPEG_SAVE_MP4))
+#include "mp4container.h"
+#endif
+
+#if (1 == (USE_SPI_PANEL))
+#include "spipanel.h"
+#endif
+
+#if (1 == (TEST_ETHERNET))
+#include "ethernet.h"
+#endif
 
 using namespace std;
 
@@ -46,11 +80,6 @@ AvtpAudioClient *pAvtpAudioClient = NULL;
 
 #if (1 == (USE_AVTP_VIDEO))
 AvtpVideoClient *pAvtpVideoClient = NULL;
-#endif
-
-#if (1 == (USE_RTSPSERVER_LOCALFILE) || 1 == (USE_RTSPSERVER_LIVESTREAM_MAIN) \
-	|| 1 == (USE_RTSPSERVER_LIVESTREAM_SUB) || 1 == (USE_RTSPSERVER_LIVESTREAM_JPEG))
-Live555Rtsp *pLive555Rtsp = NULL;
 #endif
 
 #if (1 == (USE_AI))
@@ -361,8 +390,7 @@ void *routeVideo(int vencDev, int vencCh)
 	const char *streamName = videoName;
 	auto vesType = Venc::getInstance()->getVesType(vencDev, vencCh);
 
-	#if ((1 == (USE_RTSPSERVER_LIVESTREAM_MAIN)) || (1 == (USE_RTSPSERVER_LIVESTREAM_SUB)) \
-		|| (1 == (USE_RTSPSERVER_LIVESTREAM_JPEG)))
+	#if (1 == (USE_RTSP_LIVESTREAM))
 	snprintf(videoName, nameSize, "%s%d", "video", vencCh);
 	cout << "live555 rtsp file : " << videoName << endl;
 	unlink(videoName);
@@ -387,6 +415,7 @@ void *routeVideo(int vencDev, int vencCh)
 	}
 
 	int retRtsp = 0;
+	Live555Rtsp *pLive555Rtsp = Live555Rtsp::getInstance();
 	retRtsp = pLive555Rtsp->addStream(videoName, streamName, emEncType);
 	if(0 != retRtsp)
 	{
@@ -429,8 +458,7 @@ void *routeVideo(int vencDev, int vencCh)
 			}
 			#endif
 
-			#if (1 == (USE_RTSPSERVER_LIVESTREAM_MAIN) || 1 == (USE_RTSPSERVER_LIVESTREAM_SUB) \
-				|| 1 == (USE_RTSPSERVER_LIVESTREAM_JPEG))
+			#if (1 == (USE_RTSP_LIVESTREAM))
 			if(0 == retRtsp)	// 正常返回值。
 			{
 				int fifoFd = myNameFifo.getFdWrite();
@@ -788,14 +816,14 @@ int interAction()
 		}
 
 		Venc *pVenc = Venc::getInstance();
-		if(pVenc->isChannelExists(Venc::vencMainChn))
+		if(pVenc->isChannelExists(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn))
 		{
-			pVenc->changeBitrate(Venc::vencMainChn, bitRate);
+			pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, bitRate);
 		}
 
-		if(pVenc->isChannelExists(Venc::vencJpegChn))
+		if(pVenc->isChannelExists(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn))
 		{
-			pVenc->changeBitrate(Venc::vencJpegChn, bitRate);
+			pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, bitRate);
 		}
 	}
 	#endif
@@ -820,7 +848,18 @@ int interAction()
 		{
 			MI_VENC_CHN vencCh = streamIndex;
 			Venc *pVenc = Venc::getInstance();
-			pVenc->changeBitrate(vencCh, bitRate);
+			if(Venc::vencMainChn == vencCh || Venc::vencSubChn == vencCh)
+			{
+				pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, vencCh, bitRate);
+			}
+			else if(Venc::vencJpegChn == vencCh)
+			{
+				pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, vencCh, bitRate);
+			}
+			else
+			{
+				cerr << "No such venc channel, vencCh = " << vencCh << endl;
+			}
 		}
 	}
 	#endif
@@ -981,18 +1020,17 @@ int interAction()
 			cin >> cmdVal;
 		}
 
-		MI_VENC_ModType_e vesType = Venc::vesTypeH264;
+		MI_VENC_ModType_e vesType = E_MI_VENC_MODTYPE_VENC;
 		if(0 == cmdVal)
 		{
-			vesType = Venc::vesTypeH264;
+			vesType = E_MI_VENC_MODTYPE_H264E;
 		}
 		else if(1 == cmdVal)
 		{
-			vesType = Venc::vesTypeH265;
+			vesType = E_MI_VENC_MODTYPE_H265E;
 		}
 
-		#if (1 == (USE_RTSPSERVER_LIVESTREAM_MAIN) || 1 == (USE_RTSPSERVER_LIVESTREAM_SUB) \
-			|| 1 == (USE_RTSPSERVER_LIVESTREAM_JPEG))
+		#if (1 == (USE_RTSP_LIVESTREAM))
 		auto emEncType = emEncTypeH264;
 		if(0 == cmdVal)
 		{
@@ -1009,45 +1047,44 @@ int interAction()
 		int oldWidthMain = 0;
 		int oldHeightMain = 0;
 		Venc *pVenc = Venc::getInstance();
-		pVenc->getResolution(Venc::vencSubChn, &oldWidthSub, &oldHeightSub);
-		pVenc->getResolution(Venc::vencMainChn, &oldWidthMain, &oldHeightMain);
+		pVenc->getResolution(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, &oldWidthSub, &oldHeightSub);
+		pVenc->getResolution(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, &oldWidthMain, &oldHeightMain);
 		printf("oldWidthSub = %d, oldHeightSub = %d.\n", oldWidthSub, oldHeightSub);
 		printf("oldWidthMain = %d, oldHeightMain = %d.\n", oldWidthMain, oldHeightMain);
 
-		#if (1 == (USE_RTSPSERVER_LIVESTREAM_MAIN) || 1 == (USE_RTSPSERVER_LIVESTREAM_SUB) \
-			|| 1 == (USE_RTSPSERVER_LIVESTREAM_JPEG))
+		#if (1 == (USE_RTSP_LIVESTREAM))
+		Live555Rtsp *pLive555Rtsp = Live555Rtsp::getInstance();
 		pLive555Rtsp->removeStream("video0");
 		pLive555Rtsp->removeStream("video1");
 		#endif
 
-		Vpe *pVpe = Vpe::getInstance();
+ 		Scl *pScl = Scl::getInstance();
 		// 销毁主码流
-		pVenc->stopRecvPic(Venc::vencMainChn);
-		pVenc->destroyChn(Venc::vencMainChn);
-		pVpe->disablePort(Vpe::vpeMainPort);
+		pVenc->stopRecvPic(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn);
+		pVenc->destroyChn(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn);
+		pScl->destoryPort(Scl::sclPortMain);
 
 		// 销毁子码流
-		pVenc->stopRecvPic(Venc::vencSubChn);
-		pVenc->destroyChn(Venc::vencSubChn);
-		pVpe->disablePort(Vpe::vpeSubPort);
+		pVenc->stopRecvPic(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn);
+		pVenc->destroyChn(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn);
+		pScl->destoryPort(Scl::sclPortSub);
 
 		Sys *pSys = Sys::getInstance();
 		// 创建子码流
 		unsigned int subW = 1280;
 		unsigned int subH = 720;
-		pVpe->createPort(Vpe::vpeSubPort, oldWidthSub, oldHeightSub);
-		pVenc->createH26xStream(Venc::vencSubChn, oldWidthSub, oldHeightSub, vesType);
-		pVenc->changeBitrate(Venc::vencSubChn, 0.25 * 1024);
-		pSys->bindVpe2Venc(Vpe::vpeSubPort, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+		pScl->createPort(Scl::sclPortSub, oldWidthSub, oldHeightSub);
+		//pVenc->createH26xStream(Venc::vencSubChn, oldWidthSub, oldHeightSub, vesType);
+		pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 0.25 * 1024);
+		//pSys->bindScl2Venc(Scl::SclSubPort, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 
 		// 创建主码流
-		pVpe->createPort(Vpe::vpeMainPort, oldWidthMain, oldHeightMain);
-		pVenc->createH26xStream(Venc::vencMainChn, oldWidthMain, oldHeightMain, vesType);
-		pVenc->changeBitrate(Venc::vencMainChn, 1 * 1024);
-		pSys->bindVpe2Venc(Vpe::vpeMainPort, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+		//pVpe->createPort(Vpe::vpeMainPort, oldWidthMain, oldHeightMain);
+		//pVenc->createH26xStream(Venc::vencMainChn, oldWidthMain, oldHeightMain, vesType);
+		pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, 1 * 1024);
+		//pSys->bindVpe2Venc(Vpe::vpeMainPort, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 
-		#if (1 == (USE_RTSPSERVER_LIVESTREAM_MAIN) || 1 == (USE_RTSPSERVER_LIVESTREAM_SUB) \
-			|| 1 == (USE_RTSPSERVER_LIVESTREAM_JPEG))
+		#if (1 == (USE_RTSP_LIVESTREAM))
 		int ret = 0;
 		ret = pLive555Rtsp->addStream("video1", "video1", emEncType);
 		if(0 != ret)
@@ -1081,28 +1118,28 @@ int interAction()
 			}
 		}while(0 > subW || 0 > subH || 192 > subW || 128 > subH || 1920 < subW || 1080 < subH);
 	
-		Vpe *pVpe = Vpe::getInstance();
+		Scl *pScl = Scl::getInstance();
 		Venc *pVenc = Venc::getInstance();
 
 		// 获取旧的编码信息
 		MI_VENC_ChnAttr_t stChAttr;
 		memset(&stChAttr, 0, sizeof(MI_VENC_ChnAttr_t));
-		pVenc->getChnAttr(Venc::vencSubChn, &stChAttr);
+		pVenc->getChnAttr(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, &stChAttr);
 		
 		// 销毁子码流
-		pVenc->stopRecvPic(Venc::vencSubChn);
-		pVenc->destroyChn(Venc::vencSubChn);
-		pVpe->disablePort(Vpe::vpeSubPort);
+		pVenc->stopRecvPic(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn);
+		pVenc->destroyChn(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn);
+		pScl->destoryPort(Scl::sclPortSub);
 		Sys *pSys = Sys::getInstance();
 		
 		// 创建子码流
-		pVpe->createPort(Vpe::vpeSubPort, subW, subH);
+		pScl->createPort(Scl::sclPortSub, subW, subH);
 		stChAttr.stVeAttr.stAttrH264e.u32MaxPicWidth = subW;
 		stChAttr.stVeAttr.stAttrH264e.u32MaxPicHeight = subH;
 		stChAttr.stVeAttr.stAttrH264e.u32PicWidth = subW;
 		stChAttr.stVeAttr.stAttrH264e.u32PicHeight = subH;
-		pVenc->createStreamWithAttr(Venc::vencSubChn, &stChAttr);
-		pSys->bindVpe2Venc(Vpe::vpeSubPort, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+		pVenc->createStreamWithAttr(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, &stChAttr);
+		pSys->bindScl2Venc(Scl::sclPortSub, MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 	}
 	#endif
 	#if(1 == TEST_DAY_NIGHT)

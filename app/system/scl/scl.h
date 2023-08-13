@@ -14,7 +14,14 @@ xxx版权所有。
 class Scl{
 public:
 	static Scl* getInstance();
+	
+private:
+	Scl();
+	~Scl();
+	Scl(const Scl&);
+	Scl& operator=(const Scl&);
 
+public:
 	const static MI_SCL_DEV sclDevId = 0;
 	const static MI_SCL_CHANNEL sclChnId = 0;
 	const static MI_SCL_PORT sclPortMain = 0;
@@ -29,11 +36,6 @@ public:
 	int destoryPort(MI_SCL_PORT sclPortId);
 
 private:
-	Scl();
-	~Scl();
-	Scl(const Scl&);
-	Scl& operator=(const Scl&);
-
 	bool bEnable = false;
 };
 

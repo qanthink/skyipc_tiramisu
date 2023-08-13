@@ -14,12 +14,16 @@ using namespace std;
 
 Vif::Vif()
 {
+	cout << "Call Vif::Vif()." << endl;
 	enable();
+	cout << "Call Vif::Vif() end." << endl;
 }
 
 Vif::~Vif()
 {
+	cout << "Call Vif::Vif() ~Vif." << endl;
 	disable();
+	cout << "Call Vif::Vif() ~Vif." << endl;
 }
 
 /*-----------------------------------------------------------------------------

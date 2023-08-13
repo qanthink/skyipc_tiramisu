@@ -12,16 +12,17 @@ xxx版权所有。
 
 class Divp{
 public:
-	const static MI_DIVP_CHN divpChn = 0;
-
 	static Divp *getInstance();
 
-	MI_S32 createChn(unsigned int wIn, unsigned int hIn, 
-						unsigned int wOut, unsigned int hOut);
 private:
 	Divp();
 	~Divp();
 	Divp(const Divp&);
 	Divp& operator=(const Divp&);
+
+public:
+	const static MI_DIVP_CHN divpChn = 0;
+	MI_S32 createChn(unsigned int wIn, unsigned int hIn, 
+						unsigned int wOut, unsigned int hOut);
 };
 

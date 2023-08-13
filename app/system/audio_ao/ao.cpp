@@ -12,21 +12,36 @@ using namespace std;
 
 AudioOut::AudioOut()
 {
+	cout << "Call AudioOut::AudioOut()." << endl;
 	enable();
+	cout << "Call AudioOut::AudioOut() end." << endl;
 }
 
 AudioOut::~AudioOut()
 {
+	cout << "Call AudioOut::~AudioOut()." << endl;
 	disable();
+	cout << "Call AudioOut::~AudioOut() end." << endl;
 }
 
+/*-----------------------------------------------------------------------------
+描--述：
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
 AudioOut* AudioOut::getInstance()
 {
 	static AudioOut AudioOut;
 	return &AudioOut;
 };
 
-
+/*-----------------------------------------------------------------------------
+描--述：
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
 int AudioOut::enable()
 {
 	if(bInitialized)
@@ -44,6 +59,12 @@ int AudioOut::enable()
 	return 0;
 }
 
+/*-----------------------------------------------------------------------------
+描--述：
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
 int AudioOut::disable()
 {
 	disableChanel();

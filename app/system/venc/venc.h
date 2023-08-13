@@ -15,15 +15,22 @@ xxx版权所有。
 
 class Venc{
 public:
+	static Venc *getInstance();
+	
+private:
+	Venc();
+	~Venc();
+	Venc(const Venc&);
+	Venc& operator=(const Venc&);
+
+public:
 	// 主码流和子码流的通道号。
 	const static MI_VENC_CHN vencMainChn = 0;
 	const static MI_VENC_CHN vencSubChn = 1;
 	const static MI_VENC_CHN vencJpegChn = 2;
 	const static bool bUseSliceMode = false;
-
 	const static unsigned int superMaxISize = 128 * 1024;
 
-	static Venc *getInstance();
 	MI_S32 enable();
 	MI_S32 disable();
 
@@ -66,14 +73,9 @@ public:
 	int setResolution(MI_VENC_DEV vencDev, MI_VENC_CHN vencCh, int width, int height);
 	int getResolution(MI_VENC_DEV vencDev, MI_VENC_CHN vencCh, int *pWidth, int *pHeight);
 
-	int isChannelExists(MI_VENC_CHN vencCh);
-	
-private:
-	Venc();
-	~Venc();
-	Venc(const Venc&);
-	Venc& operator=(const Venc&);
+	int isChannelExists(MI_VENC_DEV vencDev, MI_VENC_CHN vencCh);
 
+private:
 	bool bEnable;
 };
 

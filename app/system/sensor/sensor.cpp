@@ -12,13 +12,17 @@ using namespace std;
 
 Sensor::Sensor()
 {
+	cout << "Call Sensor::Sensor()." << endl;
 	enable();
+	cout << "Call Sensor::Sensor() end." << endl;
 }
 
 Sensor::~Sensor()
 {
+	cout << "Call Sensor::~Sensor()." << endl;
 	disable();
 	bEnable = false;
+	cout << "Call Sensor::~Sensor() end." << endl;
 }
 
 /*-----------------------------------------------------------------------------
@@ -32,7 +36,6 @@ Sensor* Sensor::getInstance()
 	static Sensor sensor;
 	return &sensor;
 }
-
 
 /*-----------------------------------------------------------------------------
 描--述：
@@ -257,7 +260,6 @@ int Sensor::getSnrWH(unsigned int *pSnrW, unsigned int *pSnrH)
 
 	MI_S32 s32Ret = 0;
 	MI_SNR_PlaneInfo_t stPlaneInfo;
-	
 	memset(&stPlaneInfo, 0, sizeof(MI_SNR_PlaneInfo_t));
 	s32Ret = MI_SNR_GetPlaneInfo(ePADId, u32PlaneID, &stPlaneInfo);
 	if(0 != s32Ret)

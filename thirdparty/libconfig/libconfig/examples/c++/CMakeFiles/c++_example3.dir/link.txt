@@ -1,1 +1,0 @@
-/usr/bin/c++      CMakeFiles/c++_example3.dir/example3.cpp.o  -o ../../out/c++_example3 -rdynamic ../../out/libconfig++.so -Wl,-rpath,/home/linux/Workspace/mindsoft/mindcam/mindpub/libconfig/libconfig/out 

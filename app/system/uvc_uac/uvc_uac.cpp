@@ -29,10 +29,14 @@ UvcUac* UvcUac::getInstance()
 
 UvcUac::UvcUac()
 {
+	cout << "Call UvcUac::UvcUac()." << endl;
+	cout << "Call UvcUac::UvcUac() end." << endl;
 }
 
 UvcUac::~UvcUac()
 {
+	cout << "Call UvcUac::~UvcUac()." << endl;
+	cout << "Call UvcUac::~UvcUac() end." << endl;
 }
 
 /*-----------------------------------------------------------------------------
