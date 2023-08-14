@@ -22,7 +22,7 @@ extern "C" {
 #include "mi_hdmi_datatype.h"
 
 #define HDMI_MAJOR_VERSION 2
-#define HDMI_SUB_VERSION 5
+#define HDMI_SUB_VERSION 3
 #define MACRO_TO_STR(macro) #macro
 #define HDMI_VERSION_STR(major_version,sub_version) ({char *tmp = sub_version/100 ? \
                                     "mi_hdmi_version_" MACRO_TO_STR(major_version)"." MACRO_TO_STR(sub_version) : sub_version/10 ? \

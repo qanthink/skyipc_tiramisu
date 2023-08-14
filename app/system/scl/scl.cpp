@@ -118,11 +118,11 @@ MI_S32 Scl::disable()
 	MI_S32 s32Ret = 0;
 	for(i = 0; i < 6; ++i)	// tiramisu 平台，总共6个PORT.
 	{
-		s32Ret = MI_SCL_EnableOutputPort(sclDevId, sclChnId, i);
+		s32Ret = MI_SCL_DisableOutputPort(sclDevId, sclChnId, i);
 		if(0 != s32Ret)
 		{
 			cerr << "PortID = " << i <<endl;
-			cerr << "Fail to call MI_SCL_EnableOutputPort() in Scl::disable(). " 
+			cerr << "Fail to call MI_SCL_DisableOutputPort() in Scl::disable(). " 
 				<< "errno = 0x" << hex << s32Ret << dec << endl;
 		}
 	}

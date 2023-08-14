@@ -33,7 +33,7 @@ xxx 版权所有。
 #endif
 
 #if (1 == (USE_UVC))
-#include "uvc_uac.h"
+#include "uac_uvc.h"
 #endif
 
 #if (1 == (USE_FAAC_FAAD))
@@ -180,8 +180,8 @@ int main(int argc, const char *argv[])
 
 	// 测试UVC
 	#if (1 == (USE_UVC))
-	UvcUac *pUvcUac = UvcUac::getInstance();
-	pUvcUac->startUvc();
+	UacUvc *pUacUvc = UacUvc::getInstance();
+	pUacUvc->startUvc();
 	#endif
 
 	/*
@@ -352,7 +352,7 @@ int main(int argc, const char *argv[])
 	#endif
 
 	#if (1 == (USE_UVC))
-	pUvcUac->stopUvc();
+	pUacUvc->stopUvc();
 	#endif
 
 	#if(1 == (USE_IQ_SERVER))

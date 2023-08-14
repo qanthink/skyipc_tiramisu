@@ -8,7 +8,7 @@ xxx版权所有。
 #include "sys.h"
 #include "sensor.h"
 #include "isp.h"
-#include "uvc_uac.h"
+#include "uac_uvc.h"
 #include "st_common.h"
 
 #include <iostream>
