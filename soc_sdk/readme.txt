@@ -8,4 +8,9 @@ When update sdk, run:
 rm include/* -rf
 rm dynamic/* -rf
 
+cp ~/Downloads/tiramisuV012_202206_usbcam/sourcecode/project/release/include/* ~/Workspace/skyipc_tiramisu/soc_sdk/include/ -r
+
+cp ~/Downloads/tiramisuV012_202206_usbcam/sourcecode/project/image/output/rootfs/lib/* ~/Workspace/skyipc_tiramisu/soc_sdk/dynamic/ -r
+cp ~/Downloads/tiramisuV012_202206_usbcam/sourcecode/project/image/output/miservice/config/lib/* ~/Workspace/skyipc_tiramisu/soc_sdk/dynamic/ -r
+
 
