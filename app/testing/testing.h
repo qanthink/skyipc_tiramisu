@@ -46,7 +46,7 @@ xxx版权所有。
 #define USE_FAAC_FAAD		0
 
 // IQ Server
-#define USE_IQ_SERVER		1
+#define USE_IQ_SERVER		0
 
 #define USE_AI				0
 #define USE_AI_SAVE_LOCAL_PCM		0
