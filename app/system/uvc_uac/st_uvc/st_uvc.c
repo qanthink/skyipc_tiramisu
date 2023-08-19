@@ -1,15 +1,16 @@
-/* Copyright (c) 2018-2019 Sigmastar Technology Corp.
- All rights reserved.
+/* SigmaStar trade secret */
+/* Copyright (c) [2019~2020] SigmaStar Technology.
+All rights reserved.
 
-  Unless otherwise stipulated in writing, any and all information contained
- herein regardless in any format shall remain the sole proprietary of
- Sigmastar Technology Corp. and be kept in strict confidence
- (ï¿½ï¿½Sigmastar Confidential Informationï¿½ï¿½) by the recipient.
- Any unauthorized act including without limitation unauthorized disclosure,
- copying, use, reproduction, sale, distribution, modification, disassembling,
- reverse engineering and compiling of the contents of Sigmastar Confidential
- Information is unlawful and strictly prohibited. Sigmastar hereby reserves the
- rights to any and all damages, losses, costs and expenses resulting therefrom.
+Unless otherwise stipulated in writing, any and all information contained
+herein regardless in any format shall remain the sole proprietary of
+SigmaStar and be kept in strict confidence
+(SigmaStar Confidential Information) by the recipient.
+Any unauthorized act including without limitation unauthorized disclosure,
+copying, use, reproduction, sale, distribution, modification, disassembling,
+reverse engineering and compiling of the contents of SigmaStar Confidential
+Information is unlawful and strictly prohibited. SigmaStar hereby reserves the
+rights to any and all damages, losses, costs and expenses resulting therefrom.
 */
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,7 +32,7 @@
 #include "st_uvc_xu.h"
 
 #define ONLY_ONE_VIDEO  (1)
-unsigned int g_device_count = 0;
+uint32_t g_device_count = 0;
 
 bool uvc_func_trace = 1;
 UVC_DBG_LEVEL_e uvc_debug_level = UVC_DBG_ERR;
@@ -55,7 +56,12 @@ static char *version = MACRO_TO_STRING(DEMO_VERSION);
     } while(0)
 
 static struct uvc_streaming_control
-_UVC_Fill_Streaming_Control(ST_UVC_Device_t * pdev, struct uvc_streaming_control *ctrl,int32_t iframe, int32_t iformat);
+_UVC_Fill_Streaming_Control(ST_UVC_Device_t * pdev,
+                struct uvc_streaming_control *ctrl,
+                int32_t iframe, int32_t iformat);
+static struct uvc_still_image_streaming_control
+_UVC_Fill_Still_Image_Streaming_Control(ST_UVC_Device_t * pdev,
+                struct uvc_still_image_streaming_control *sti_ctrl);
 
 static char *TraceLevel2Str(int level)
 {
@@ -166,6 +172,7 @@ static int32_t _UVC_FillBuffer(ST_UVC_Device_t * pdev, struct buffer *mem, UVC_I
     ST_UVC_BufInfo_t BufInfo;
     ST_UVC_OPS_t fops = pdev->ChnAttr.fops;
 
+    /* only wait half frame to ensure userptr mode's max latency is one frame */
     if(false==UVC_GET_STATUS(pdev->status, UVC_INTDEV_STREAMON))
         return -1;
 
@@ -219,7 +226,7 @@ static int32_t _UVC_FillBuffer(ST_UVC_Device_t * pdev, struct buffer *mem, UVC_I
     /* check format */
     if(mem->buf.bytesused > mem->length){
         UVC_WRN(pdev,"bytesused[%d] is bigger than buf length[%d] ,Drop it", mem->buf.bytesused, mem->length);
-        return -EBUSY;
+         return -EBUSY;
     }
     return mem->buf.bytesused;
 }
@@ -263,7 +270,7 @@ static int _UVC_FinishBuf(ST_UVC_Device_t * pdev, struct buffer *mem)
     return s32Ret;
 }
 
-static int8_t _UVC_QBuf(ST_UVC_Device_t * pdev, struct buffer *mem)
+static int8_t _UVC_QBuf(ST_UVC_Device_t * pdev, struct buffer *mem, bool sti)
 {
     int32_t s32Ret;
     int32_t fd     = pdev->fd;
@@ -288,10 +295,11 @@ static int8_t _UVC_QBuf(ST_UVC_Device_t * pdev, struct buffer *mem)
         goto fail;
     }
 
-    if(mem->is_tail)
-        mem->buf.reserved = 0;
-    else
-        mem->buf.reserved = 1;
+    if(!mem->is_tail)
+        mem->buf.reserved = UVC_BUFFER_FLAGS_FRAME_NOEND;
+
+    if (sti)
+        mem->buf.reserved |= UVC_BUFFER_FLAGS_STILL_IMAGE;
 
     s32Ret = ioctl(fd, VIDIOC_QBUF, &(mem->buf));
     if (s32Ret < 0) {
@@ -373,7 +381,7 @@ static int8_t _UVC_Video_QBuf(ST_UVC_Device_t * pdev)
             continue;
         }
 
-        s32Ret = _UVC_QBuf(pdev, mem);
+        s32Ret = _UVC_QBuf(pdev, mem, false);
     }
     UP();
 
@@ -540,10 +548,12 @@ static int8_t _UVC_Video_ReqBufs(ST_UVC_Device_t * pdev, int32_t flags)
     pdev->mem = mem;
     if (mem)
     {
+#if 0
         // some platform need to queue buf before ISOC In (Streamon)
         UP();
         _UVC_Video_QBuf(pdev);
         DOWN();
+#endif
     }
     printf("UVC: %u buffers %s. \n", set.nbuf, rb.count?"alloc":"free");
 
@@ -641,6 +651,127 @@ static int8_t _UVC_Video_Stream_on_off(ST_UVC_Device_t * pdev, int32_t fd,int32_
 
 done:
     return ST_UVC_SUCCESS;
+}
+
+static int32_t UVC_Change_Input_Frame(ST_UVC_Device_t * pdev, Stream_Params_t param)
+{
+    int32_t s32Ret = 0;
+    ST_UVC_OPS_t fops = pdev->ChnAttr.fops;
+
+    /* change stream to current frame */
+    s32Ret = fops.UVC_StopCapture(pdev);
+    if (s32Ret < 0)
+        return s32Ret;
+
+    s32Ret = fops.UVC_StartCapture(pdev, param);
+    if (s32Ret < 0)
+        return s32Ret;
+
+    return s32Ret;
+}
+
+static void UVC_Sti_Capture(ST_UVC_Device_t * pdev)
+{
+    struct buffer *mem = NULL;
+    int32_t s32Ret = -1;
+    uint32_t bytesused = 0;
+    int32_t fd = pdev->fd;
+    UVC_IO_MODE_e io_mode = pdev->ChnAttr.setting.io_mode;
+    Stream_Params_t param = pdev->stream_param;
+    ST_UVC_OPS_t fops = pdev->ChnAttr.fops;
+    ST_UVC_BufInfo_t BufInfo;
+
+    param.fcc =
+        uvc_still_formats[pdev->sti_commit.bFormatIndex-1].fcc;
+    param.width =
+        uvc_still_formats[pdev->sti_commit.bFormatIndex-1].frames[pdev->sti_commit.bFrameIndex-1].width;
+    param.height =
+        uvc_still_formats[pdev->sti_commit.bFormatIndex-1].frames[pdev->sti_commit.bFrameIndex-1].height;
+
+    DOWN();
+    printf("START %s width%d height%d\n", __func__, param.width, param.height);
+    UVC_Change_Input_Frame(pdev, param);
+
+
+    /* Get A Still Image */
+    memset(&BufInfo,0x00,sizeof(ST_UVC_BufInfo_t));
+    BufInfo.is_tail = true;
+
+    if(UVC_MEMORY_MMAP==io_mode)
+    {
+        BufInfo.b.buf = malloc(param.width * param.height * 2);
+        if(NULL == BufInfo.b.buf)
+            goto fail;
+    }
+retry:
+    if(0 <= fops.m.UVC_DevFillBuffer(pdev, &BufInfo))
+    {
+        printf("Get A Still Buf, length:%ld\n", BufInfo.length);
+    } else {
+        usleep(1000);
+        goto retry;
+    }
+
+    do {
+        mem = _UVC_DQBuf(pdev, 1);
+        if(NULL == mem)
+        {
+            mem = _UVC_DQBuf(pdev, 0);
+            if(NULL == mem)
+                continue;
+        }
+
+        /* cut to a slice */
+        if ((BufInfo.length-bytesused) > mem->length)
+        {
+            mem->is_tail = false;
+
+            if(UVC_MEMORY_MMAP==io_mode){
+                memcpy(mem->mmap, BufInfo.b.buf+bytesused, mem->length);
+                mem->buf.bytesused = mem->length;
+            }
+            if(UVC_MEMORY_USERPTR==io_mode){
+                *mem->userptr = BufInfo.b.start + bytesused;
+                mem->buf.bytesused = mem->length;
+            }
+            bytesused += mem->length;
+        } else {
+            mem->is_tail = true;
+
+            if(UVC_MEMORY_MMAP==io_mode){
+                memcpy(mem->mmap, BufInfo.b.buf+bytesused, BufInfo.length - bytesused);
+                mem->buf.bytesused = BufInfo.length - bytesused;
+            }
+            if(UVC_MEMORY_USERPTR==io_mode){
+                *mem->userptr = BufInfo.b.start + bytesused;
+                mem->buf.bytesused = BufInfo.length - bytesused;
+                mem->handle = BufInfo.b.handle;
+            }
+            bytesused = BufInfo.length;
+        }
+
+        printf("queue slice bytesused%d tail%d\n", bytesused, mem->is_tail);
+        if (!mem->is_tail)
+            mem->buf.reserved = UVC_BUFFER_FLAGS_FRAME_NOEND;
+        mem->buf.reserved |= UVC_BUFFER_FLAGS_STILL_IMAGE;
+        s32Ret = ioctl(fd, VIDIOC_QBUF, &(mem->buf));
+        if (s32Ret < 0)
+        {
+            UVC_WRN(pdev, "Unable to queue buffer: %s (%d).", strerror(errno), errno);
+            _UVC_FinishBuf(pdev, mem);
+            goto fail;
+        }
+        mem->status = BUFFER_QUEUE;
+        UVC_TRACE(pdev, "Qbuf Success, buf index %d buflen %d", mem->buf.index, mem->buf.bytesused);
+    } while(bytesused < BufInfo.length);
+
+fail:
+    if(BufInfo.b.buf)
+        free(BufInfo.b.buf);
+    UVC_Change_Input_Frame(pdev, pdev->stream_param);
+    printf("END %s width%d height%d\n", __func__, param.width, param.height);
+
+    UP();
 }
 
 static void _UVC_SYS_Exit(ST_UVC_Device_t * pdev)
@@ -995,35 +1126,54 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
     return ST_UVC_SUCCESS;
 }
 
-
 static int8_t _UVC_Events_Process_Streaming(ST_UVC_Device_t *pdev,uint8_t req, uint8_t cs,
                                             struct uvc_request_data *resp)
 {
     struct uvc_streaming_control *ctrl;
+    struct uvc_still_image_streaming_control *sti_ctrl;
 
-    if (cs != UVC_VS_PROBE_CONTROL && cs != UVC_VS_COMMIT_CONTROL)
-        return -EINVAL;
-
-    ctrl = (struct uvc_streaming_control *)&resp->data;
-    resp->length = sizeof *ctrl;
+    if (cs == UVC_VS_PROBE_CONTROL || cs == UVC_VS_COMMIT_CONTROL)
+    {
+        ctrl = (struct uvc_streaming_control *)&resp->data;
+        resp->length = sizeof *ctrl;
+    } else
+    if (cs == UVC_VS_STILL_PROBE_CONTROL || cs == UVC_VS_STILL_COMMIT_CONTROL)
+    {
+        sti_ctrl = (struct uvc_still_image_streaming_control *)&resp->data;
+        resp->length = sizeof *sti_ctrl;
+    } else
+    if (cs == UVC_VS_STILL_IMAGE_TRIGGER_CONTROL)
+    {
+        resp->length = 1;
+    } else {
+        return resp->length = -EL2HLT;
+    }
 
     switch (req) {
     case UVC_SET_CUR:
         pdev->control.control = cs;
         break;
 
-    case UVC_GET_CUR:
-        if (cs == UVC_VS_PROBE_CONTROL)
-            memcpy(ctrl, &pdev->probe, sizeof *ctrl);
-        else
-            memcpy(ctrl, &pdev->commit, sizeof *ctrl);
-        break;
-
     case UVC_GET_MIN:
     case UVC_GET_MAX:
     case UVC_GET_DEF:
-        _UVC_Fill_Streaming_Control(pdev, ctrl, req == UVC_GET_MAX ? -1 : 0,
-                       req == UVC_GET_MAX ? -1 : 0);
+    case UVC_GET_CUR:
+        switch (cs) {
+        case UVC_VS_PROBE_CONTROL:
+            memcpy(ctrl, &pdev->probe, sizeof *ctrl);
+            break;
+        case UVC_VS_COMMIT_CONTROL:
+            memcpy(ctrl, &pdev->commit, sizeof *ctrl);
+            break;
+        case UVC_VS_STILL_PROBE_CONTROL:
+            memcpy(sti_ctrl, &pdev->sti_probe, sizeof *sti_ctrl);
+            break;
+        case UVC_VS_STILL_COMMIT_CONTROL:
+            memcpy(sti_ctrl, &pdev->sti_commit, sizeof *sti_ctrl);
+            break;
+        default:
+            return resp->length = -EL2HLT;
+        }
         break;
 
     case UVC_GET_RES:
@@ -1031,9 +1181,21 @@ static int8_t _UVC_Events_Process_Streaming(ST_UVC_Device_t *pdev,uint8_t req, u
         break;
 
     case UVC_GET_LEN:
-        resp->data[0] = 0x00;
-        resp->data[1] = 0x22;
-        resp->length = 2;
+        switch (cs)
+        {
+        case UVC_VS_PROBE_CONTROL:
+        case UVC_VS_COMMIT_CONTROL:
+            resp->data[0] = sizeof(struct uvc_streaming_control);
+            resp->length = 1;
+            break;
+        case UVC_VS_STILL_PROBE_CONTROL:
+        case UVC_VS_STILL_COMMIT_CONTROL:
+            resp->data[0] = sizeof(struct uvc_still_image_streaming_control);
+            resp->length = 1;
+            break;
+        default:
+            return resp->length = -EL2HLT;
+        }
         break;
 
     case UVC_GET_INFO:
@@ -1043,6 +1205,7 @@ static int8_t _UVC_Events_Process_Streaming(ST_UVC_Device_t *pdev,uint8_t req, u
     }
     return ST_UVC_SUCCESS;
 }
+
 /* ctrl request:
  * wValue: the wValue field contains the Control Selector (CS) in the high byte
  * wIndex: high byte for entity or zero,low byte for endpoint or interface
@@ -1152,21 +1315,49 @@ int8_t usb_vc_out_data(ST_UVC_Device_t *pdev, uint8_t entity, uint8_t cs, uint32
 
 static int8_t _UVC_Events_Process_Data(ST_UVC_Device_t * pdev, struct uvc_request_data *data)
 {
-    struct uvc_streaming_control *ctrl = NULL;
-
     if (UVC_STREAMING_INTERFACE == pdev->control.ctype)
     {
+        struct uvc_streaming_control *ctrl = NULL;
+        struct uvc_still_image_streaming_control *sti_ctrl = NULL;
         switch (pdev->control.control) {
         case UVC_VS_PROBE_CONTROL:
             UVC_INFO(pdev," Probe control, length = %d ",data->length);
             ctrl = (struct uvc_streaming_control *)&data->data;
-            pdev->probe = _UVC_Fill_Streaming_Control(pdev, ctrl,0,0);
+            pdev->probe = _UVC_Fill_Streaming_Control(pdev, ctrl, 0, 0);
+            break;
+
+        case UVC_VS_STILL_PROBE_CONTROL:
+            UVC_INFO(pdev," Still Image Probe control, length = %d ",data->length);
+            sti_ctrl = (struct uvc_still_image_streaming_control *)&data->data;
+            pdev->sti_probe = _UVC_Fill_Still_Image_Streaming_Control(pdev, sti_ctrl);
             break;
 
         case UVC_VS_COMMIT_CONTROL:
             UVC_INFO(pdev," Commit control, length = %d ",data->length);
             ctrl = (struct uvc_streaming_control *)&data->data;
-            pdev->commit = _UVC_Fill_Streaming_Control(pdev, ctrl,0,0);
+            pdev->commit = _UVC_Fill_Streaming_Control(pdev, ctrl, 0, 0);
+            break;
+
+        case UVC_VS_STILL_COMMIT_CONTROL:
+            UVC_INFO(pdev," Still Image Commit control, length = %d ",data->length);
+            sti_ctrl = (struct uvc_still_image_streaming_control *)&data->data;
+            pdev->sti_commit = _UVC_Fill_Still_Image_Streaming_Control(pdev, sti_ctrl);
+            break;
+
+        case UVC_VS_STILL_IMAGE_TRIGGER_CONTROL:
+            UVC_INFO(pdev," stilld image trigger control, length = %d data %x ",data->length, data->data[0]);
+            switch (data->data[0])
+            {
+                case UVC_STILL_IMAGE_TRIGGER_TRANSMIT:
+                    UVC_Sti_Capture(pdev);
+                    break;
+                case UVC_STILL_IMAGE_TRIGGER_BULK_TRANSMIT:
+                case UVC_STILL_IMAGE_TRIGGER_ABORT_TRANSMIT:
+                    break;
+                case UVC_STILL_IMAGE_TRIGGER_NORMAL:
+                default:
+                    break;
+            }
             break;
 
         default:
@@ -1284,10 +1475,143 @@ static int8_t _UVC_Video_Process(ST_UVC_Device_t * pdev)
 
     if(ST_UVC_SUCCESS == s32Ret)
     {
-         s32Ret = _UVC_QBuf(pdev, mem);
+         s32Ret = _UVC_QBuf(pdev, mem, false);
     }
     UP();
     return s32Ret;
+}
+
+static uint32_t calculate_payloadsize(ST_UVC_Device_t * pdev,
+                const struct uvc_format_info *format,
+                uint32_t maxFrameSize, uint32_t frameInterval)
+{
+    uint32_t MaxPayloadTransferSize;
+    uint32_t calculate_payloadsize;
+
+    /* get dwc3 current_speed: usb3.0:super-speed usb2.0:high-speed */
+    char speedName[100]={0};
+    bool bSuperSpeed = false;
+    bool bDwc3 = false;
+
+    if(!access("/sys/class/udc/1f344200.dwc3/current_speed", 0))
+    {
+        ST_UVC_GetCurrentSpeed("cat /sys/class/udc/1f344200.dwc3/current_speed", speedName, sizeof(speedName));
+        if(0 == strncmp("super-speed", speedName, 11))
+        {
+            bSuperSpeed = true;
+        }
+        else if(0 == strncmp("high-speed", speedName, 10))
+        {
+            bSuperSpeed = false;
+        }
+        bDwc3 = true;
+    }
+    else if(!access("/sys/class/udc/soc:Sstar-udc/current_speed", 0))
+    {
+        ST_UVC_GetCurrentSpeed("cat /sys/class/udc/soc:Sstar-udc/current_speed", speedName, sizeof(speedName));
+        if(0 == strncmp("high-speed", speedName, 10))
+        {
+            bSuperSpeed = false;
+        }
+        bDwc3 = false;
+    }
+
+    if(bSuperSpeed)
+    {
+        MaxPayloadTransferSize = pdev->ChnAttr.setting.maxpacket * (pdev->ChnAttr.setting.mult + 1) * (pdev->ChnAttr.setting.burst + 1);
+    }
+    else
+    {
+        MaxPayloadTransferSize = pdev->ChnAttr.setting.maxpacket * (pdev->ChnAttr.setting.mult + 1);
+    }
+
+    /* reserve some packet for uvc_header(12 bytes) */
+    calculate_payloadsize = (maxFrameSize * FrameInterval2FrameRate(frameInterval) / 8000) + 1;
+
+    /* payload adjust to maxpayload */
+    if(calculate_payloadsize > MaxPayloadTransferSize)
+    {
+        calculate_payloadsize = MaxPayloadTransferSize;
+        if((V4L2_PIX_FMT_YUYV == format->fcc) || (V4L2_PIX_FMT_NV12 == format->fcc))
+            UVC_WRN(pdev,"Payload is not enough, frameate can't reach %dfps", FrameInterval2FrameRate(frameInterval));
+    }
+
+    if (pdev->ChnAttr.setting.mode == USB_ISOC_MODE && bSuperSpeed != true && g_device_count != ONLY_ONE_VIDEO)
+    {
+        /* set different maxpaysize base on number of videos */
+        calculate_payloadsize = calculate_payloadsize <= 2048 ? calculate_payloadsize:2048;
+    }
+
+    return calculate_payloadsize;
+}
+
+static struct uvc_still_image_streaming_control
+_UVC_Fill_Still_Image_Streaming_Control(ST_UVC_Device_t * pdev, struct uvc_still_image_streaming_control *sti_ctrl)
+{
+    int32_t nframes = 0, iformat = 0, iframe = 0;
+    const struct uvc_format_info *format = NULL;
+    const struct uvc_frame_info *frame = NULL;
+    struct uvc_still_image_streaming_control ctrl;
+    uint32_t format_array_size = ARRAY_SIZE(uvc_still_formats);
+
+    memset(&ctrl, 0, sizeof ctrl);
+    /* Get Stream iFormat */
+    if (NULL!=sti_ctrl)
+        iformat = clamp((uint32_t)sti_ctrl->bFormatIndex, 1U, format_array_size) - 1;
+
+    if (iformat >= format_array_size){
+        UVC_ERR(pdev,"No Support Format");
+        return ctrl;
+    }
+    format = &uvc_still_formats[iformat];
+
+    /* Get Stream iFrame */
+    nframes = 0;
+    while (format->frames[nframes].width != 0)
+        ++nframes;
+
+    if (NULL!=sti_ctrl) {
+        iframe = clamp((uint32_t)sti_ctrl->bFrameIndex, 1U, nframes) - 1;
+    }
+
+    if (iframe >= (int)nframes){
+        UVC_ERR(pdev,"No Support Frame");
+        return ctrl;
+    }
+    frame = &format->frames[iframe];
+
+    /* Commit the Ctrl data */
+    ctrl.bFormatIndex = iformat + 1;
+    ctrl.bFrameIndex = iframe + 1;
+    ctrl.bCompressionIndex = 3;
+
+#ifndef UVC_USE_MAXSZ_BUF
+    switch (format->fcc) {
+    case V4L2_PIX_FMT_YUYV:
+        ctrl.dwMaxVideoFrameSize = frame->width*frame->height * 2.0;
+        break;
+    case V4L2_PIX_FMT_NV12:
+        ctrl.dwMaxVideoFrameSize = frame->width*frame->height * 1.5;
+        break;
+    case V4L2_PIX_FMT_MJPEG:
+        ctrl.dwMaxVideoFrameSize = (frame->width*frame->height*2.0)/2;
+        break;
+    case V4L2_PIX_FMT_H264:
+        ctrl.dwMaxVideoFrameSize = (frame->width*frame->height*2.0)/2;
+        break;
+    case V4L2_PIX_FMT_H265:
+        ctrl.dwMaxVideoFrameSize = (frame->width*frame->height *2.0)/2;
+        break;
+    }
+#else
+    ctrl.dwMaxVideoFrameSize = (1920 * 1080 * 2.0);
+#endif
+    ctrl.dwMaxPayloadTransferSize = pdev->commit.dwMaxPayloadTransferSize;
+
+    ctrl.dwMaxPayloadTransferSize =
+            calculate_payloadsize(pdev, format, ctrl.dwMaxVideoFrameSize, 333333);
+    ctrl.dwMaxVideoFrameSize = 1000;
+    return ctrl;
 }
 
 /* when uvc_streaming_control is no NULL ,use c for ctrl setting
@@ -1302,21 +1626,17 @@ _UVC_Fill_Streaming_Control(ST_UVC_Device_t * pdev, struct uvc_streaming_control
     const struct uvc_format_info *format = NULL;
     const struct uvc_frame_info *frame = NULL;
     struct uvc_streaming_control ctrl;
-    unsigned int MaxPayloadTransferSize = (pdev->ChnAttr.setting.maxpacket *
-                                    (pdev->ChnAttr.setting.mult + 1) *
-                                    (pdev->ChnAttr.setting.burst + 1));
+    uint32_t format_array_size = ARRAY_SIZE(uvc_formats);
 
     memset(&ctrl, 0, sizeof ctrl);
     /* Get Stream iFormat */
-    if (NULL!=c) {
-        iformat = clamp((unsigned int)c->bFormatIndex, 1U,
-            (unsigned int)ARRAY_SIZE(uvc_formats)) - 1;
-    }
+    if (NULL!=c)
+        iformat = clamp((uint32_t)c->bFormatIndex, 1U, format_array_size) - 1;
 
     if (iformat < 0)
-        iformat = ARRAY_SIZE(uvc_formats) + iformat;
+        iformat = format_array_size + iformat;
 
-    if (iformat < 0 || iformat >= (int)ARRAY_SIZE(uvc_formats)){
+    if (iformat < 0 || iformat >= format_array_size){
         UVC_ERR(pdev,"No Support Format");
         return ctrl;
     }
@@ -1328,7 +1648,7 @@ _UVC_Fill_Streaming_Control(ST_UVC_Device_t * pdev, struct uvc_streaming_control
         ++nframes;
 
     if (NULL!=c) {
-        iframe = clamp((unsigned int)c->bFrameIndex, 1U, nframes) - 1;
+        iframe = clamp((uint32_t)c->bFrameIndex, 1U, nframes) - 1;
     }
 
     if (iframe < 0)
@@ -1354,41 +1674,6 @@ _UVC_Fill_Streaming_Control(ST_UVC_Device_t * pdev, struct uvc_streaming_control
     ctrl.bFormatIndex = iformat + 1;
     ctrl.bFrameIndex = iframe + 1;
     ctrl.dwFrameInterval = *interval;
-
-
-
-    /* get dwc3 current_speed: usb3.0:super-speed usb2.0:high-speed */
-     char speedName[100]={0};
-     bool bSuperSpeed = false;
-     bool bDwc3 = false;
-
-      if(!access("/sys/class/udc/1f344200.dwc3/current_speed", 0))
-     {
-
-        ST_UVC_GetCurrentSpeed("cat /sys/class/udc/1f344200.dwc3/current_speed", speedName, sizeof(speedName));
-         if(0 == strncmp("super-speed", speedName, 11))
-         {
-            bSuperSpeed = true;
-            printf("This is dwc3 usb3.0 current_speed=%s", speedName);
-         }
-         else if(0 == strncmp("high-speed", speedName, 10))
-         {
-            bSuperSpeed = false;
-            printf("This is dwc3 usb2.0 current_speed=%s", speedName);
-         }
-         bDwc3 = true;
-     }
-     else if(!access("/sys/class/udc/soc\:Sstar-udc/current_speed", 0))
-     {
-
-        ST_UVC_GetCurrentSpeed("cat /sys/class/udc/soc\:Sstar-udc/current_speed", speedName, sizeof(speedName));
-        if(0 == strncmp("high-speed", speedName, 10))
-        {
-            printf("This is udc-msb250x usb2.0 current_speed=%s", speedName);
-        }
-        bDwc3 = false;
-    }
-
 #ifndef UVC_USE_MAXSZ_BUF
     switch (format->fcc) {
     case V4L2_PIX_FMT_YUYV:
@@ -1410,44 +1695,12 @@ _UVC_Fill_Streaming_Control(ST_UVC_Device_t * pdev, struct uvc_streaming_control
 #else
     ctrl.dwMaxVideoFrameSize = (1920 * 1080 * 2.0);
 #endif
+
     if (pdev->ChnAttr.setting.mode == USB_BULK_MODE)
         ctrl.dwMaxPayloadTransferSize = 16 * 1024;
     else
-    {
-       /*
-        * ctrl.dwMaxPayloadTransferSize = (dev->maxpkt) *
-        *                      (dev->mult + 1) * (dev->burst + 1);
-        */
-        if (c && !c->dwMaxPayloadTransferSize)
-        {
-            ctrl.dwMaxPayloadTransferSize = (c->dwMaxPayloadTransferSize <= MaxPayloadTransferSize)?
-                                            c->dwMaxPayloadTransferSize:MaxPayloadTransferSize;
-        } else {
-            ctrl.dwMaxPayloadTransferSize = MaxPayloadTransferSize;
-        }
-
-         /* dwc3-usb2.0 && udc-msb250x-usb2.0*/
-        if((bSuperSpeed != true) && (MaxPayloadTransferSize > 3072))
-                MaxPayloadTransferSize=3072;
-
-         /** default MaxPayloadTransferSize **/
-         if((ctrl.dwMaxVideoFrameSize * FrameInterval2FrameRate(ctrl.dwFrameInterval) / 8000) <= MaxPayloadTransferSize)
-             ctrl.dwMaxPayloadTransferSize = ctrl.dwMaxVideoFrameSize * FrameInterval2FrameRate(ctrl.dwFrameInterval) / 8000;
-         else
-         {
-             ctrl.dwMaxPayloadTransferSize = MaxPayloadTransferSize;
-             if((V4L2_PIX_FMT_YUYV == format->fcc) || (V4L2_PIX_FMT_NV12 == format->fcc))
-                 UVC_WRN(pdev,"Payload is not enough, frameate can't reach %dfps", FrameInterval2FrameRate(ctrl.dwFrameInterval));
-         }
-
-        /** special values set MaxPayloadTransferSize **/
-        if(bSuperSpeed != true && g_device_count != ONLY_ONE_VIDEO)
-        {
-              /* set different maxpaysize base on number of videos */
-            ctrl.dwMaxPayloadTransferSize = ctrl.dwMaxPayloadTransferSize <= 2048 ? ctrl.dwMaxPayloadTransferSize:2048;
-        }
-        printf("dwMaxPayloadTransferSize=%d, Frame=%dfps\n", ctrl.dwMaxPayloadTransferSize, FrameInterval2FrameRate(ctrl.dwFrameInterval));
-    }
+        ctrl.dwMaxPayloadTransferSize = 
+            calculate_payloadsize(pdev, format, ctrl.dwMaxVideoFrameSize, ctrl.dwFrameInterval);
 
     ctrl.bmFramingInfo = 3;
     ctrl.bPreferedVersion = 1;
@@ -1521,16 +1774,15 @@ static void * UVC_Video_Process_Task(void *arg)
     int32_t fd = pdev->fd;
     struct timeval timeout;
 
-    while(UVC_DEVICE_ISREADY(pdev->status))
-    {
-        /* queue buf from user */
-        if(-EBUSY == _UVC_Video_QBuf(pdev))
-        {
+     while(UVC_DEVICE_ISREADY(pdev->status))
+     {
+         /* queue buf from user */
+         if( -EBUSY== _UVC_Video_QBuf(pdev))
+         {
             usleep(1000);
             continue;
-        }
-
-        FD_ZERO(&fdsu);
+         }
+         FD_ZERO(&fdsu);
 
         /* We want both setup and data events on UVC interface.. */
         FD_SET(fd, &fdsu);
@@ -1774,7 +2026,7 @@ static int UVC_MTD_Write(char *data, int size, int mtd_num)
 
     }
     close(fd);
-    printf("\rWriting... 100% complete.\n");
+    printf("\rWriting... 100%% complete.\n");
     printf("\nUpdate %s finish\n", mtd_name);
     return 0;
 }
@@ -1806,7 +2058,7 @@ static void * UVC_Fw_Update_Task(void *arg)
         if (pdev->dfu_status == UVC_DFU_STATE_DNL_END)
         {
             int fw_burning_size = 0;
-            char *pbuf = pdev->fw_buf;
+            char *pbuf = (char*)pdev->fw_buf;
 
             while(fw_burning_size < pdev->fw_size)
             {
@@ -1845,7 +2097,7 @@ static void * UVC_Fw_Update_Task(void *arg)
                 fw_burning_size += (32 + FwDataSize);
                 printf("fw_size:0x%x fw_burning_size:0x%x\n", pdev->fw_size, fw_burning_size);
 
-                pbuf = pdev->fw_buf + fw_burning_size;
+                pbuf = (char*)pdev->fw_buf + fw_burning_size;
             }
 
             pdev->dfu_status = UVC_DFU_STATE_IDLE;
@@ -1905,7 +2157,7 @@ int32_t UVC_DFU_DnlEnd(ST_UVC_Device_t *pdev)
         return -1;
     }
     else {
-        printf("\rDownloading.... 100% complete.\n");
+        printf("\rDownloading.... 100%% complete.\n");
         pdev->dfu_status = UVC_DFU_STATE_DNL_END;
         //wakeup thread to do ota
         sem_post(&pdev->dfu_sem);

@@ -5,7 +5,7 @@ aux_source_directory(. DIR_APP_SRC)
 include_directories(
 	../sensor
 	../isp
-	../vpe
+	../scl
 	../venc
 	../sys
 	../common

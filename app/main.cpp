@@ -145,9 +145,11 @@ int main(int argc, const char *argv[])
 
 	// 创建JPEG 码流
 	#if (1 == (USE_VENC_JPEG))
-	pScl->createPort(Scl::sclPortJpeg, snrW, snrH, true);
+	bool bIsJpeg = true;
+	pScl->createPort(Scl::sclPortJpeg, snrW, snrH, bIsJpeg);
 	pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, snrW, snrH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 50);;
+	pVenc->startRecvPic(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn);
 	pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 	#endif	// End of USE_VENC_JPEG
 	#endif	// End of USE_IPC

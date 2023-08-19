@@ -134,6 +134,50 @@ MI_S32 Venc::disable()
 }
 
 /*-----------------------------------------------------------------------------
+描--述：创建VENC 设备。
+参--数：
+返回值：成功，返回0; 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+MI_S32 Venc::createDev(MI_VENC_DEV vencDev)
+{
+	cout << "Call Venc::createDev()." << endl;
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_VENC_CreateDev(vencDev, NULL);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_CreateDev() in Venc::createDev(). "
+				<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	cout << "Call Venc::createDev() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：销毁VENC 设备。
+参--数：
+返回值：成功，返回0; 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+MI_S32 Venc::destroyDev(MI_VENC_DEV vencDev)
+{
+	cout << "Call Venc::destroyDev()." << endl;
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_VENC_DestroyDev(vencDev);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_DestroyDev() in Venc::destroyDev(). "
+				<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	cout << "Call Venc::destroyDev() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
 描--述：创建VENC通道。
 参--数：vencChn VENC通道；pstChnAttr 指向通道属性的结构体指针。
 返回值：成功，返回0; 失败，返回错误码。
@@ -1042,19 +1086,21 @@ MI_S32 Venc::createJpegStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned
 	}
 	#endif
 	
-	s32Ret = MI_VENC_SetMaxStreamCnt(vencDev, vencChn, 3);
+	s32Ret = MI_VENC_SetMaxStreamCnt(vencDev, vencChn, 3 + 1);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VENC_SetMaxStreamCnt() in Venc::createJpegStream(), s32Ret = " << s32Ret << endl;
 		return s32Ret;
 	}
 
+	#if 0
 	s32Ret = MI_VENC_StartRecvPic(vencDev, vencChn);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VENC_StartRecvPic() in Venc::createJpegStream(), s32Ret = " << s32Ret << endl;
 		return s32Ret;
 	}
+	#endif
 	
 	cout << "Call Venc::createJpegStream() end." << endl;
 	return s32Ret;

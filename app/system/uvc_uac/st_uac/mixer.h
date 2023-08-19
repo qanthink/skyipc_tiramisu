@@ -137,7 +137,7 @@ int mixer_ctl_get_range_min(const struct mixer_ctl *ctl);
 int mixer_ctl_get_range_max(const struct mixer_ctl *ctl);
 
 /* Gets the event of a control. */
-int mixer_ctl_get_event(const struct mixer *mixer, const char *name);
+int mixer_ctl_get_event(const struct mixer *mixer);
 
 #if defined(__cplusplus)
 }  /* extern "C" */

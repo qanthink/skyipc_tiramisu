@@ -112,3 +112,10 @@ add_custom_target(stripTask
 	COMMAND echo ================= make strip end ==================
 )
 
+#install 拷贝安装
+add_custom_target(installTask
+	COMMAND echo ================ make install task ================
+	COMMAND cp ${PROJECT_NAME} ~/Sigmastar/customer/winShare/
+	COMMAND echo ================ make install end =================
+)
+

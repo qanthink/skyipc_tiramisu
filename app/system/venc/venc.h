@@ -53,6 +53,9 @@ public:
 	MI_S32 setH265SliceSplit(MI_VENC_CHN vencChn, MI_VENC_ParamH265SliceSplit_t *pstSliceSplit);
 	MI_S32 setInputBufMode(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn,
 			MI_VENC_InputSrcBufferMode_e eVencBufMode);
+
+	MI_S32 createDev(MI_VENC_DEV vencDev);
+	MI_S32 destroyDev(MI_VENC_DEV vencDev);
 	
 	MI_S32 createChn(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr);
 	MI_S32 destroyChn(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn);

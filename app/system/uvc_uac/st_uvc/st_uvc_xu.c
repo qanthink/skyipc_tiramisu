@@ -1,15 +1,16 @@
-/* Copyright (c) 2018-2019 Sigmastar Technology Corp.
- All rights reserved.
+/* SigmaStar trade secret */
+/* Copyright (c) [2019~2020] SigmaStar Technology.
+All rights reserved.
 
-  Unless otherwise stipulated in writing, any and all information contained
- herein regardless in any format shall remain the sole proprietary of
- Sigmastar Technology Corp. and be kept in strict confidence
- (ï¿½ï¿½Sigmastar Confidential Informationï¿½ï¿½) by the recipient.
- Any unauthorized act including without limitation unauthorized disclosure,
- copying, use, reproduction, sale, distribution, modification, disassembling,
- reverse engineering and compiling of the contents of Sigmastar Confidential
- Information is unlawful and strictly prohibited. Sigmastar hereby reserves the
- rights to any and all damages, losses, costs and expenses resulting therefrom.
+Unless otherwise stipulated in writing, any and all information contained
+herein regardless in any format shall remain the sole proprietary of
+SigmaStar and be kept in strict confidence
+(SigmaStar Confidential Information) by the recipient.
+Any unauthorized act including without limitation unauthorized disclosure,
+copying, use, reproduction, sale, distribution, modification, disassembling,
+reverse engineering and compiling of the contents of SigmaStar Confidential
+Information is unlawful and strictly prohibited. SigmaStar hereby reserves the
+rights to any and all damages, losses, costs and expenses resulting therefrom.
 */
 #include <stdlib.h>
 #include <stdio.h>
@@ -171,8 +172,11 @@ VC_CMD_CFG VC_XU_GET_MMP_CMD16_RESULT_CFG = {
 #endif
 #if 1 //cus EU
 #define CUS_XU_ISP_LEN 4
+#define CUS_XU_ISP_LEN_UT 60
 uint8_t cus_eu_set_isp_config[CUS_XU_ISP_LEN];//bit 1 is for reset bframe
 uint8_t cus_eu_get_isp_config[CUS_XU_ISP_LEN];//bit 1 is for reset bframe
+uint8_t cus_eu_set_isp_config_ut[CUS_XU_ISP_LEN_UT];
+uint8_t cus_eu_get_isp_config_ut[CUS_XU_ISP_LEN_UT];
 
 VC_CMD_CFG CUS_XU_SET_ISP_CFG = {
     (CAP_SET_CUR_CMD | CAP_GET_INFO_CMD | CAP_GET_DEF_CMD | CAP_GET_MIN_CMD | CAP_GET_MAX_CMD | CAP_GET_RES_CMD | CAP_GET_LEN_CMD),
@@ -185,6 +189,20 @@ VC_CMD_CFG CUS_XU_GET_ISP_CFG = {
     (CAP_GET_INFO_CMD | CAP_GET_CUR_CMD | CAP_GET_DEF_CMD | CAP_GET_MIN_CMD | CAP_GET_MAX_CMD | CAP_GET_RES_CMD | CAP_GET_LEN_CMD),
     (INFO_GET_SUPPORT),
     CUS_XU_ISP_LEN, 1,
+    0,0,0,0,0
+};
+
+VC_CMD_CFG CUS_XU_SET_ISP_CFG_UT = {
+    (CAP_SET_CUR_CMD | CAP_GET_INFO_CMD | CAP_GET_DEF_CMD | CAP_GET_MIN_CMD | CAP_GET_MAX_CMD | CAP_GET_RES_CMD | CAP_GET_LEN_CMD),
+    (INFO_SET_SUPPORT),
+    CUS_XU_ISP_LEN_UT, 1,
+    0,0,0,0,0
+};
+
+VC_CMD_CFG CUS_XU_GET_ISP_CFG_UT = {
+    (CAP_GET_INFO_CMD | CAP_GET_CUR_CMD | CAP_GET_DEF_CMD | CAP_GET_MIN_CMD | CAP_GET_MAX_CMD | CAP_GET_RES_CMD | CAP_GET_LEN_CMD),
+    (INFO_GET_SUPPORT),
+    CUS_XU_ISP_LEN_UT, 1,
     0,0,0,0,0
 };
 #endif
@@ -739,6 +757,20 @@ int8_t usb_vc_eu2_cs(uint8_t cs, uint8_t req, struct uvc_request_data *resp)
             break;
         }
 
+        case CUS_XU_SET_ISP_UT:
+        {
+            XU_Print("CUS_XU_SET_ISP_UT\r\n");
+            usb_vc_cmd_cfg(req, &CUS_XU_SET_ISP_CFG_UT, (unsigned long) cus_eu_set_isp_config_ut, resp);
+            break;
+        }
+
+        case CUS_XU_GET_ISP_UT:
+        {
+            XU_Print("CUS_XU_GET_ISP_UT\r\n");
+            usb_vc_cmd_cfg(req, &CUS_XU_GET_ISP_CFG_UT, (unsigned long) cus_eu_get_isp_config_ut, resp);
+            break;
+        }
+
         case XU_CONTROL_UNDEFINED:
         default:
             // un-support
@@ -782,6 +814,23 @@ int8_t usb_cus_get_isp(struct uvc_request_data *data)
     return 0;
 }
 
+int8_t usb_cus_set_isp_ut(struct uvc_request_data *data)
+{
+    if (data->length != CUS_XU_ISP_LEN_UT)
+    {
+        XU_Print("Invalid ISP Data\n");
+        return -1;
+    }
+
+    memcpy(cus_eu_get_isp_config_ut, data->data, data->length);
+    return 0;
+}
+
+int8_t usb_cus_get_isp_ut(struct uvc_request_data *data)
+{
+    return 0;
+}
+
 int8_t usb_vc_eu2_cs_out(uint8_t entity_id, uint8_t cs, uint32_t len, struct uvc_request_data *data)
 {
     switch (cs)
@@ -797,6 +846,20 @@ int8_t usb_vc_eu2_cs_out(uint8_t entity_id, uint8_t cs, uint32_t len, struct uvc
         {
             XU_Print("CUS_XU_GET_ISP\r\n");
             usb_cus_get_isp(data);
+        }
+        break;
+
+        case CUS_XU_SET_ISP_UT:
+        {
+            XU_Print("CUS_XU_SET_ISP_UT\r\n");
+            usb_cus_set_isp_ut(data);
+        }
+        break;
+
+        case CUS_XU_GET_ISP_UT:
+        {
+            XU_Print("CUS_XU_GET_ISP_UT\r\n");
+            usb_cus_get_isp_ut(data);
         }
         break;
 
@@ -851,4 +914,5 @@ int8_t usb_vc_pu_cs_out(ST_UVC_Device_t *pdev, uint8_t entity_id, uint8_t cs, ui
 
     return ST_UVC_SUCCESS;
 }
+
 

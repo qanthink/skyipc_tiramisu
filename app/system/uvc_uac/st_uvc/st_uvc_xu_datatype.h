@@ -1,3 +1,17 @@
+/* SigmaStar trade secret */
+/* Copyright (c) [2019~2020] SigmaStar Technology.
+All rights reserved.
+
+Unless otherwise stipulated in writing, any and all information contained
+herein regardless in any format shall remain the sole proprietary of
+SigmaStar and be kept in strict confidence
+(SigmaStar Confidential Information) by the recipient.
+Any unauthorized act including without limitation unauthorized disclosure,
+copying, use, reproduction, sale, distribution, modification, disassembling,
+reverse engineering and compiling of the contents of SigmaStar Confidential
+Information is unlawful and strictly prohibited. SigmaStar hereby reserves the
+rights to any and all damages, losses, costs and expenses resulting therefrom.
+*/
 #ifndef _ST_UVC_XU_DATATYPE_H_
 #define _ST_UVC_XU_DATATYPE_H_
 
@@ -18,7 +32,7 @@
 #define  CAP_GET_RES_ALL_CMD        (1 << 11)
 #define  CAP_GET_DEF_ALL_CMD        (1 << 12)
 
-// capability info
+// capability info 
 #define  INFO_GET_SUPPORT                0x01
 #define  INFO_SET_SUPPORT                0x02
 #define  INFO_AUTO_MODE_SUPPORT          0x04
@@ -120,8 +134,8 @@
 #define MMP8_SET_MIN_QP                 (8)
 #define MMP8_SET_GOP                    (9)
 #define STREAM_VIEWER_CMD               (0x0C)
-#define MMP8_SET_UVC_CT                 (0)//(0x10)
-#define ROMBOOT_RESET                   (0x16)
+#define MMP8_SET_UVC_CT                 (0)//(0x10)	
+#define ROMBOOT_RESET                   (0x16)	
 #define MMP8_SET_SNAPSHOT_M1            (0x12)
 #define MMP8_SET_OSD_DISPLAY_CONTROL    (0x21)
 #define MMP8_SET_DATE_TIME              (0x22)
@@ -142,14 +156,14 @@
 #define UVC_XU_EU2_UNDEFINED	(0x0)
 #define CUS_XU_SET_ISP      (0x1)   //command number
 #define CUS_XU_GET_ISP      (0x2)   //command number
-
-
+#define CUS_XU_SET_ISP_UT      (0x3)
+#define CUS_XU_GET_ISP_UT      (0x4)
 // ## ISP Command
 #define REQUEST_IFRAME        (0x00000001)
 #define CUS_UNKONW_CMD      (0xFFFFFFFF)
 
 #ifdef DEBUG_XU
-#define XU_Print(fmt, args...) ({do{printf("[DBG]:%s[%d]:", __FUNCTION__,__LINE__);printf(fmt, ##args);}while(0);})
+#define XU_Print(fmt, args...) printf("%s %d", fmt, ##args)
 #else
 #define XU_Print(fmt, args...)
 #endif
