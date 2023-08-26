@@ -240,10 +240,10 @@ int Scl::destoryPort(MI_SCL_PORT sclPortId)
 {
 	cout << "Call Scl::destoryPort()." << endl;
 	MI_S32 s32Ret = 0;
-	s32Ret = MI_SCL_EnableOutputPort(sclDevId, sclChnId, sclPortId);
+	s32Ret = MI_SCL_DisableOutputPort(sclDevId, sclChnId, sclPortId);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_SCL_EnableOutputPort() in Scl::createPort(). " 
+		cerr << "Fail to call MI_SCL_DisableOutputPort() in Scl::createPort(). " 
 			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}

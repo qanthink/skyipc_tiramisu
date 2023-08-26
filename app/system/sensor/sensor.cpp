@@ -112,7 +112,7 @@ int Sensor::enable()
 	{
 		cerr << "Fail to call MI_SNR_SetFps() in Sensor::enable(). " 
 			<< "errno = 0x" << hex << s32Ret << dec << endl;
-		return s32Ret;
+		//return s32Ret;
 	}
 
 	// 启用sensor.

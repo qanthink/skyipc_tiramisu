@@ -1,3 +1,17 @@
+/* SigmaStar trade secret */
+/* Copyright (c) [2019~2020] SigmaStar Technology.
+All rights reserved.
+
+Unless otherwise stipulated in writing, any and all information contained
+herein regardless in any format shall remain the sole proprietary of
+SigmaStar and be kept in strict confidence
+(SigmaStar Confidential Information) by the recipient.
+Any unauthorized act including without limitation unauthorized disclosure,
+copying, use, reproduction, sale, distribution, modification, disassembling,
+reverse engineering and compiling of the contents of SigmaStar Confidential
+Information is unlawful and strictly prohibited. SigmaStar hereby reserves the
+rights to any and all damages, losses, costs and expenses resulting therefrom.
+*/
 #ifndef _ST_UVC_DATATYPE_H_
 #define _ST_UVC_DATATYPE_H_
 
@@ -74,6 +88,17 @@ typedef unsigned int size_t;
 #define UVC_DEVICE_ISREADY(val)   ( UVC_GET_STATUS(val,UVC_DEVICE_INITIAL )      &&\
                                     UVC_GET_STATUS(val,UVC_INTDEV_INITIAL )      &&\
                                     UVC_GET_STATUS(val,UVC_INTDEV_STARTED ))
+
+#define UVC_BUFFER_FLAGS_FRAME_NOEND    (1 << 0)
+#define UVC_BUFFER_FLAGS_STILL_IMAGE    (1 << 1)
+
+typedef enum
+{
+    UVC_STILL_IMAGE_TRIGGER_NORMAL = 0,
+    UVC_STILL_IMAGE_TRIGGER_TRANSMIT = 1,
+    UVC_STILL_IMAGE_TRIGGER_BULK_TRANSMIT = 2,
+    UVC_STILL_IMAGE_TRIGGER_ABORT_TRANSMIT = 3,
+} UVC_STILL_IMAGE_TRIGGER_TYPE_e;
 
 typedef enum
 {
@@ -180,60 +205,97 @@ struct uvc_format_info {
 };
 
 static const struct uvc_frame_info uvc_frames_yuyv[] = {
-    { 1920, 1080,{ 333333, 666666, 2000000, 0 }, },
-    { 1280, 720, { 333333, 666666, 1000000, 0 }, },
-    {  704, 576, { 333333, 666666, 1000000, 0 }, },
-    {  640, 480, { 333333, 666666, 1000000, 0 }, },
-    {  640, 360, { 333333, 666666, 1000000, 0 }, },
     {  320, 240, { 333333, 666666, 1000000, 0 }, },
+    {  640, 480, { 333333, 666666, 1000000, 0 }, },
+    { 1280, 720, { 333333, 666666, 1000000, 0 }, },
+    { 1920, 1080,{ 333333, 666666, 1000000, 0 }, },
+    { 2560, 1440,{ 333333, 666666, 1000000, 0 }, },
+    { 3840, 2160,{ 333333, 666666, 1000000, 0 }, },
     { 0, 0, { 0, }, },
 };
 
 static const struct uvc_frame_info uvc_frames_nv12[] = {
-    { 1920, 1080,{ 333333, 666666, 1000000, 0 }, },
-    { 1280, 720, { 333333, 666666, 1000000, 0 }, },
-    {  640, 480, { 333333, 666666, 1000000, 0 }, },
-    {  640, 320, { 333333, 666666, 1000000, 0 }, },
     {  320, 240, { 333333, 666666, 1000000, 0 }, },
+    {  640, 480, { 333333, 666666, 1000000, 0 }, },
+    { 1280, 720, { 333333, 666666, 1000000, 0 }, },
+    { 1920, 1080,{ 333333, 666666, 1000000, 0 }, },
+    { 2560, 1440,{ 333333, 666666, 1000000, 0 }, },
+    { 3840, 2160,{ 333333, 666666, 1000000, 0 }, },
     { 0, 0, { 0, }, },
 };
 
-static const struct uvc_frame_info uvc_frames_mjpeg[] = {
-    { 1920,1080, { 333333,  666666, 1000000, 0 }, },
-    { 1280, 720, { 333333,  666666, 1000000, 0 }, },
-    {  704, 576, { 333333,  666666, 1000000, 0 }, },
-    { 640,  480, { 333333,  666666, 1000000, 0 }, },
-    { 640,  360, { 333333,  666666, 1000000, 0 }, },
+static const struct uvc_frame_info uvc_frames_mjpg[] = {
     { 320,  240, { 333333,  666666, 1000000, 0 }, },
+    { 640,  480, { 333333,  666666, 1000000, 0 }, },
+    { 1280, 720, { 333333,  666666, 1000000, 0 }, },
+    { 1920,1080, { 333333,  666666, 1000000, 0 }, },
+    { 2560,1440, { 333333,  666666, 1000000, 0 }, },
+    { 3840,2160, { 333333,  666666, 1000000, 0 }, },
+    //{ 424,240, { 333333,  666666, 1000000, 0 }, },
     { 0, 0, { 0, }, },
 };
 
 static const struct uvc_frame_info uvc_frames_h264[] = {
-    { 1920,1080, { 333333, 666666, 1000000,  0 }, },
-    { 1280, 720, { 333333, 666666, 1000000,  0 }, },
-    {  704, 576, { 333333, 666666, 1000000,  0 }, },
-    {  640, 480, { 333333, 666666, 1000000,  0 }, },
-    {  640, 360, { 333333, 666666, 1000000,  0 }, },
     {  320, 240, { 333333, 666666, 1000000,  0 }, },
+    {  640, 480, { 333333, 666666, 1000000,  0 }, },
+    { 1280, 720, { 333333, 666666, 1000000,  0 }, },
+    { 1920,1080, { 333333, 666666, 1000000,  0 }, },
+    { 2560,1440, { 333333, 666666, 1000000,  0 }, },
+    { 3840,2160, { 333333, 666666, 1000000,  0 }, },
+    //{ 424,240, { 333333,  666666, 1000000, 0 }, },
     { 0, 0, { 0, }, },
 };
 
 static const struct uvc_frame_info uvc_frames_h265[] = {
-    { 1920,1080, { 333333, 666666, 1000000,  0 }, },
-    { 1280, 720, { 333333, 666666, 1000000,  0 }, },
-    {  704, 576, { 333333, 666666, 1000000,  0 }, },
-    {  640, 480, { 333333, 666666, 1000000,  0 }, },
-    {  640, 360, { 333333, 666666, 1000000,  0 }, },
     {  320, 240, { 333333, 666666, 1000000,  0 }, },
+    {  640, 480, { 333333, 666666, 1000000,  0 }, },
+    { 1280, 720, { 333333, 666666, 1000000,  0 }, },
+    { 1920,1080, { 333333, 666666, 1000000,  0 }, },
+    { 2560,1440, { 333333, 666666, 1000000,  0 }, },
+    { 3840,2160, { 333333, 666666, 1000000,  0 }, },
+    //{ 424,240, { 333333,  666666, 1000000, 0 }, },
     { 0, 0, { 0, }, },
 };
 
 static const struct uvc_format_info uvc_formats[] = {
-    { V4L2_PIX_FMT_H265,  uvc_frames_h265 },
+    //{ V4L2_PIX_FMT_YUYV,  uvc_frames_yuyv },
+    //{ V4L2_PIX_FMT_NV12,  uvc_frames_nv12 },
+    { V4L2_PIX_FMT_MJPEG, uvc_frames_mjpg },
     { V4L2_PIX_FMT_H264,  uvc_frames_h264 },
-    { V4L2_PIX_FMT_MJPEG, uvc_frames_mjpeg },
-    { V4L2_PIX_FMT_YUYV,  uvc_frames_yuyv },
-    { V4L2_PIX_FMT_NV12,  uvc_frames_nv12 },
+    { V4L2_PIX_FMT_H265,  uvc_frames_h265 },
+};
+
+static const struct uvc_frame_info uvc_still_frames_yuyv[] = {
+    { 1920,1080, { 0, }, },
+    { 0, 0, { 0, }, },
+};
+
+static const struct uvc_frame_info uvc_still_frames_nv12[] = {
+    { 1920,1080, { 0, }, },
+    { 0, 0, { 0, }, },
+};
+
+static const struct uvc_frame_info uvc_still_frames_mjpg[] = {
+    { 1920,1080, { 0, }, },
+    { 0, 0, { 0, }, },
+};
+
+static const struct uvc_frame_info uvc_still_frames_h264[] = {
+    { 1920,1080, { 0, }, },
+    { 0, 0, { 0, }, },
+};
+
+static const struct uvc_frame_info uvc_still_frames_h265[] = {
+    { 1920,1080, { 0, }, },
+    { 0, 0, { 0, }, },
+};
+
+static const struct uvc_format_info uvc_still_formats[] = {
+    { V4L2_PIX_FMT_YUYV,  uvc_still_frames_yuyv },
+    { V4L2_PIX_FMT_NV12,  uvc_still_frames_nv12 },
+    { V4L2_PIX_FMT_MJPEG, uvc_still_frames_mjpg },
+    { V4L2_PIX_FMT_H264,  uvc_still_frames_h264 },
+    { V4L2_PIX_FMT_H265,  uvc_still_frames_h265 },
 };
 
 typedef struct Stream_Params_s {
@@ -335,6 +397,8 @@ typedef struct ST_UVC_Device_s {
     Stream_Params_t stream_param;
     struct uvc_streaming_control probe;
     struct uvc_streaming_control commit;
+    struct uvc_still_image_streaming_control sti_probe;
+    struct uvc_still_image_streaming_control sti_commit;
 
     /* UVC Control Request Specific */
     UVC_Control_t control;
