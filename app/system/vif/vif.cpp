@@ -99,7 +99,6 @@ MI_S32 Vif::enable()
 	}
 
 	// step3: 创建VIF 设备，设置设备属性。
-	MI_VIF_DEV vifDevId = 0;			// 有复杂的计算关系。
 	MI_VIF_DevAttr_t stVifDevAttr;
 	memset(&stVifDevAttr, 0, sizeof(MI_VIF_DevAttr_t));
 	stVifDevAttr.stInputRect.u16X = stPlaneInfo.stCapRect.u16X;
@@ -162,10 +161,11 @@ MI_S32 Vif::enable()
 
 	MI_SYS_ChnPort_t stChnPort;
 	memset(&stChnPort, 0, sizeof(MI_SYS_ChnPort_t));
-	
+
+	MI_S32 vifChnId = 0;
 	stChnPort.eModId = E_MI_MODULE_ID_VIF;
 	stChnPort.u32DevId = vifDevId;
-	//stChnPort.u32ChnId = vifChnId;
+	stChnPort.u32ChnId = vifChnId;
 	stChnPort.u32PortId = vifPortId;
 	s32Ret = MI_SYS_SetChnOutputPortDepth(Sys::u16SocId, &stChnPort, 0, 3 + 3);	// 此处可优化。
 	if(0 != s32Ret)
