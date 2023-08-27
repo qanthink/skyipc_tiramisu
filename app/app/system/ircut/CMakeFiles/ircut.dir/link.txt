@@ -1,0 +1,2 @@
+/usr/bin/ar qc libircut.a  CMakeFiles/ircut.dir/ircutled.cpp.o
+/usr/bin/ranlib libircut.a

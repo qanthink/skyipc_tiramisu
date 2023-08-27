@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/linux/Workspace/skyipc_tiramisu/app/mylib/myqueue/myqueue.cpp
+iostream
+-
+myqueue.h
+/home/linux/Workspace/skyipc_tiramisu/app/mylib/myqueue/myqueue.h
+
+/home/linux/Workspace/skyipc_tiramisu/app/mylib/myqueue/myqueue.h
+iostream
+-
+string.h
+-
+atomic
+-
+

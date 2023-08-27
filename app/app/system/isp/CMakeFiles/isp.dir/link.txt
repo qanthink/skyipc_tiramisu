@@ -1,0 +1,2 @@
+/usr/bin/ar qc libisp.a  CMakeFiles/isp.dir/isp.cpp.o
+/usr/bin/ranlib libisp.a

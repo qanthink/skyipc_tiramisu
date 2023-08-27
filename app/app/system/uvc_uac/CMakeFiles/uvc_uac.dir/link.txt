@@ -1,0 +1,2 @@
+/usr/bin/ar qc libuvc_uac.a  CMakeFiles/uvc_uac.dir/uac_uvc.cpp.o
+/usr/bin/ranlib libuvc_uac.a

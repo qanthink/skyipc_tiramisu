@@ -1,0 +1,2 @@
+/usr/bin/ar qc libsys.a  CMakeFiles/sys.dir/sys.cpp.o
+/usr/bin/ranlib libsys.a

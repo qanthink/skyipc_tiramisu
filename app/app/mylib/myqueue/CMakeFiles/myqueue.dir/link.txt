@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmyqueue.a  CMakeFiles/myqueue.dir/myqueue.cpp.o
+/usr/bin/ranlib libmyqueue.a

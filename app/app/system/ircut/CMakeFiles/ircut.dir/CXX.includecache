@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/linux/Workspace/skyipc_tiramisu/app/system/ircut/ircutled.cpp
+ircutled.h
+/home/linux/Workspace/skyipc_tiramisu/app/system/ircut/ircutled.h
+thread
+-
+fcntl.h
+-
+unistd.h
+-
+string.h
+-
+iostream
+-
+
+/home/linux/Workspace/skyipc_tiramisu/app/system/ircut/ircutled.h
+

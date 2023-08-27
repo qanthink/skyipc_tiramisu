@@ -1,0 +1,2 @@
+/usr/bin/ar qc libvif.a  CMakeFiles/vif.dir/vif.cpp.o
+/usr/bin/ranlib libvif.a

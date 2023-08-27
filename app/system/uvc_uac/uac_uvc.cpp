@@ -165,7 +165,7 @@ static MI_S32 UVC_MM_FillBuffer(void *uvc, ST_UVC_BufInfo_t *bufInfo)
 	else if(V4L2_PIX_FMT_MJPEG == pstDev->setting.fcc)
 	{
 		MI_VENC_Stream_t stStream;
-		const unsigned int vencPackNum = 4;
+		const unsigned int vencPackNum = 1;
 		MI_VENC_Pack_t stPack[vencPackNum];
 		memset(&stStream, 0, sizeof(MI_VENC_Stream_t));
 		memset(&stPack, 0, sizeof(MI_VENC_Pack_t) * vencPackNum);
@@ -200,7 +200,7 @@ static MI_S32 UVC_MM_FillBuffer(void *uvc, ST_UVC_BufInfo_t *bufInfo)
 		{
 			MI_U32 u32Size = 0;
 			u32Size = stStream.pstPack[i].u32Len;
-			memcpy(u8CopyData,stStream.pstPack[i].pu8Addr, u32Size);
+			memcpy(u8CopyData, stStream.pstPack[i].pu8Addr, u32Size);
 			u8CopyData += u32Size;
 		}
 		*pu32length = u8CopyData - (MI_U8 *)bufInfo->b.buf;

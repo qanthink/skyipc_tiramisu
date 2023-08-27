@@ -1,0 +1,2 @@
+/usr/bin/ar qc libvenc.a  CMakeFiles/venc.dir/venc.cpp.o
+/usr/bin/ranlib libvenc.a

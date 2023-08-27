@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmyfifo.a  CMakeFiles/myfifo.dir/myfifo.cpp.o
+/usr/bin/ranlib libmyfifo.a
