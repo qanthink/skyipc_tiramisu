@@ -1,2 +1,0 @@
-/usr/bin/ar qc libst_uvc.a  CMakeFiles/st_uvc.dir/st_isp.c.o CMakeFiles/st_uvc.dir/st_uvc.c.o CMakeFiles/st_uvc.dir/st_uvc_xu.c.o
-/usr/bin/ranlib libst_uvc.a

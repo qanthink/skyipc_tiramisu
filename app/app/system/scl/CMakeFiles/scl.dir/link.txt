@@ -1,2 +1,0 @@
-/usr/bin/ar qc libscl.a  CMakeFiles/scl.dir/scl.cpp.o
-/usr/bin/ranlib libscl.a

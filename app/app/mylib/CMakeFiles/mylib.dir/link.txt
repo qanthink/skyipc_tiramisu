@@ -1,2 +1,0 @@
-/usr/bin/ar qc libmylib.a  CMakeFiles/mylib.dir/myfifo/myfifo.cpp.o CMakeFiles/mylib.dir/myqueue/myqueue.cpp.o
-/usr/bin/ranlib libmylib.a

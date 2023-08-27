@@ -1,2 +1,0 @@
-/usr/bin/ar qc liblive555rtsp.a  CMakeFiles/live555rtsp.dir/JPEGByteStreamFileSource.cpp.o CMakeFiles/live555rtsp.dir/JPEGVideoServerMediaSubsession.cpp.o CMakeFiles/live555rtsp.dir/JPEGVideoStreamFramer.cpp.o CMakeFiles/live555rtsp.dir/live555rtsp.cpp.o
-/usr/bin/ranlib liblive555rtsp.a
