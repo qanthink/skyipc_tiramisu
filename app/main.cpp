@@ -294,7 +294,7 @@ int main(int argc, const char *argv[])
 			break;
 		}
 		#else
-		sleep(1);
+		this_thread::sleep_for(chrono::seconds(1));
 		static int sleepCntSec = 0;
 		if(15 == sleepCntSec++)
 		{

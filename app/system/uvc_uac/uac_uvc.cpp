@@ -373,7 +373,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 			cout << "V4L2 pixel format = V4L2_PIX_FMT_MJPEG" << endl;
 			bool bIsJpeg = true;
 			vencCh = Venc::vencJpegChn;
-			pScl->createPort(Scl::sclPortMain, format.width, format.height, bIsJpeg);
+			pScl->createPort(Scl::sclPortMain, format.width, format.height , bIsJpeg);
 			pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, vencCh, format.width, format.height);
 			//pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, vencCh, 5);
 			//pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, vencCh, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);

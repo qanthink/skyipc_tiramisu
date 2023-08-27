@@ -209,7 +209,7 @@ int Scl::createPort(MI_SCL_PORT sclPortId, unsigned int widthOut, unsigned int h
 	{
 		stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
 	}
-	
+
 	s32Ret = MI_SCL_SetOutputPortParam(sclDevId, sclChnId, sclPortId, &stSclOutputParam);
 	if(0 != s32Ret)
 	{
@@ -217,7 +217,7 @@ int Scl::createPort(MI_SCL_PORT sclPortId, unsigned int widthOut, unsigned int h
 			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
-
+	
 	s32Ret = MI_SCL_EnableOutputPort(sclDevId, sclChnId, sclPortId);
 	if(0 != s32Ret)
 	{

@@ -414,7 +414,8 @@ MI_S32 Venc::startRecvPic(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn)
 	s32Ret = MI_VENC_StartRecvPic(vencDev, vencChn);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_VENC_StartRecvPic(), errno = " << s32Ret << endl;
+		cerr << "Fail to call MI_VENC_StartRecvPic() in Venc::startRecvPic(), " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 	}
 
 	cout << "Call Venc::startRecvPic() end." << endl;
@@ -1053,19 +1054,18 @@ MI_S32 Venc::createJpegStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned
 	MI_VENC_ChnAttr_t stChnAttr;
 	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
 
-	//stChnAttr.stVeAttr.stAttrJpeg.u32BufSize = 2 * width * height;	// 不小于最大宽高的乘积
-	stChnAttr.stVeAttr.stAttrJpeg.u32BufSize = ALIGN_UP(width*height*3/4, 16);
+	// u32BufSize 不小于图像最大宽高16对齐后的乘积。 必须是64的整数倍。
+	//stChnAttr.stVeAttr.stAttrJpeg.u32BufSize = ALIGN_UP(width, 16) * ALIGN_UP(height, 16);
 	stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_MJPEGFIXQP;
 	stChnAttr.stVeAttr.stAttrJpeg.u32PicWidth = width;
 	stChnAttr.stVeAttr.stAttrJpeg.u32PicHeight = height;
-	stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicWidth = width;
-	//stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicHeight = height;
+	stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicWidth = ALIGN_UP(width, 16);
 	stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicHeight = ALIGN_UP(height, 16);
 	stChnAttr.stVeAttr.stAttrJpeg.bByFrame = TRUE;
 	stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_JPEGE;
 	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateNum = 30;
 	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateDen = 1;
-	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32Qfactor = 45;	// [1, 90]
+	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32Qfactor = 15;	// [1, 90]
 	
 	MI_S32 s32Ret = 0;
 	s32Ret = MI_VENC_CreateChn(vencDev, vencChn, &stChnAttr);
