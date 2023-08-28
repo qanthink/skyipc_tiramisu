@@ -21,6 +21,7 @@ private:
 public:
 	const static MI_VIF_DEV vifDevId = 0;	// 有复杂的计算关系。
 	const static MI_VIF_PORT vifPortId = 0;
+	const static MI_S32 vifChnId = 0;
 
 	MI_S32 enable();
 	MI_S32 disable();

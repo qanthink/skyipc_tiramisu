@@ -685,7 +685,7 @@ static struct uvc_format_mjpeg uvc_format_mjpg = {
 	.bDescriptorType	= USB_DT_CS_INTERFACE,
 	.bDescriptorSubType = UVC_VS_FORMAT_MJPEG,
 	.bFormatIndex		= 1,
-	.bNumFrameDescriptors	= 6,
+	.bNumFrameDescriptors	= 7,
 	.bmFlags		= 0,
 	.bDefaultFrameIndex = 1,
 	.bAspectRatioX		= 0,
@@ -798,6 +798,23 @@ static struct UVC_FRAME_MJPEG(3) uvc_frame_mjpg_4kp = {
 	.dwFrameInterval[1] = cpu_to_le32(666666),
 	.dwFrameInterval[2] = cpu_to_le32(1000000),
 };
+static struct UVC_FRAME_MJPEG(3) uvc_frame_mjpg_48mp = {
+	.bLength		= UVC_DT_FRAME_MJPEG_SIZE(3),
+	.bDescriptorType	= USB_DT_CS_INTERFACE,
+	.bDescriptorSubType = UVC_VS_FRAME_MJPEG,
+	.bFrameIndex		= 7,
+	.bmCapabilities		= 0,
+	.wWidth			= cpu_to_le16(7680),
+	.wHeight		= cpu_to_le16(5760),
+	.dwMinBitRate		= cpu_to_le32(7680*5760*2*10),
+	.dwMaxBitRate		= cpu_to_le32(7680*5760*2*10), //overflow
+	.dwMaxVideoFrameBufferSize	= cpu_to_le32(7680*5760*2),
+	.dwDefaultFrameInterval = cpu_to_le32(2000000),
+	.bFrameIntervalType = 3,
+	.dwFrameInterval[0] = cpu_to_le32(1000000),
+	.dwFrameInterval[1] = cpu_to_le32(2000000),
+	.dwFrameInterval[2] = cpu_to_le32(4000000),
+};
 
 static struct UVC_STILL_IMAGE_FRAME_DESCRIPTOR(1, 1) uvc_frame_mjpg_still_image = {
 	.bLength = UVC_DT_STILL_IMAGE_FRAME_SIZE(1,1),
@@ -818,6 +835,7 @@ static struct UVC_STILL_IMAGE_FRAME_DESCRIPTOR(1, 1) uvc_frame_mjpg_still_image 
 	(struct uvc_descriptor_header *) &uvc_frame_mjpg_1080p, \
 	(struct uvc_descriptor_header *) &uvc_frame_mjpg_2kp,	\
 	(struct uvc_descriptor_header *) &uvc_frame_mjpg_4kp,	\
+	(struct uvc_descriptor_header *) &uvc_frame_mjpg_48mp,	\
 	(struct uvc_descriptor_header *) &uvc_frame_mjpg_still_image,
 #else
 #define UVC_DESCRIPTOR_HEADERS_OF_MJPG_FRAME

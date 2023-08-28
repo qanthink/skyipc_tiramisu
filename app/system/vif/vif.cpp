@@ -162,7 +162,6 @@ MI_S32 Vif::enable()
 	MI_SYS_ChnPort_t stChnPort;
 	memset(&stChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 
-	MI_S32 vifChnId = 0;
 	stChnPort.eModId = E_MI_MODULE_ID_VIF;
 	stChnPort.u32DevId = vifDevId;
 	stChnPort.u32ChnId = vifChnId;

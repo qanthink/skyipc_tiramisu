@@ -27,6 +27,7 @@ aux_source_directory(common DIR_APP_SRC)
 include_directories(
 	sys
 	sensor
+	vif
 	isp
 	scl
 	rgn/st_rgn

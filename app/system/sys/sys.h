@@ -46,5 +46,9 @@ public:
 
 	MI_S32 bindDivpChn2DispPort(MI_U32 u32SrcChnID, MI_U32 u32DstPortID);
 	MI_S32 bindDivpChn2DispPort_N(MI_U32 u32PortNum);
+
+	// 私有池
+	MI_S32 enablePrivatePool();
+	MI_S32 disablePrivatePool();
 };
 

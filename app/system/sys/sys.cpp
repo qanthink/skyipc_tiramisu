@@ -6,6 +6,7 @@ xxx版权所有。
 
 #include "sys.h"
 #include "mi_venc.h"
+#include "vif.h"
 #include <iostream>
 #include <string.h>
 
@@ -655,3 +656,68 @@ MI_S32 Sys::bindDivpChn2DispPort_N(MI_U32 u32PortNum)
 	cout << "Call Sys::bindDivpChn2DispPort_N() end. Success to bind " << u32BindedPortNum << " ports!" << endl;
 	return u32BindedPortNum;
 }
+
+/*-----------------------------------------------------------------------------
+描--述：使能私有池
+参--数：
+返回值：
+注--意：暂无参数，未来可能拓展模块ID, Dev, PortID, ChnID 等。
+-----------------------------------------------------------------------------*/
+MI_S32 Sys::enablePrivatePool()
+{
+	cout << "Call Sys::enablePrivatePool(). " << endl;
+	
+	MI_S32 s32Ret = 0;
+	MI_SYS_GlobalPrivPoolConfig_t stGlobalPrivPoolConf;
+	memset(&stGlobalPrivPoolConf, 0x0, sizeof(stGlobalPrivPoolConf));
+	stGlobalPrivPoolConf.bCreate = TRUE;
+	stGlobalPrivPoolConf.eConfigType = E_MI_SYS_PER_CHN_PORT_OUTPUT_POOL;
+	stGlobalPrivPoolConf.uConfig.stPreChnPortOutputPrivPool.eModule = E_MI_MODULE_ID_VIF;
+	stGlobalPrivPoolConf.uConfig.stPreChnPortOutputPrivPool.u32Devid = Vif::vifDevId;
+	stGlobalPrivPoolConf.uConfig.stPreChnPortOutputPrivPool.u32Channel = Vif::vifChnId;
+	stGlobalPrivPoolConf.uConfig.stPreChnPortOutputPrivPool.u32Port = Vif::vifPortId;
+	stGlobalPrivPoolConf.uConfig.stPreChnPortOutputPrivPool.u32PrivateHeapSize = 0xfb6000*3;
+	s32Ret = MI_SYS_ConfigPrivateMMAPool(u16SocId, &stGlobalPrivPoolConf);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SYS_ConfigPrivateMMAPool() in Sys::enablePrivatePool(). "
+			<< "s32Ret = " << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	
+	cout << "Call Sys::enablePrivatePool() end. " << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：禁用私有池
+参--数：
+返回值：
+注--意：暂无参数，未来可能拓展模块ID, Dev, PortID, ChnID 等。
+-----------------------------------------------------------------------------*/
+MI_S32 Sys::disablePrivatePool()
+{
+	cout << "Call Sys::disablePrivatePool(). " << endl;
+	
+	MI_S32 s32Ret = 0;
+	MI_SYS_GlobalPrivPoolConfig_t stGlobalPrivPoolConf;
+	memset(&stGlobalPrivPoolConf, 0x0, sizeof(stGlobalPrivPoolConf));
+	stGlobalPrivPoolConf.bCreate = FALSE;
+	stGlobalPrivPoolConf.eConfigType = E_MI_SYS_PER_CHN_PORT_OUTPUT_POOL;
+	stGlobalPrivPoolConf.uConfig.stPreChnPortOutputPrivPool.eModule = E_MI_MODULE_ID_VIF;
+	stGlobalPrivPoolConf.uConfig.stPreChnPortOutputPrivPool.u32Devid = Vif::vifDevId;
+	stGlobalPrivPoolConf.uConfig.stPreChnPortOutputPrivPool.u32Channel = Vif::vifChnId;
+	stGlobalPrivPoolConf.uConfig.stPreChnPortOutputPrivPool.u32Port = Vif::vifPortId;
+	stGlobalPrivPoolConf.uConfig.stPreChnPortOutputPrivPool.u32PrivateHeapSize = 0xfb6000*3;
+	s32Ret = MI_SYS_ConfigPrivateMMAPool(0, &stGlobalPrivPoolConf);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SYS_ConfigPrivateMMAPool() in Sys::disablePrivatePool(). "
+			<< "s32Ret = " << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	
+	cout << "Call Sys::disablePrivatePool() end. " << endl;
+	return s32Ret;
+}
+

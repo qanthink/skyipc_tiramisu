@@ -106,6 +106,9 @@ int main(int argc, const char *argv[])
 	Isp *pIsp = Isp::getInstance();
 	pSys->bindVif2Isp(Vif::vifDevId, Isp::ispDevId, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 
+	// 使用私有池
+	pSys->enablePrivatePool();
+
 	// SCL 初始化，并绑定前级ISP.
 	Scl *pScl = Scl::getInstance();
 	pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
@@ -360,6 +363,9 @@ int main(int argc, const char *argv[])
 	#if(1 == (USE_IQ_SERVER))
 	pIsp->closeIqServer();
 	#endif
+
+	// SDK Demo 中，在销毁VIF 后禁用私有池
+	pSys->disablePrivatePool();
 
 	cout << "End of main(), sleep() for exit." << endl;
 	this_thread::sleep_for(chrono::milliseconds(500));
