@@ -1065,7 +1065,7 @@ MI_S32 Venc::createJpegStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned
 	stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_JPEGE;
 	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateNum = 30;
 	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateDen = 1;
-	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32Qfactor = 15;	// [1, 90]
+	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32Qfactor = 45;	// [1, 90]
 	
 	MI_S32 s32Ret = 0;
 	s32Ret = MI_VENC_CreateChn(vencDev, vencChn, &stChnAttr);
