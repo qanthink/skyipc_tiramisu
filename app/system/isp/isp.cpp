@@ -577,7 +577,7 @@ int Isp::loadBinFile(char* filepath)
 	cout << "IQ filepath = " << filepath << endl;
 	
 	MI_S32 s32Ret = 0;
-	//s32Ret = MI_ISP_API_CmdLoadBinFile(0, filepath, 1234);
+	s32Ret = MI_ISP_API_CmdLoadBinFile(0, 0, filepath, 1234);
 	if(MI_IQSERVER_OK != s32Ret)
 	{
 		cerr << "Fail to call MI_ISP_API_CmdLoadBinFile() in Isp::loadBinFile(). " 

@@ -75,7 +75,7 @@ static MI_S32 UVC_MM_FillBuffer(void *uvc, ST_UVC_BufInfo_t *bufInfo)
 			vencChn = Venc::vencMainChn;
 			break;
 		default:
-			cerr << "In UVC_MM_FillBuffer(). Format format = " << pstDev->setting.fcc 
+			cerr << "In UVC_MM_FillBuffer(). Format format = " << pstDev->setting.fcc
 				<< ". Just support: H.264/265, MJPEG, YUYV422." << endl;
 			return -EINVAL;
 			break;
@@ -85,7 +85,7 @@ static MI_S32 UVC_MM_FillBuffer(void *uvc, ST_UVC_BufInfo_t *bufInfo)
 	MI_U32 *pu32length = (MI_U32 *)&bufInfo->length;
 
 	MI_S32 s32Ret = MI_SUCCESS;
-	if((V4L2_PIX_FMT_H264 == pstDev->setting.fcc) 
+	if((V4L2_PIX_FMT_H264 == pstDev->setting.fcc)
 		|| (V4L2_PIX_FMT_H265 == pstDev->setting.fcc))
 	{
 		MI_VENC_Stream_t stStream;
@@ -221,7 +221,7 @@ static MI_S32 UVC_MM_FillBuffer(void *uvc, ST_UVC_BufInfo_t *bufInfo)
 		memset(&dstChnPort, 0, sizeof(MI_SYS_ChnPort_t));
 		MI_SYS_BUF_HANDLE stBufHandle;
 		memset(&stBufHandle, 0, sizeof(MI_SYS_BUF_HANDLE));
-		
+
 		dstChnPort.eModId = E_MI_MODULE_ID_VPE;
 		dstChnPort.u32DevId = 0;
 		//dstChnPort.u32PortId = Vpe::vpeSubPort;
@@ -234,7 +234,7 @@ static MI_S32 UVC_MM_FillBuffer(void *uvc, ST_UVC_BufInfo_t *bufInfo)
 			//	<< "s32Ret = " << s32Ret << endl;
 			return -EINVAL;
 		}
-		
+
 		*pu32length = stBufInfo.stFrameData.u16Height * stBufInfo.stFrameData.u32Stride[0];
 		memcpy(u8CopyData, stBufInfo.stFrameData.pVirAddr[0], *pu32length);
 
@@ -288,7 +288,7 @@ static MI_S32 UVC_Deinit(void *uvc)
 static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 {
 	cout << "Call UVC_StartCapture()." << endl;
-	
+
 	ST_UvcDev_t *pstDev = (ST_UvcDev_t *)uvc;
 	if(NULL == pstDev)
 	{
@@ -302,7 +302,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 	pstDev->setting.u32Height = format.height;
 	pstDev->setting.u32FrameRate = format.frameRate;
 
-	printf("In UVC_StartCapture, {width, height, fps} = {%d, %d, %2f}.\n", 
+	printf("In UVC_StartCapture, {width, height, fps} = {%d, %d, %2f}.\n",
 						format.width, format.height, format.frameRate);
 
 	MI_S32 s32Ret = 0;
@@ -364,7 +364,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 		}
 		case V4L2_PIX_FMT_NV12:
 		{
-			cerr << "V4L2 pixel format = V4L2_PIX_FMT_NV12. Not support." 
+			cerr << "V4L2 pixel format = V4L2_PIX_FMT_NV12. Not support."
 					<< "Just support: H.264/265, MJPEG, YUYV422." << endl;
 			break;
 		}
@@ -373,8 +373,18 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 			cout << "V4L2 pixel format = V4L2_PIX_FMT_MJPEG" << endl;
 			bool bIsJpeg = true;
 			vencCh = Venc::vencJpegChn;
-			pScl->createPort(Scl::sclPortMain, format.width, format.height , bIsJpeg);
-			pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, vencCh, format.width, format.height);
+
+			if(7000 < format.width)
+			{
+				cout << "more than 7000" << endl;
+				pScl->createPort(Scl::sclPortMain, 7200, 5400 , bIsJpeg);
+				pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, vencCh, 7200, 5400);
+			}
+			else
+			{
+				pScl->createPort(Scl::sclPortMain, format.width, format.height , bIsJpeg);
+				pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, vencCh, format.width, format.height);
+			}
 			//pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, vencCh, 5);
 			//pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, vencCh, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
 			pVenc->startRecvPic(MI_VENC_DEV_ID_JPEG_0, vencCh);
@@ -417,7 +427,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 		s32Ret = MI_VENC_SetMaxStreamCnt(MI_VENC_DEV_ID_H264_H265_0, vencCh, pstDev->u8MaxBufCnt + 1);
 		if(MI_SUCCESS != s32Ret)
 		{
-			cerr << "Fail to call MI_VENC_SetMaxStreamCnt() in UVC_StartCapture(). " 
+			cerr << "Fail to call MI_VENC_SetMaxStreamCnt() in UVC_StartCapture(). "
 			<< "errno = 0x" << hex << s32Ret << dec << endl;
 			return s32Ret;
 		}
@@ -428,7 +438,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 		s32Ret = MI_VENC_SetMaxStreamCnt(MI_VENC_DEV_ID_JPEG_0, vencCh, pstDev->u8MaxBufCnt + 1);
 		if(MI_SUCCESS != s32Ret)
 		{
-			cerr << "Fail to call MI_VENC_SetMaxStreamCnt() in UVC_StartCapture(). " 
+			cerr << "Fail to call MI_VENC_SetMaxStreamCnt() in UVC_StartCapture(). "
 			<< "errno = 0x" << hex << s32Ret << dec << endl;
 			return s32Ret;
 		}
@@ -442,7 +452,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 		cout << "First run app, load iqfile." << endl;
 		bFirstRun = false;
 		Isp *pIsp = Isp::getInstance();
-		pIsp->loadBinFile((char *)"/config/iqfile/335_imx291_day.bin");
+		pIsp->loadBinFile((char *)"/config/iqfile/GM1.bin");
 	}
 
 	cout << "Call UVC_StartCapture() end." << endl;
@@ -460,7 +470,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 static MI_S32 UVC_StopCapture(void *uvc)
 {
 	cout << "Call UVC_StopCapture()." << endl;
-	
+
 	ST_UvcDev_t *pstDev = (ST_UvcDev_t *)uvc;
 	if(NULL == pstDev)
 	{
@@ -599,7 +609,7 @@ int UacUvc::startUvc()
 	ST_UVC_Init(stUvcDev.name, &stUvcDev.handle);
 	ST_UVC_CreateDev(stUvcDev.handle, &stUvcChAttr);
 	ST_UVC_StartDev(stUvcDev.handle);
-	
+
 	cout << "Call UacUvc::startUvc() end." << endl;
 	return 0;
 }

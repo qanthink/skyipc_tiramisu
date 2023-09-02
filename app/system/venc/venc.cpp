@@ -1086,7 +1086,7 @@ MI_S32 Venc::createJpegStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned
 	}
 	#endif
 	
-	s32Ret = MI_VENC_SetMaxStreamCnt(vencDev, vencChn, 2);
+	s32Ret = MI_VENC_SetMaxStreamCnt(vencDev, vencChn, 3);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_VENC_SetMaxStreamCnt() in Venc::createJpegStream(), s32Ret = " << s32Ret << endl;
