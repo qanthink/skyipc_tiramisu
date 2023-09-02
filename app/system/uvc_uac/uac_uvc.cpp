@@ -312,6 +312,21 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 	Scl *pScl = Scl::getInstance();
 	Venc *pVenc = Venc::getInstance();
 
+	#if 0			// 二次设置sensor res 会导致kernel panic.
+	if(format.width >= 4000 && format.width <= 8000)
+	{
+		pSensor->setRes(1);
+	}
+	else if(format.width >= 2000 && format.width < 4000)
+	{
+		pSensor->setRes(0);
+	}
+	else if(format.width < 2000)
+	{
+		pSensor->setRes(1);
+	}
+	#endif
+
 	switch(pstDev->setting.fcc)
 	{
 		case V4L2_PIX_FMT_YUYV:

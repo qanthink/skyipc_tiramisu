@@ -27,6 +27,8 @@ public:
 	int getFps(MI_U32 *u32Fps);						// 获取帧率
 	int setFps(MI_U32 u32Fps);						// 设置帧率
 
+	int setRes(MI_U32 u32Res);
+
 	int getPadInfo(MI_SNR_PADID ePADId, MI_SNR_PADInfo_t *pstPadInfo);				// 获取sensor 设备信息
 	int getPlaneInfo(MI_SNR_PADID ePADId, MI_SNR_PlaneInfo_t *pstPlaneInfo);		// 获取sensor 通道信息
 

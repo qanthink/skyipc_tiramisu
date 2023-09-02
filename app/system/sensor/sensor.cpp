@@ -197,6 +197,28 @@ int Sensor::setFps(MI_U32 u32Fps)
 }
 
 /*-----------------------------------------------------------------------------
+描--述：设置Sensor 的资源属性。一颗sensor 可以出多个分辨率，通过该函数选择。
+参--数：
+返回值：成功，返回0; 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+int Sensor::setRes(MI_U32 u32Fps)
+{
+	cout << "Call Sensor::setRes()." << endl;
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_SNR_SetRes(ePADId, u32Fps);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SNR_SetRes() in Sensor::setRes(). "
+			<< "errno = " << hex << s32Ret << dec << endl;
+	}
+
+	cout << "Call Sensor::setRes() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
 描--述：
 参--数：
 返回值：
