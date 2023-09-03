@@ -52,6 +52,7 @@ UacUvc::~UacUvc()
 static MI_S32 UVC_MM_FillBuffer(void *uvc, ST_UVC_BufInfo_t *bufInfo)
 {
 	//cout << "Call UVC_MM_FillBuffer()." << endl;
+	//return MI_SUCCESS;
 
 	ST_UvcDev_t *pstDev = (ST_UvcDev_t *)uvc;
 	if(NULL == pstDev)
@@ -60,192 +61,145 @@ static MI_S32 UVC_MM_FillBuffer(void *uvc, ST_UVC_BufInfo_t *bufInfo)
 		return -1;
 	}
 
-	MI_U32 vencChn = 0;
-	switch(pstDev->setting.fcc)
-	{
-		case V4L2_PIX_FMT_YUYV:
-			break;
-		case V4L2_PIX_FMT_MJPEG:
-			vencChn = Venc::vencJpegChn;
-			break;
-		case V4L2_PIX_FMT_H264:
-			vencChn = Venc::vencMainChn;
-			break;
-		case V4L2_PIX_FMT_H265:
-			vencChn = Venc::vencMainChn;
-			break;
-		default:
-			cerr << "In UVC_MM_FillBuffer(). Format format = " << pstDev->setting.fcc
-				<< ". Just support: H.264/265, MJPEG, YUYV422." << endl;
-			return -EINVAL;
-			break;
-	}
-
 	MI_U8 *u8CopyData = (MI_U8 *)bufInfo->b.buf;
 	MI_U32 *pu32length = (MI_U32 *)&bufInfo->length;
 
 	MI_S32 s32Ret = MI_SUCCESS;
-	if((V4L2_PIX_FMT_H264 == pstDev->setting.fcc)
-		|| (V4L2_PIX_FMT_H265 == pstDev->setting.fcc))
+	MI_VENC_Stream_t stStream;
+	MI_VENC_Pack_t stPack[4];
+	MI_VENC_ChnStat_t stStat;
+
+	MI_U32 vencChn = 0;
+	switch(pstDev->setting.fcc)
 	{
-		MI_VENC_Stream_t stStream;
-		const unsigned int vencPackNum = 4;
-		MI_VENC_Pack_t stPack[vencPackNum];
-		memset(&stStream, 0, sizeof(MI_VENC_Stream_t));
-		memset(&stPack, 0, sizeof(MI_VENC_Pack_t) * vencPackNum);
-		stStream.pstPack = stPack;
+		case V4L2_PIX_FMT_YUYV:
+		{
+			#if 0
+			memset(&stBufInfo, 0, sizeof(MI_SYS_BufInfo_t));
+            memset(&stBufHandle, 0, sizeof(MI_SYS_BUF_HANDLE));
 
-		MI_VENC_ChnStat_t stStat;
-		memset(&stStat, 0, sizeof(MI_VENC_ChnStat_t));
-		s32Ret = MI_VENC_Query(MI_VENC_DEV_ID_H264_H265_0, vencChn, &stStat);
-		if(MI_SUCCESS != s32Ret)	// 如果出错了，
-		{
-			cerr << "Fail to call MI_VENC_Query() in UVC_MM_FillBuffer()."
-				<< "errno = 0x" << hex << s32Ret << dec << endl;
-			return -EINVAL;
-		}
-		else if(0 == stStat.u32CurPacks)	// 查询成功，但没数据，则直接返回。
-		{
-			return -EINVAL;
-		}
-		stStream.u32PackCount = stStat.u32CurPacks;
+            s32Ret = MI_SYS_ChnOutputPortGetBuf(&dstChnPort, &stBufInfo, &stBufHandle);
+            if(MI_SUCCESS!=s32Ret)
+            {
+                return -EINVAL;
+            }
 
-		const unsigned int outTimeMs = 40;				// 40ms 没获得视频数据，就返回。
-		s32Ret = MI_VENC_GetStream(MI_VENC_DEV_ID_H264_H265_0, vencChn, &stStream, outTimeMs);
-		if(MI_SUCCESS != s32Ret)
-		{
-			cerr << "Fail to call MI_VENC_GetStream() in UVC_MM_FillBuffer()."
-				<< "errno = 0x" << hex << s32Ret << dec << endl;
-			return -EINVAL;
-		}
+            *pu32length = stBufInfo.stFrameData.u16Height * stBufInfo.stFrameData.u32Stride[0];
+            memcpy(u8CopyData, stBufInfo.stFrameData.pVirAddr[0], *pu32length);
 
-		if(((V4L2_PIX_FMT_H264 == pstDev->setting.fcc) && (E_MI_VENC_BASE_IDR == stStream.stH264Info.eRefType)) ||
-			((V4L2_PIX_FMT_H265 == pstDev->setting.fcc) && (E_MI_VENC_BASE_IDR == stStream.stH265Info.eRefType)))
-		{
-			bufInfo->is_keyframe = true;
+            s32Ret = MI_SYS_ChnOutputPortPutBuf(stBufHandle);
+            if(MI_SUCCESS!=s32Ret)
+                printf("%s Release Frame Failed\n", __func__);
+            #endif
 		}
-		else
+		case V4L2_PIX_FMT_NV12:
 		{
-			bufInfo->is_keyframe = false;
-		}
+			#if 0
+			memset(&stBufInfo, 0, sizeof(MI_SYS_BufInfo_t));
+            memset(&stBufHandle, 0, sizeof(MI_SYS_BUF_HANDLE));
 
-		int i = 0;
-		for(i = 0; i < stStat.u32CurPacks; ++i)
-		{
-			MI_U32 u32Size = 0;
-			u32Size = stStream.pstPack[i].u32Len;
-			memcpy(u8CopyData,stStream.pstPack[i].pu8Addr, u32Size);
-			u8CopyData += u32Size;
-		}
-		*pu32length = u8CopyData - (MI_U8 *)bufInfo->b.buf;
+            s32Ret = MI_SYS_ChnOutputPortGetBuf(&dstChnPort, &stBufInfo, &stBufHandle);
+            if(MI_SUCCESS!=s32Ret)
+                return -EINVAL;
 
-		bufInfo->is_tail = true;	//default is frameEnd
-		s32Ret = MI_VENC_ReleaseStream(MI_VENC_DEV_ID_H264_H265_0, vencChn, &stStream);
-		if(MI_SUCCESS != s32Ret)
-		{
-			cerr << "Fail to call MI_VENC_ReleaseStream() in UVC_MM_FillBuffer()."
-				<< "errno = 0x" << hex << s32Ret << dec << endl;
-		}
+            *pu32length = stBufInfo.stFrameData.u16Height
+                    * (stBufInfo.stFrameData.u32Stride[0] + stBufInfo.stFrameData.u32Stride[1] / 2);
+            memcpy(u8CopyData, stBufInfo.stFrameData.pVirAddr[0],
+                            stBufInfo.stFrameData.u16Height * stBufInfo.stFrameData.u32Stride[0]);
+            u8CopyData += stBufInfo.stFrameData.u16Height * stBufInfo.stFrameData.u32Stride[0];
+            memcpy(u8CopyData, stBufInfo.stFrameData.pVirAddr[1],
+                            stBufInfo.stFrameData.u16Height * stBufInfo.stFrameData.u32Stride[1]/2);
 
-		if(pstDev->bForceIdr && (Venc::vencJpegChn != vencChn))
+            s32Ret = MI_SYS_ChnOutputPortPutBuf(stBufHandle);
+            if(MI_SUCCESS!=s32Ret)
+                printf("%s Release Frame Failed\n", __func__);
+            #endif
+			break;
+		}
+		case V4L2_PIX_FMT_MJPEG:
+		case V4L2_PIX_FMT_H264:
+		case V4L2_PIX_FMT_H265:
 		{
-			cout << "In UVC_MM_FillBuffer(). Force Idr." << endl;
-			s32Ret = MI_VENC_RequestIdr(MI_VENC_DEV_ID_H264_H265_0, vencChn, TRUE);
-			if(MI_SUCCESS != s32Ret)
+			int vencChnId = 0;
+			int vencDevId = 0;
+			vencDevId = (V4L2_PIX_FMT_MJPEG == pstDev->setting.fcc) ? MI_VENC_DEV_ID_JPEG_0 : MI_VENC_DEV_ID_H264_H265_0;
+			memset(&stStream, 0, sizeof(MI_VENC_Stream_t));
+			memset(&stPack, 0, sizeof(MI_VENC_Pack_t) * 4);
+			stStream.pstPack = stPack;
+
+			s32Ret = MI_VENC_Query(vencDevId, vencChnId, &stStat);
+			if(0 != s32Ret)
 			{
-				cerr << "Fail to call MI_VENC_RequestIdr() in UVC_MM_FillBuffer()."
+				cerr << "Fail to call pVenc->query() in UVC_MM_FillBuffer()."
 					<< "errno = 0x" << hex << s32Ret << dec << endl;
+				return -EINVAL;
+			}
+
+			if(0 == stStat.u32CurPacks)		// 查询成功，但没数据，则直接返回。
+			{
+				//cerr << "Call pVenc->query() in UVC_MM_FillBuffer(), but there is no data." << endl;
+				return -EINVAL;
+			}
+
+			stStream.u32PackCount = stStat.u32CurPacks;
+			s32Ret = MI_VENC_GetStream(vencDevId, vencChnId, &stStream, 40);
+			if(0 != s32Ret)
+			{
+				cerr << "Fail to MI_VENC_GetStream() in UVC_MM_FillBuffer()."
+					<< "errno = 0x" << hex << s32Ret << dec << endl;
+				return -EINVAL;
+			}
+			
+			if(((V4L2_PIX_FMT_H264 == pstDev->setting.fcc) && (E_MI_VENC_BASE_IDR == stStream.stH264Info.eRefType)) ||
+				((V4L2_PIX_FMT_H265 == pstDev->setting.fcc) && (E_MI_VENC_BASE_IDR == stStream.stH265Info.eRefType)))
+			{
+				bufInfo->is_keyframe = TRUE;
 			}
 			else
 			{
-				pstDev->bForceIdr = false;
+				bufInfo->is_keyframe = FALSE;
 			}
-		}
-	}
-	else if(V4L2_PIX_FMT_MJPEG == pstDev->setting.fcc)
-	{
-		MI_VENC_Stream_t stStream;
-		const unsigned int vencPackNum = 1;
-		MI_VENC_Pack_t stPack[vencPackNum];
-		memset(&stStream, 0, sizeof(MI_VENC_Stream_t));
-		memset(&stPack, 0, sizeof(MI_VENC_Pack_t) * vencPackNum);
-		stStream.pstPack = stPack;
 
-		MI_VENC_ChnStat_t stStat;
-		memset(&stStat, 0, sizeof(MI_VENC_ChnStat_t));
-		s32Ret = MI_VENC_Query(MI_VENC_DEV_ID_JPEG_0, vencChn, &stStat);
-		if(MI_SUCCESS != s32Ret)	// 如果出错了，
+			int i = 0;
+			for(i = 0; i < stStat.u32CurPacks; ++i)
+			{
+				MI_U32 u32Size = 0;
+				u32Size = stStream.pstPack[i].u32Len;
+				memcpy(u8CopyData, stStream.pstPack[i].pu8Addr, u32Size);
+				u8CopyData += u32Size;
+			}
+			*pu32length = u8CopyData - (MI_U8 *)bufInfo->b.buf;
+			bufInfo->is_tail = TRUE; //default is frameEnd
+
+			s32Ret = MI_VENC_ReleaseStream(vencDevId, vencChnId, &stStream);
+			if(0 != s32Ret)
+			{
+				cerr << "Fail to call pVenc->releaseStream() in UVC_MM_FillBuffer()."
+					<< "errno = 0x" << hex << s32Ret << dec << endl;
+			}
+
+			if(pstDev->bForceIdr && (V4L2_PIX_FMT_MJPEG != pstDev->setting.fcc))
+			{
+				pstDev->bForceIdr = FALSE;
+				s32Ret = MI_VENC_RequestIdr(vencDevId, vencChnId, TRUE);
+				if(0 != s32Ret)
+				{
+					cerr << "Fail to call pVenc->requestIdr() in UVC_MM_FillBuffer()."
+						<< "errno = 0x" << hex << s32Ret << dec << endl;
+				}
+			}
+			break;
+		}
+		default:
 		{
-			cerr << "Fail to call MI_VENC_Query() in UVC_MM_FillBuffer()."
-				<< "errno = 0x" << hex << s32Ret << dec << endl;
+			cerr << "In UVC_MM_FillBuffer(). Format format = " << pstDev->setting.fcc
+				<< ". Just support: H.264/265, MJPEG, YUYV422." << endl;
 			return -EINVAL;
-		}
-		else if(0 == stStat.u32CurPacks)	// 查询成功，但没数据，则直接返回。
-		{
-			return -EINVAL;
-		}
-		stStream.u32PackCount = stStat.u32CurPacks;
-
-		const unsigned int outTimeMs = 40;				// 40ms 没获得视频数据，就返回。
-		s32Ret = MI_VENC_GetStream(MI_VENC_DEV_ID_JPEG_0, vencChn, &stStream, outTimeMs);
-		if(MI_SUCCESS != s32Ret)
-		{
-			cerr << "Fail to call MI_VENC_GetStream() in UVC_MM_FillBuffer()."
-				<< "errno = 0x" << hex << s32Ret << dec << endl;
-			return -EINVAL;
-		}
-
-		int i = 0;
-		for(i = 0; i < stStat.u32CurPacks; ++i)
-		{
-			MI_U32 u32Size = 0;
-			u32Size = stStream.pstPack[i].u32Len;
-			memcpy(u8CopyData, stStream.pstPack[i].pu8Addr, u32Size);
-			u8CopyData += u32Size;
-		}
-		*pu32length = u8CopyData - (MI_U8 *)bufInfo->b.buf;
-
-		bufInfo->is_tail = true;	//default is frameEnd
-		s32Ret = MI_VENC_ReleaseStream(MI_VENC_DEV_ID_JPEG_0, vencChn, &stStream);
-		if(MI_SUCCESS != s32Ret)
-		{
-			cerr << "Fail to call MI_VENC_ReleaseStream() in UVC_MM_FillBuffer()."
-				<< "errno = 0x" << hex << s32Ret << dec << endl;
-		}
-	}
-	else if(V4L2_PIX_FMT_YUYV == pstDev->setting.fcc)
-	{
-		MI_SYS_BufInfo_t stBufInfo;
-		memset(&stBufInfo, 0, sizeof(MI_SYS_BufInfo_t));
-		MI_SYS_ChnPort_t dstChnPort;
-		memset(&dstChnPort, 0, sizeof(MI_SYS_ChnPort_t));
-		MI_SYS_BUF_HANDLE stBufHandle;
-		memset(&stBufHandle, 0, sizeof(MI_SYS_BUF_HANDLE));
-
-		dstChnPort.eModId = E_MI_MODULE_ID_VPE;
-		dstChnPort.u32DevId = 0;
-		//dstChnPort.u32PortId = Vpe::vpeSubPort;
-		//dstChnPort.u32ChnId = Vpe::vpeCh;
-		s32Ret = MI_SYS_ChnOutputPortGetBuf(&dstChnPort, &stBufInfo, &stBufHandle);
-		if(MI_SUCCESS != s32Ret)
-		{
-			// 正常现象，不用打印。
-			//cerr << "Fail to call MI_SYS_ChnOutputPortGetBuf() in UVC_MM_FillBuffer(). "
-			//	<< "s32Ret = " << s32Ret << endl;
-			return -EINVAL;
-		}
-
-		*pu32length = stBufInfo.stFrameData.u16Height * stBufInfo.stFrameData.u32Stride[0];
-		memcpy(u8CopyData, stBufInfo.stFrameData.pVirAddr[0], *pu32length);
-
-		s32Ret = MI_SYS_ChnOutputPortPutBuf(stBufHandle);
-		if(MI_SUCCESS != s32Ret)
-		{
-			cerr << "Fail to call MI_SYS_ChnOutputPortPutBuf() in UVC_MM_FillBuffer(). "
-				<< "errno = 0x" << hex << s32Ret << dec << endl;
+			break;
 		}
 	}
 
+	//cout << "Call UVC_MM_FillBuffer() end." << endl;
 	return MI_SUCCESS;
 }
 
@@ -305,161 +259,233 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 	printf("In UVC_StartCapture, {width, height, fps} = {%d, %d, %2f}.\n",
 						format.width, format.height, format.frameRate);
 
+
+	/************************************************
+	Step1:  Init Isp Output Param
+	*************************************************/
+	Isp *pIsp = Isp::getInstance();
+	MI_ISP_OutPortParam_t stIspOutputParam;
+	memset(&stIspOutputParam, 0, sizeof(MI_ISP_OutPortParam_t));
+	pIsp->getInputPortCrop(&stIspOutputParam.stCropRect);
+
+	/************************************************
+	Step2:  Init Scl Output Param
+	*************************************************/
+
+	MI_SCL_OutPortParam_t stSclOutputParam;
+	memset(&stSclOutputParam, 0x0, sizeof(MI_SCL_OutPortParam_t));
+	stSclOutputParam.stSCLOutCropRect.u16X = stIspOutputParam.stCropRect.u16X;
+	stSclOutputParam.stSCLOutCropRect.u16Y = stIspOutputParam.stCropRect.u16Y;
+	stSclOutputParam.stSCLOutCropRect.u16Width = stIspOutputParam.stCropRect.u16Width;
+	stSclOutputParam.stSCLOutCropRect.u16Height = stIspOutputParam.stCropRect.u16Height;
+	stSclOutputParam.stSCLOutputSize.u16Width = format.width;
+	stSclOutputParam.stSCLOutputSize.u16Height = format.height;
+	stSclOutputParam.bMirror = FALSE;
+	stSclOutputParam.bFlip = FALSE;
+	stSclOutputParam.eCompressMode= E_MI_SYS_COMPRESS_MODE_NONE;
+
+	/************************************************
+	Step3:  Init Venc Param
+	*************************************************/
+	MI_VENC_ChnAttr_t stVencChnAttr;
+	MI_VENC_InputSourceConfig_t stVencInputSourceConfig;
+	memset(&stVencChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
+	memset(&stVencInputSourceConfig, 0, sizeof(MI_VENC_InputSourceConfig_t));
+
+	MI_U32 u32VenBitRate = 1 * 1024 * 1024;
+	MI_U32 u32VenQfactor = 45;
+	bool bByFrame = TRUE;
+
+	/************************************************
+	Step4:  Init Bind Param
+	*************************************************/
+
+	Sensor *pSensor = Sensor::getInstance();
+	pSensor->setFps(format.frameRate);
+	#if 0
+    memset(&stBindInfo[0], 0x0, sizeof(ST_Sys_BindInfo_T));
+    stBindInfo[0].stSrcChnPort.eModId = E_MI_MODULE_ID_ISP;
+    stBindInfo[0].stSrcChnPort.u32DevId = IspDevId;
+    stBindInfo[0].stSrcChnPort.u32ChnId = IspChnId;
+    stBindInfo[0].stSrcChnPort.u32PortId = IspPortId;
+    stBindInfo[0].stDstChnPort.eModId = E_MI_MODULE_ID_SCL;
+    stBindInfo[0].stDstChnPort.u32DevId = SclDevId;
+    stBindInfo[0].stDstChnPort.u32ChnId = SclChnId;
+    stBindInfo[0].u32SrcFrmrate = g_stConfig.u32MaxFps;
+    stBindInfo[0].u32DstFrmrate = u32FrameRate;
+    stBindInfo[0].eBindType = E_MI_SYS_BIND_TYPE_REALTIME;
+
+    memset(&stBindInfo[1], 0x0, sizeof(ST_Sys_BindInfo_T));
+    stBindInfo[1].stSrcChnPort.eModId = E_MI_MODULE_ID_SCL;
+    stBindInfo[1].stSrcChnPort.u32DevId = SclDevId;
+    stBindInfo[1].stSrcChnPort.u32ChnId = SclChnId;
+    stBindInfo[1].stSrcChnPort.u32PortId = SclPortId;
+    stBindInfo[1].stDstChnPort.eModId = E_MI_MODULE_ID_VENC;
+    stBindInfo[1].stDstChnPort.u32ChnId = VencChnId;
+    stBindInfo[1].u32SrcFrmrate = u32FrameRate;
+    stBindInfo[1].u32DstFrmrate = u32FrameRate;
+    if(!g_bEnableHDMI && g_device_num == 1)
+    {
+        if(fcc == V4L2_PIX_FMT_MJPEG)
+            stBindInfo[1].eBindType = E_MI_SYS_BIND_TYPE_REALTIME;
+        else if(fcc == V4L2_PIX_FMT_H264 || fcc == V4L2_PIX_FMT_H265)
+            stBindInfo[1].eBindType = E_MI_SYS_BIND_TYPE_HW_RING;
+    }
+
+    memset(&stChnPort[0], 0x0, sizeof(MI_SYS_ChnPort_t));
+    stChnPort[0].eModId = E_MI_MODULE_ID_ISP;
+    stChnPort[0].u32DevId = IspDevId;
+    stChnPort[0].u32ChnId = IspChnId;
+    stChnPort[0].u32PortId = IspPortId;
+
+    memset(&stChnPort[1], 0x0, sizeof(MI_SYS_ChnPort_t));
+    stChnPort[1].eModId = E_MI_MODULE_ID_SCL;
+    stChnPort[1].u32DevId = SclDevId;
+    stChnPort[1].u32ChnId = SclChnId;
+    stChnPort[1].u32PortId = SclPortId;
+    #endif
+
+	/************************************************
+	Step5:  Start
+	*************************************************/
+
 	MI_S32 s32Ret = 0;
 	MI_VENC_CHN vencCh = 0;
-	Sensor *pSensor = Sensor::getInstance();
+	//Sensor *pSensor = Sensor::getInstance();
 	Sys *pSys = Sys::getInstance();
 	Scl *pScl = Scl::getInstance();
 	Venc *pVenc = Venc::getInstance();
 
-	#if 0			// 二次设置sensor res 会导致kernel panic.
-	if(format.width >= 4000 && format.width <= 8000)
-	{
-		pSensor->setRes(1);
-	}
-	else if(format.width >= 2000 && format.width < 4000)
-	{
-		pSensor->setRes(0);
-	}
-	else if(format.width < 2000)
-	{
-		pSensor->setRes(1);
-	}
-	#endif
-
 	switch(pstDev->setting.fcc)
 	{
 		case V4L2_PIX_FMT_YUYV:
-		{
-			cout << "V4L2 pixel format = V4L2_PIX_FMT_YUYV" << endl;
-			//MI_VPE_PortMode_t stVpeMode;
-			//memset(&stVpeMode, 0, sizeof(stVpeMode));
-			//stVpeMode.bFlip = FALSE;
-			//stVpeMode.bMirror = FALSE;
-			//stVpeMode.u16Width = format.width;
-			//stVpeMode.u16Height= format.height;
-			//stVpeMode.eCompressMode = E_MI_SYS_COMPRESS_MODE_NONE;
-			//stVpeMode.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV422_YUYV;
-
-			//s32Ret = MI_VPE_SetPortMode(Vpe::vpeCh, Vpe::vpeSubPort, &stVpeMode);
-			if(0 != s32Ret)
-			{
-				cerr << "Fail to call MI_VPE_SetPortMode() in UVC_StartCapture(). "
-					<< "errno = 0x" << hex << s32Ret << dec << endl;
-			}
-
-			MI_SYS_ChnPort_t stChnPort;
-			memset(&stChnPort, 0, sizeof(MI_SYS_ChnPort_t));
-			stChnPort.eModId = E_MI_MODULE_ID_VPE;
-			stChnPort.u32DevId = 0;
-			//stChnPort.u32ChnId = Vpe::vpeCh;
-			//stChnPort.u32PortId = Vpe::vpeSubPort;
-
-			/* 虽然后续会再次调用 MI_SYS_SetChnOutputPortDepth(), 但此处的也不可少 */
-			s32Ret = MI_SYS_SetChnOutputPortDepth(MI_VENC_DEV_ID_H264_H265_0, &stChnPort, 0, 5);
-			if(0 != s32Ret)
-			{
-				cerr << "Fail to call MI_SYS_SetChnOutputPortDepth() in UVC_StartCapture(). "
-					<< "errno = 0x" << hex << s32Ret << dec << endl;
-			}
-
-			//s32Ret = MI_VPE_EnablePort(Vpe::vpeCh, Vpe::vpeSubPort);
-			if(0 != s32Ret)
-			{
-				cerr << "Fail to call MI_VPE_EnablePort(). s32Ret = " << s32Ret << endl;
-			}
-
-			s32Ret = MI_SYS_SetChnOutputPortDepth(0, &stChnPort, 4, 5);
-			if(0 != s32Ret)
-			{
-				cerr << "Fail to call MI_SYS_SetChnOutputPortDepth() in UVC_StartCapture(). "
-					<< "errno = 0x" << hex << s32Ret << dec << endl;
-			}
-			break;
-		}
 		case V4L2_PIX_FMT_NV12:
 		{
 			cerr << "V4L2 pixel format = V4L2_PIX_FMT_NV12. Not support."
 					<< "Just support: H.264/265, MJPEG, YUYV422." << endl;
+			#if 0
+            stIspOutputParam.ePixelFormat = (fcc == V4L2_PIX_FMT_YUYV) ? E_MI_SYS_PIXEL_FRAME_YUV422_YUYV : E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
+            stSclOutputParam.ePixelFormat = (fcc == V4L2_PIX_FMT_YUYV) ? E_MI_SYS_PIXEL_FRAME_YUV422_YUYV : E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
+
+            STCHECKRESULT(MI_ISP_SetOutputPortParam(IspDevId, IspChnId, IspPortId, &stIspOutputParam));
+            STCHECKRESULT(MI_SCL_SetOutputPortParam(SclDevId, SclChnId, SclPortId, &stSclOutputParam));
+
+            STCHECKRESULT(ST_Sys_Bind(&stBindInfo[0]));
+            STCHECKRESULT(MI_SYS_SetChnOutputPortDepth(0, &stChnPort[0] , 0, g_maxbuf_cnt+2));
+            STCHECKRESULT(MI_SYS_SetChnOutputPortDepth(0, &stChnPort[1] , g_maxbuf_cnt+1, g_maxbuf_cnt+2));
+            if (g_bEnableLDC)
+                STCHECKRESULT(MI_SYS_SetChnOutputPortDepth(0, &stChnPort[2] , 2, g_maxbuf_cnt+2));
+            STCHECKRESULT(MI_ISP_EnableOutputPort(IspDevId, IspChnId, IspPortId));
+            STCHECKRESULT(MI_SCL_EnableOutputPort(SclDevId, SclChnId, SclPortId));
+            *dstChnPort = stBindInfo[0].stDstChnPort;
+			#endif
 			break;
 		}
 		case V4L2_PIX_FMT_MJPEG:
+		case V4L2_PIX_FMT_H264:
+		case V4L2_PIX_FMT_H265:
 		{
-			cout << "V4L2 pixel format = V4L2_PIX_FMT_MJPEG" << endl;
-			bool bIsJpeg = true;
-			vencCh = Venc::vencJpegChn;
-
-			if(7000 < format.width)
+			if(V4L2_PIX_FMT_MJPEG == format.fcc)
 			{
-				cout << "more than 7000" << endl;
-				pScl->createPort(Scl::sclPortMain, 7200, 5400 , bIsJpeg);
-				pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, vencCh, 7200, 5400);
+				stIspOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV422_YUYV;
+				stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV422_YUYV;
 			}
 			else
 			{
-				pScl->createPort(Scl::sclPortMain, format.width, format.height , bIsJpeg);
-				pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, vencCh, format.width, format.height);
+				stIspOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
+				stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
 			}
-			//pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, vencCh, 5);
-			//pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, vencCh, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
-			pVenc->startRecvPic(MI_VENC_DEV_ID_JPEG_0, vencCh);
-			pSys->bindScl2Venc(Scl::sclPortMain, MI_VENC_DEV_ID_JPEG_0, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
-			break;
-		}
-		case V4L2_PIX_FMT_H264:
-		{
-			cout << "V4L2 pixel format = V4L2_PIX_FMT_H264" << endl;
-			vencCh = Venc::vencMainChn;
-			pScl->createPort(Scl::sclPortMain, format.width, format.height);
-			pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, vencCh, format.width, format.height);
-			pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, vencCh, 1 * 1024);
-			pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, vencCh, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
-			pVenc->startRecvPic(MI_VENC_DEV_ID_H264_H265_0, vencCh);
-			pSys->bindScl2Venc(Scl::sclPortMain, MI_VENC_DEV_ID_H264_H265_0, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_HW_RING, format.height);
-			break;
-		}
-		case V4L2_PIX_FMT_H265:
-		{
-			cout << "V4L2 pixel format = V4L2_PIX_FMT_H265" << endl;
-			vencCh = Venc::vencMainChn;
-			pScl->createPort(Scl::sclPortMain, format.width, format.height);
-			pVenc->createH265Stream(MI_VENC_DEV_ID_H264_H265_0, vencCh, format.width, format.height);
-			pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, vencCh, 1 * 1024);
-			pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, vencCh, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
-			pVenc->startRecvPic(MI_VENC_DEV_ID_H264_H265_0, vencCh);
-			pSys->bindScl2Venc(Scl::sclPortMain, MI_VENC_DEV_ID_H264_H265_0, vencCh, 30, 30, E_MI_SYS_BIND_TYPE_HW_RING, format.height);
+
+			int sclPortId = Scl::sclPortMain;
+			pScl->setOutputPortParam(sclPortId, &stSclOutputParam);
+			pIsp->setOutputPortParam(&stIspOutputParam);
+
+			int vencDevId = 0;
+			int vencChnId = 0;
+			vencDevId = (V4L2_PIX_FMT_MJPEG == format.fcc) ? MI_VENC_DEV_ID_JPEG_0 : MI_VENC_DEV_ID_H264_H265_0;
+
+			if(V4L2_PIX_FMT_MJPEG == format.fcc)
+			{
+				stVencChnAttr.stVeAttr.stAttrJpeg.u32PicWidth = format.width;
+				stVencChnAttr.stVeAttr.stAttrJpeg.u32PicHeight = format.height;
+				stVencChnAttr.stVeAttr.stAttrJpeg.u32MaxPicWidth = format.width;
+				stVencChnAttr.stVeAttr.stAttrJpeg.u32MaxPicHeight = ALIGN_UP(format.height, 16);
+				stVencChnAttr.stVeAttr.stAttrJpeg.bByFrame = bByFrame;
+				stVencChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_JPEGE;
+				stVencChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_MJPEGFIXQP;
+				stVencChnAttr.stRcAttr.stAttrMjpegFixQp.u32Qfactor = u32VenQfactor;
+				stVencChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateNum = format.frameRate;
+				stVencChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateDen = 1;
+			}
+			else if(V4L2_PIX_FMT_H264 == format.fcc)
+			{
+				stVencChnAttr.stVeAttr.stAttrH264e.u32PicWidth = format.width;
+				stVencChnAttr.stVeAttr.stAttrH264e.u32PicHeight = format.height;
+				stVencChnAttr.stVeAttr.stAttrH264e.u32MaxPicWidth = format.width;
+				stVencChnAttr.stVeAttr.stAttrH264e.u32MaxPicHeight = ALIGN_UP(format.height, 16);
+				stVencChnAttr.stVeAttr.stAttrH264e.bByFrame = bByFrame;
+				stVencChnAttr.stVeAttr.stAttrH264e.u32BFrameNum = 2;
+				stVencChnAttr.stVeAttr.stAttrH264e.u32Profile = 1;
+				stVencChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_H264E;
+				stVencChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_H264CBR;
+				stVencChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = u32VenBitRate;
+				stVencChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateNum = format.frameRate;
+				stVencChnAttr.stRcAttr.stAttrH264Cbr.u32SrcFrmRateDen = 1;
+				stVencChnAttr.stRcAttr.stAttrH264Cbr.u32Gop = 30;
+				stVencChnAttr.stRcAttr.stAttrH264Cbr.u32FluctuateLevel = 0;
+				stVencChnAttr.stRcAttr.stAttrH264Cbr.u32StatTime = 0;
+			}
+			else if(V4L2_PIX_FMT_H265 == format.fcc)
+			{
+				stVencChnAttr.stVeAttr.stAttrH265e.u32PicWidth = format.width;
+				stVencChnAttr.stVeAttr.stAttrH265e.u32PicHeight = format.height;
+				stVencChnAttr.stVeAttr.stAttrH265e.u32MaxPicWidth = format.width;
+				stVencChnAttr.stVeAttr.stAttrH265e.u32MaxPicHeight = ALIGN_UP(format.height, 16);
+				stVencChnAttr.stVeAttr.stAttrH265e.bByFrame = bByFrame;
+				stVencChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_H265E;
+				stVencChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_H265CBR;
+				stVencChnAttr.stRcAttr.stAttrH265Cbr.u32BitRate = u32VenBitRate;
+				stVencChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateNum = format.frameRate;
+				stVencChnAttr.stRcAttr.stAttrH265Cbr.u32SrcFrmRateDen = 1;
+				stVencChnAttr.stRcAttr.stAttrH265Cbr.u32Gop = 30;
+				stVencChnAttr.stRcAttr.stAttrH265Cbr.u32FluctuateLevel = 0;
+				stVencChnAttr.stRcAttr.stAttrH265Cbr.u32StatTime = 0;
+			}
+
+			pVenc->createChn(vencDevId, vencChnId, &stVencChnAttr);
+			if((V4L2_PIX_FMT_H264 == format.fcc) || (V4L2_PIX_FMT_H265 == format.fcc))
+			{
+				stVencInputSourceConfig.eInputSrcBufferMode = E_MI_VENC_INPUT_MODE_RING_ONE_FRM;
+				pVenc->setInputSourceConf(vencDevId, vencChnId, &stVencInputSourceConfig);
+			}
+
+			MI_SYS_BindType_e eBindType = E_MI_SYS_BIND_TYPE_REALTIME;
+			MI_U32 bindParam = 0;
+			if((V4L2_PIX_FMT_H264 == format.fcc) || (V4L2_PIX_FMT_H265 == format.fcc))
+			{
+				eBindType = E_MI_SYS_BIND_TYPE_HW_RING;
+				bindParam = format.height;
+			}
+
+			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 3);
+			pVenc->startRecvPic(vencDevId, vencChnId);
+			pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
+			pSys->bindScl2Venc(sclPortId, vencDevId, vencChnId, 30, 30, eBindType, bindParam);
+			//STCHECKRESULT(MI_SYS_SetChnOutputPortDepth(0, &stChnPort[0] , 0, g_maxbuf_cnt+2));
+			//STCHECKRESULT(MI_SYS_SetChnOutputPortDepth(0, &stChnPort[1] , 0, g_maxbuf_cnt+2));
+			pIsp->enablePort(Isp::ispPortId);
+			pScl->enablePort(sclPortId);
 			break;
 		}
 		default:
+		{
 			cout << "V4L2 pixel format = what? Format is no recognized."
 				<< "Just support: H.264/265, MJPEG, YUYV422." << endl;
 			break;
-	}
-
-	if((V4L2_PIX_FMT_H264 == pstDev->setting.fcc)
-		|| (V4L2_PIX_FMT_H265 == pstDev->setting.fcc))
-	{
-		s32Ret = MI_VENC_SetMaxStreamCnt(MI_VENC_DEV_ID_H264_H265_0, vencCh, pstDev->u8MaxBufCnt + 1);
-		if(MI_SUCCESS != s32Ret)
-		{
-			cerr << "Fail to call MI_VENC_SetMaxStreamCnt() in UVC_StartCapture(). "
-			<< "errno = 0x" << hex << s32Ret << dec << endl;
-			return s32Ret;
 		}
 	}
 
-	if(V4L2_PIX_FMT_MJPEG == pstDev->setting.fcc)
-	{
-		s32Ret = MI_VENC_SetMaxStreamCnt(MI_VENC_DEV_ID_JPEG_0, vencCh, pstDev->u8MaxBufCnt + 1);
-		if(MI_SUCCESS != s32Ret)
-		{
-			cerr << "Fail to call MI_VENC_SetMaxStreamCnt() in UVC_StartCapture(). "
-			<< "errno = 0x" << hex << s32Ret << dec << endl;
-			return s32Ret;
-		}
-	}
-
-	pSensor->setFps(format.frameRate);
+	//pSensor->setFps(format.frameRate);
 
 	static bool bFirstRun = true;
 	if(bFirstRun)
@@ -497,60 +523,43 @@ static MI_S32 UVC_StopCapture(void *uvc)
 	switch(pstDev->setting.fcc)
 	{
 		case V4L2_PIX_FMT_YUYV:
-		{
-			cout << "V4L2 pixel format = V4L2_PIX_FMT_YUYV" << endl;
-			//Vpe *pVpe = Vpe::getInstance();
-			//pVpe->stopChannel();
-			//pVpe->destroyChannel();
-			//pVpe->disablePort(Vpe::vpeSubPort);
-			return MI_SUCCESS;
-			break;
-		}
 		case V4L2_PIX_FMT_NV12:
 		{
-			cout << "V4L2 pixel format = V4L2_PIX_FMT_NV12" << endl;
+			#if 0
+			STCHECKRESULT(MI_SCL_DisableOutputPort(SclDevId, SclChnId, SclPortId));
+            if(!g_bEnableHDMI)STCHECKRESULT(MI_ISP_DisableOutputPort(IspDevId, IspChnId, IspPortId));
+            if(!g_bEnableHDMI)STCHECKRESULT(ST_Sys_UnBind(&stBindInfo[0]));
+            #endif
 			break;
 		}
 		case V4L2_PIX_FMT_MJPEG:
-		{
-			cout << "V4L2 pixel format = V4L2_PIX_FMT_MJPEG" << endl;
-			vencCh = Venc::vencJpegChn;
-			break;
-		}
 		case V4L2_PIX_FMT_H264:
-		{
-			cout << "V4L2 pixel format = V4L2_PIX_FMT_H264" << endl;
-			vencCh = Venc::vencMainChn;
-			break;
-		}
 		case V4L2_PIX_FMT_H265:
 		{
-			cout << "V4L2 pixel format = V4L2_PIX_FMT_H265" << endl;
-			vencCh = Venc::vencMainChn;
+			int vencDevId = 0;
+			int vencChnId = 0;
+			Venc *pVenc = Venc::getInstance();
+			vencDevId = (V4L2_PIX_FMT_MJPEG == pstDev->setting.fcc) ? MI_VENC_DEV_ID_JPEG_0 : MI_VENC_DEV_ID_H264_H265_0;
+			pVenc->stopRecvPic(vencDevId, vencChnId);
+
+			Scl *pScl = Scl::getInstance();
+			int sclPort = Scl::sclPortMain;
+			pScl->disablePort(sclPort);
+
+			Isp *pIsp = Isp::getInstance();
+			int ispPort = Isp::ispPortId;
+			pIsp->disablePort(ispPort);
+
+			Sys *pSys = Sys::getInstance();
+			pSys->unbindScl2Venc(sclPort, vencDevId, vencChnId);
+			pSys->unbindIsp2Scl(Isp::ispDevId, Scl::sclDevId);
+
+			pVenc->destroyChn(vencDevId, vencChnId);
 			break;
 		}
 		default:
 			cout << "V4L2 pixel format = what? Format is no recognized." << endl;
 			break;
-	}
-
-	Scl *pScl = Scl::getInstance();
-	Venc *pVenc = Venc::getInstance();
-	if((V4L2_PIX_FMT_H264 == pstDev->setting.fcc)
-		|| (V4L2_PIX_FMT_H265 == pstDev->setting.fcc))
-	{
-		pVenc->stopRecvPic(MI_VENC_DEV_ID_H264_H265_0, vencCh);
-		pVenc->destroyChn(MI_VENC_DEV_ID_H264_H265_0, vencCh);
-		pVenc->destroyDev(MI_VENC_DEV_ID_H264_H265_0);
-		pScl->destoryPort(Scl::sclPortMain);
-	}
-
-	if(V4L2_PIX_FMT_MJPEG == pstDev->setting.fcc)
-	{
-		pVenc->stopRecvPic(MI_VENC_DEV_ID_JPEG_0, vencCh);
-		pVenc->destroyChn(MI_VENC_DEV_ID_JPEG_0, vencCh);
-		pVenc->destroyDev(MI_VENC_DEV_ID_JPEG_0);
-		pScl->destoryPort(Scl::sclPortMain);
 	}
 
 	cout << "Call UVC_StopCapture() end." << endl;
@@ -597,7 +606,7 @@ int UacUvc::startUvc()
 	stUvcDev.u8MaxBufCnt = u8MaxBufCnt;
 
 	// step 2
-	uint32_t maxpacket = 1024;	// 不知道啥含义
+	uint32_t maxpacket = 3;		// 不知道啥含义，ispahan SDK 中给过1024.
 	MI_U8 mult = 2;				// 不知道啥含义
 	MI_U8 burst = 13;			// 不知道啥含义
 	MI_U8 c_intf = 0;			// 不知道啥含义
