@@ -72,7 +72,7 @@ int Isp::enable()
 	MI_ISP_ChnParam_t stIspChnParam;
 	memset(&stIspChnParam, 0x0, sizeof(MI_ISP_ChnParam_t));
 	stIspChnParam.eHDRType = E_MI_ISP_HDR_TYPE_OFF;
-	stIspChnParam.e3DNRLevel = E_MI_ISP_3DNR_LEVEL2;
+	stIspChnParam.e3DNRLevel = E_MI_ISP_3DNR_LEVEL_OFF;
 	stIspChnParam.bMirror = FALSE;
 	stIspChnParam.bFlip = FALSE;
 	stIspChnParam.eRot = E_MI_SYS_ROTATE_NONE;

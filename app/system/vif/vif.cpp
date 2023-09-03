@@ -166,7 +166,7 @@ MI_S32 Vif::enable()
 	stChnPort.u32ChnId = vifChnId;
 	stChnPort.u32PortId = vifPortId;
 	// 此处可优化，u32BufQueueDepth, 
-	//s32Ret = MI_SYS_SetChnOutputPortDepth(Sys::u16SocId, &stChnPort, 0, 2);
+	s32Ret = MI_SYS_SetChnOutputPortDepth(Sys::u16SocId, &stChnPort, 0, 2);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_SYS_SetChnOutputPortDepth() in Vif::enable()." 

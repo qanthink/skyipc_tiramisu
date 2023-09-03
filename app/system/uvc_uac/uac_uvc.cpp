@@ -293,59 +293,14 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 	/************************************************
 	Step4:  Init Bind Param
 	*************************************************/
-
 	Sensor *pSensor = Sensor::getInstance();
 	pSensor->setFps(format.frameRate);
-	#if 0
-    memset(&stBindInfo[0], 0x0, sizeof(ST_Sys_BindInfo_T));
-    stBindInfo[0].stSrcChnPort.eModId = E_MI_MODULE_ID_ISP;
-    stBindInfo[0].stSrcChnPort.u32DevId = IspDevId;
-    stBindInfo[0].stSrcChnPort.u32ChnId = IspChnId;
-    stBindInfo[0].stSrcChnPort.u32PortId = IspPortId;
-    stBindInfo[0].stDstChnPort.eModId = E_MI_MODULE_ID_SCL;
-    stBindInfo[0].stDstChnPort.u32DevId = SclDevId;
-    stBindInfo[0].stDstChnPort.u32ChnId = SclChnId;
-    stBindInfo[0].u32SrcFrmrate = g_stConfig.u32MaxFps;
-    stBindInfo[0].u32DstFrmrate = u32FrameRate;
-    stBindInfo[0].eBindType = E_MI_SYS_BIND_TYPE_REALTIME;
-
-    memset(&stBindInfo[1], 0x0, sizeof(ST_Sys_BindInfo_T));
-    stBindInfo[1].stSrcChnPort.eModId = E_MI_MODULE_ID_SCL;
-    stBindInfo[1].stSrcChnPort.u32DevId = SclDevId;
-    stBindInfo[1].stSrcChnPort.u32ChnId = SclChnId;
-    stBindInfo[1].stSrcChnPort.u32PortId = SclPortId;
-    stBindInfo[1].stDstChnPort.eModId = E_MI_MODULE_ID_VENC;
-    stBindInfo[1].stDstChnPort.u32ChnId = VencChnId;
-    stBindInfo[1].u32SrcFrmrate = u32FrameRate;
-    stBindInfo[1].u32DstFrmrate = u32FrameRate;
-    if(!g_bEnableHDMI && g_device_num == 1)
-    {
-        if(fcc == V4L2_PIX_FMT_MJPEG)
-            stBindInfo[1].eBindType = E_MI_SYS_BIND_TYPE_REALTIME;
-        else if(fcc == V4L2_PIX_FMT_H264 || fcc == V4L2_PIX_FMT_H265)
-            stBindInfo[1].eBindType = E_MI_SYS_BIND_TYPE_HW_RING;
-    }
-
-    memset(&stChnPort[0], 0x0, sizeof(MI_SYS_ChnPort_t));
-    stChnPort[0].eModId = E_MI_MODULE_ID_ISP;
-    stChnPort[0].u32DevId = IspDevId;
-    stChnPort[0].u32ChnId = IspChnId;
-    stChnPort[0].u32PortId = IspPortId;
-
-    memset(&stChnPort[1], 0x0, sizeof(MI_SYS_ChnPort_t));
-    stChnPort[1].eModId = E_MI_MODULE_ID_SCL;
-    stChnPort[1].u32DevId = SclDevId;
-    stChnPort[1].u32ChnId = SclChnId;
-    stChnPort[1].u32PortId = SclPortId;
-    #endif
 
 	/************************************************
 	Step5:  Start
 	*************************************************/
 
 	MI_S32 s32Ret = 0;
-	MI_VENC_CHN vencCh = 0;
-	//Sensor *pSensor = Sensor::getInstance();
 	Sys *pSys = Sys::getInstance();
 	Scl *pScl = Scl::getInstance();
 	Venc *pVenc = Venc::getInstance();
@@ -461,12 +416,10 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 				bindParam = format.height;
 			}
 
-			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 4);
+			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 2);
 			pVenc->startRecvPic(vencDevId, vencChnId);
 			pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 			pSys->bindScl2Venc(sclPortId, vencDevId, vencChnId, 30, 30, eBindType, bindParam);
-			//STCHECKRESULT(MI_SYS_SetChnOutputPortDepth(0, &stChnPort[0] , 0, g_maxbuf_cnt+2));
-			//STCHECKRESULT(MI_SYS_SetChnOutputPortDepth(0, &stChnPort[1] , 0, g_maxbuf_cnt+2));
 			pIsp->enablePort(Isp::ispPortId);
 			pScl->enablePort(sclPortId);
 			break;
@@ -600,7 +553,10 @@ int UacUvc::startUvc()
 	stUvcDev.u8MaxBufCnt = u8MaxBufCnt;
 
 	// step 2
-	uint32_t maxpacket = 64;	// 不知道啥含义，但会影响帧率。
+	//uint32_t maxpacket = 64;	// 不知道啥含义，但会影响帧率。1080P30, 4MP15.
+	//uint32_t maxpacket = 192;	// 不知道啥含义，但会影响帧率。4KP10.
+	uint32_t maxpacket = 1024;	// 不知道啥含义，4K20.
+	//uint32_t maxpacket = 2048;	// 不知道啥含义
 	MI_U8 mult = 2;				// 不知道啥含义
 	MI_U8 burst = 13;			// 不知道啥含义
 	MI_U8 c_intf = 0;			// 不知道啥含义
