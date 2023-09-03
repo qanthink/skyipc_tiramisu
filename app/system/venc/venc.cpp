@@ -187,20 +187,19 @@ MI_S32 Venc::createChn(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ChnAttr
 {
 	cout << "Call Venc::createChn()." << endl;
 
-	MI_S32 s32Ret = 0;
-	MI_VENC_ChnAttr_t stChnAttr;
-	
 	if(NULL == pstChnAttr)
 	{
 		cout << "Fail to call Venc::createChn(). Argument has null value!" << endl;
 		return -1;
 	}
 
+	MI_S32 s32Ret = 0;
 	// MI_S32 MI_VENC_CreateChn(MI_VENC_CHN vencChn, MI_VENC_ChnAttr_t *pstChnAttr);
 	s32Ret = MI_VENC_CreateChn(vencDev, vencChn, pstChnAttr);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_VENC_CreateChn() in Venc::createChn(), errno = " << s32Ret << endl;
+		cerr << "Fail to call MI_VENC_CreateChn() in Venc::createChn(). "
+				<< "errno = 0x" << hex << s32Ret << dec << endl;
 	}
 
 	cout << "Call Venc::createChn() end." << endl;
@@ -414,7 +413,7 @@ MI_S32 Venc::startRecvPic(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn)
 	s32Ret = MI_VENC_StartRecvPic(vencDev, vencChn);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_VENC_StartRecvPic() in Venc::startRecvPic(), " 
+		cerr << "Fail to call MI_VENC_StartRecvPic() in Venc::startRecvPic(). " 
 			<< "errno = 0x" << hex << s32Ret << dec << endl;
 	}
 
@@ -478,7 +477,8 @@ MI_S32 Venc::query(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ChnStat_t *
 	s32Ret = MI_VENC_Query(vencDev, vencChn, pstChnStat);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_VENC_Query(), errno = " << s32Ret << endl;
+		cerr << "Fail to call MI_VENC_Query() in Venc::query(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 	}
 
 	if(0 != s32Ret && bShow)
@@ -551,8 +551,8 @@ MI_S32 Venc::releaseStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_Str
 		cerr << "Fail to call MI_VENC_ReleaseStream(), errno = " << s32Ret << endl;
 	}
 
-	free(pstStream->pstPack);
-	pstStream->pstPack = NULL;
+	//free(pstStream->pstPack);		// 在tiramisu 中，不要free. 在ispahan 和pudding 中，需要free.
+	//pstStream->pstPack = NULL;
 
 	// cout << "Call Venc::releaseStream() end." << endl;
 	return s32Ret;
@@ -654,11 +654,52 @@ MI_S32 Venc::getJpegParam(MI_VENC_CHN vencChn, MI_VENC_ParamJpeg_t *pstJpegParam
 
 	if(0 != s32Ret && bShow)
 	{
-		cout << "pstJpegParam->u32McuPerEcs = " << pstJpegParam->u32McuPerEcs<< endl;
+		cout << "pstJpegParam->u32McuPerEcs = " << pstJpegParam->u32McuPerEcs << endl;
 		cout << "pstJpegParam->u32Qfactor = " << pstJpegParam->u32Qfactor << endl;
 	}
 
 	cout << "Call Venc::getJpegParam() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：设置H.264/H.265 的配置信息。
+参--数：devId, 设备号；chnId, 通道号；pstInputSourceConfig, 指向配置信息。
+返回值：成功，返回0; 失败，返回错误码。
+注--意：只对H.264/H.265 生效。不能用于MJPEG.
+-----------------------------------------------------------------------------*/
+MI_S32 Venc::setInputSourceConf(MI_VENC_DEV devId, MI_VENC_CHN chnId, 
+									MI_VENC_InputSourceConfig_t *pstInputSourceConfig)
+{
+	cout << "Call Venc::setInputSourceConf()." << endl;
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_VENC_SetInputSourceConfig(devId, chnId, pstInputSourceConfig);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_SetInputSourceConfig() in Venc::setInputSourceConf(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+	cout << "Call Venc::setInputSourceConf() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：设置码流最大缓存帧数。
+参--数：devId, 设备号；chnId, 通道号；u32MaxStrmCnt, 码流缓存帧数。
+返回值：成功，返回0; 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+MI_S32 Venc::setMaxStreamCnt(MI_VENC_DEV devId, MI_VENC_CHN chnId, MI_U32 u32MaxStrmCnt)
+{
+	cout << "Call Venc::setMaxStreamCnt()." << endl;
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_VENC_SetMaxStreamCnt(devId, chnId, u32MaxStrmCnt);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_VENC_SetMaxStreamCnt() in Venc::setMaxStreamCnt(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+	cout << "Call Venc::setMaxStreamCnt() end." << endl;
 	return s32Ret;
 }
 
@@ -1055,12 +1096,12 @@ MI_S32 Venc::createJpegStream(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, unsigned
 	memset(&stChnAttr, 0, sizeof(MI_VENC_ChnAttr_t));
 
 	// u32BufSize 不小于图像最大宽高16对齐后的乘积。 必须是64的整数倍。
-	//stChnAttr.stVeAttr.stAttrJpeg.u32BufSize = ALIGN_UP(width, 16) * ALIGN_UP(height, 16);
+	stChnAttr.stVeAttr.stAttrJpeg.u32BufSize = ALIGN_UP(width, 8) * ALIGN_UP(height, 2);
 	stChnAttr.stRcAttr.eRcMode = E_MI_VENC_RC_MODE_MJPEGFIXQP;
-	stChnAttr.stVeAttr.stAttrJpeg.u32PicWidth = width;
-	stChnAttr.stVeAttr.stAttrJpeg.u32PicHeight = height;
-	stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicWidth = ALIGN_UP(width, 16);
-	stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicHeight = ALIGN_UP(height, 16);
+	stChnAttr.stVeAttr.stAttrJpeg.u32PicWidth = ALIGN_UP(width, 8);
+	stChnAttr.stVeAttr.stAttrJpeg.u32PicHeight = ALIGN_UP(height, 2);
+	stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicWidth = ALIGN_UP(width, 8);
+	stChnAttr.stVeAttr.stAttrJpeg.u32MaxPicHeight = ALIGN_UP(height, 2);
 	stChnAttr.stVeAttr.stAttrJpeg.bByFrame = TRUE;
 	stChnAttr.stVeAttr.eType = E_MI_VENC_MODTYPE_JPEGE;
 	stChnAttr.stRcAttr.stAttrMjpegFixQp.u32SrcFrmRateNum = 30;

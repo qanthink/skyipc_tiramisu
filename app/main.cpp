@@ -111,7 +111,7 @@ int main(int argc, const char *argv[])
 
 	// SCL 初始化，并绑定前级ISP.
 	Scl *pScl = Scl::getInstance();
-	pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
+	//pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 
 	// 创建DIVP 缩放、剪裁通道、格式转换
 	#if (1 == (USE_DIVP))

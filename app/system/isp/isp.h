@@ -30,6 +30,13 @@ public:
 	int enable();
 	int disable();
 
+	int enablePort(MI_ISP_PORT portId);
+	int disablePort(MI_ISP_PORT portId);
+
+	int getInputPortCrop(MI_SYS_WindowRect_t *pstCropInfo);
+	
+	int setOutputPortParam(MI_ISP_OutPortParam_t *pstOutPortParam);
+
 	#if 0	// ispahan
 	int getExposureLimit(MI_ISP_AE_EXPO_LIMIT_TYPE_t *pExpoLimit);
 	int setExposureLimit(MI_ISP_AE_EXPO_LIMIT_TYPE_t *pExpoLimit);

@@ -72,7 +72,7 @@ int Isp::enable()
 	MI_ISP_ChnParam_t stIspChnParam;
 	memset(&stIspChnParam, 0x0, sizeof(MI_ISP_ChnParam_t));
 	stIspChnParam.eHDRType = E_MI_ISP_HDR_TYPE_OFF;
-	stIspChnParam.e3DNRLevel = E_MI_ISP_3DNR_LEVEL1;
+	stIspChnParam.e3DNRLevel = E_MI_ISP_3DNR_LEVEL2;
 	stIspChnParam.bMirror = FALSE;
 	stIspChnParam.bFlip = FALSE;
 	stIspChnParam.eRot = E_MI_SYS_ROTATE_NONE;
@@ -92,6 +92,7 @@ int Isp::enable()
 		return s32Ret;
 	}
 
+	#if 0
 	MI_ISP_OutPortParam_t stIspOutputParam;
 	memset(&stIspOutputParam, 0x0, sizeof(MI_ISP_OutPortParam_t));
 	s32Ret = MI_ISP_GetInputPortCrop(ispDevId, ispChnId, &stIspOutputParam.stCropRect);
@@ -120,7 +121,7 @@ int Isp::enable()
 			<< "errno = 0x" << hex << s32Ret << dec << endl;
 		return s32Ret;
 	}
-	
+	#endif
 	cout << "Call Isp::enable() end." << endl;
 	return 0;
 }
@@ -160,6 +161,89 @@ int Isp::disable()
 	
 	cout << "Call Isp::disable() end." << endl;
 	return 0;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：使能端口。
+参--数：portId, 端口号。
+返回值：成功，返回0. 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+int Isp::enablePort(MI_ISP_PORT portId)
+{
+	cout << "Call Isp::enablePort()." << endl;
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_ISP_EnableOutputPort(ispDevId, ispChnId, ispPortId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_EnableOutputPort() in Isp::enablePort(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+	cout << "Call Isp::enablePort() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：禁用端口。
+参--数：portId, 端口号。
+返回值：成功，返回0. 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+int Isp::disablePort(MI_ISP_PORT portId)
+{
+	cout << "Call Isp::disablePort()." << endl;
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_ISP_DisableOutputPort(ispDevId, ispChnId, ispPortId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_DisableOutputPort() in Isp::disablePort(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+	cout << "Call Isp::disablePort() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：获取输入端口剪裁信息。
+参--数：pstCropInfo, 指向端口剪裁信息。
+返回值：成功，返回0. 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+int Isp::getInputPortCrop(MI_SYS_WindowRect_t *pstCropInfo)
+{
+	cout << "Call Isp::getInputPortCrop()." << endl;
+	
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_ISP_GetInputPortCrop(ispDevId, ispChnId, pstCropInfo);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_GetInputPortCrop() in Isp::getInputPortCrop(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	cout << "Call Isp::getInputPortCrop() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：设置输出端口参数。
+参--数：pstOutPortParam, 指向端口参数。
+返回值：成功，返回0. 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+int Isp::setOutputPortParam(MI_ISP_OutPortParam_t *pstOutPortParam)
+{
+	cout << "Call Isp::setOutputPortParam()." << endl;
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_ISP_SetOutputPortParam(ispDevId, ispChnId, ispPortId, pstOutPortParam);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_SetOutputPortParam() in Isp::setOutputPortParam(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	cout << "Call Isp::setOutputPortParam() end." << endl;
+	return s32Ret;
 }
 
 #if 0	// ispahan

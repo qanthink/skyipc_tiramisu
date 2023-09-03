@@ -272,6 +272,36 @@ MI_S32 Sys::bindIsp2Scl(MI_U32 u32IspDevID, MI_U32 u32SclDevID, MI_U32 u32SrcFrm
 	return 0;
 }
 
+MI_S32 Sys::unbindIsp2Scl(MI_U32 u32IspDevID, MI_U32 u32SclDevID)
+{
+	cout << "Call Sys::unbindIsp2Scl()." << endl;
+	MI_SYS_ChnPort_t stSrcChnPort;
+	memset(&stSrcChnPort, 0, sizeof(MI_SYS_ChnPort_t));
+	stSrcChnPort.eModId = E_MI_MODULE_ID_ISP;
+	stSrcChnPort.u32DevId = u32IspDevID;
+	stSrcChnPort.u32ChnId = 0;
+	stSrcChnPort.u32PortId = 0;
+
+	MI_SYS_ChnPort_t stDstChnPort;
+	memset(&stDstChnPort, 0, sizeof(MI_SYS_ChnPort_t));
+	stDstChnPort.eModId = E_MI_MODULE_ID_SCL;
+	stDstChnPort.u32DevId = u32SclDevID;
+	stDstChnPort.u32ChnId = 0;		// 通道号暂且为0.
+	stDstChnPort.u32PortId = 0;
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_SYS_UnBindChnPort(u16SocId, &stSrcChnPort, &stDstChnPort);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SYS_UnBindChnPort() in unbindIsp2Scl(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	
+	cout << "Call Sys::unbindIsp2Scl() end." << endl;
+	return 0;
+}
+
 MI_S32 Sys::bindScl2Venc(MI_U32 u32SclPortId, MI_U32 u32VencDev, MI_U32 u32VencCh, MI_U32 u32SrcFrmrate, MI_U32 u32DstFrmrate, MI_SYS_BindType_e eBindType, MI_U32 u32BindParam)
 {
 	cout << "Call Sys::bindScl2Venc()." << endl;
@@ -299,6 +329,36 @@ MI_S32 Sys::bindScl2Venc(MI_U32 u32SclPortId, MI_U32 u32VencDev, MI_U32 u32VencC
 	}
 	
 	cout << "Call Sys::bindScl2Venc() end." << endl;
+	return 0;
+}
+
+MI_S32 Sys::unbindScl2Venc(MI_U32 u32SclPortId, MI_U32 u32VencDev, MI_U32 u32VencCh)
+{
+	cout << "Call Sys::unbindScl2Venc()." << endl;
+	MI_SYS_ChnPort_t stSrcChnPort;
+	memset(&stSrcChnPort, 0, sizeof(MI_SYS_ChnPort_t));
+	stSrcChnPort.eModId = E_MI_MODULE_ID_SCL;
+	stSrcChnPort.u32DevId = 0;
+	stSrcChnPort.u32ChnId = 0;
+	stSrcChnPort.u32PortId = u32SclPortId;
+
+	MI_SYS_ChnPort_t stDstChnPort;
+	memset(&stDstChnPort, 0, sizeof(MI_SYS_ChnPort_t));
+	stDstChnPort.eModId = E_MI_MODULE_ID_VENC;
+	stDstChnPort.u32DevId = u32VencDev;
+	stDstChnPort.u32ChnId = u32VencCh;		// 通道号暂且为0.
+	stDstChnPort.u32PortId = 0;
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_SYS_UnBindChnPort(u16SocId, &stSrcChnPort, &stDstChnPort);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SYS_UnBindChnPort() in unbindScl2Venc(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	
+	cout << "Call Sys::unbindScl2Venc() end." << endl;
 	return 0;
 }
 

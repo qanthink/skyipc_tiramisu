@@ -128,21 +128,15 @@ static MI_S32 UVC_MM_FillBuffer(void *uvc, ST_UVC_BufInfo_t *bufInfo)
 			stStream.pstPack = stPack;
 
 			s32Ret = MI_VENC_Query(vencDevId, vencChnId, &stStat);
-			if(0 != s32Ret)
+			if(0 != s32Ret || 0 == stStat.u32CurPacks)
 			{
-				cerr << "Fail to call pVenc->query() in UVC_MM_FillBuffer()."
-					<< "errno = 0x" << hex << s32Ret << dec << endl;
-				return -EINVAL;
-			}
-
-			if(0 == stStat.u32CurPacks)		// 查询成功，但没数据，则直接返回。
-			{
-				//cerr << "Call pVenc->query() in UVC_MM_FillBuffer(), but there is no data." << endl;
+				//cerr << "Fail to call pVenc->query() in UVC_MM_FillBuffer()."
+				//	<< "errno = 0x" << hex << s32Ret << dec << endl;
 				return -EINVAL;
 			}
 
 			stStream.u32PackCount = stStat.u32CurPacks;
-			s32Ret = MI_VENC_GetStream(vencDevId, vencChnId, &stStream, 40);
+			s32Ret = MI_VENC_GetStream(vencDevId, vencChnId, &stStream, 5);
 			if(0 != s32Ret)
 			{
 				cerr << "Fail to MI_VENC_GetStream() in UVC_MM_FillBuffer()."
@@ -467,7 +461,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 				bindParam = format.height;
 			}
 
-			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 3);
+			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 4);
 			pVenc->startRecvPic(vencDevId, vencChnId);
 			pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 			pSys->bindScl2Venc(sclPortId, vencDevId, vencChnId, 30, 30, eBindType, bindParam);
@@ -606,7 +600,7 @@ int UacUvc::startUvc()
 	stUvcDev.u8MaxBufCnt = u8MaxBufCnt;
 
 	// step 2
-	uint32_t maxpacket = 3;		// 不知道啥含义，ispahan SDK 中给过1024.
+	uint32_t maxpacket = 64;	// 不知道啥含义，但会影响帧率。
 	MI_U8 mult = 2;				// 不知道啥含义
 	MI_U8 burst = 13;			// 不知道啥含义
 	MI_U8 c_intf = 0;			// 不知道啥含义

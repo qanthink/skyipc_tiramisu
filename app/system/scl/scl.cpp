@@ -60,7 +60,8 @@ MI_S32 Scl::enable()
 	memset(&stSclDevAttr, 0x0, sizeof(MI_SCL_DevAttr_t));
 	
 	//Port0->HWSCL2, //Port1->HWSCL3, //Port2->HWSCL4
-	stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL2 | E_MI_SCL_HWSCL3 | E_MI_SCL_HWSCL4;
+	//stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL2 | E_MI_SCL_HWSCL3 | E_MI_SCL_HWSCL4;
+	stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL2;
 	
 	s32Ret = MI_SCL_CreateDevice(sclDevId, &stSclDevAttr);
 	if(0 != s32Ret)
@@ -152,6 +153,48 @@ MI_S32 Scl::disable()
 
 	cout << "Call Scl::disable() end." << endl;
 	return 0;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：使能端口。
+参--数：portId, 端口号。
+返回值：成功，返回0; 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+MI_S32 Scl::enablePort(MI_SCL_PORT portId)
+{
+	cout << "Call Scl::enablePort()." << endl;
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_SCL_EnableOutputPort(sclDevId, sclChnId, portId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_EnableOutputPort() in Scl::enablePort(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	cout << "Call Scl::enablePort() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：禁用端口。
+参--数：portId, 端口号。
+返回值：成功，返回0; 失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+MI_S32 Scl::disablePort(MI_SCL_PORT portId)
+{
+	cout << "Call Scl::disablePort()." << endl;
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_SCL_DisableOutputPort(sclDevId, sclChnId, portId);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_DisableOutputPort() in Scl::disablePort(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	cout << "Call Scl::disablePort() end." << endl;
+	return s32Ret;
 }
 
 /*-----------------------------------------------------------------------------
@@ -250,4 +293,28 @@ int Scl::destoryPort(MI_SCL_PORT sclPortId)
 	cout << "Call Scl::destoryPort() end." << endl;
 	return 0;
 }
+
+/*-----------------------------------------------------------------------------
+描--述：设置端口输出参数。
+参--数：portId, 端口号，tiramisu 平台最多6个端口；
+		pstOutPortParam, 指向端口参数。
+返回值：
+注--意：成功，返回0; 失败，返回错误码。
+-----------------------------------------------------------------------------*/
+int Scl::setOutputPortParam(MI_SCL_PORT portId, MI_SCL_OutPortParam_t *pstOutPortParam)
+{
+	cout << "Call Scl::setOutputPortParam()." << endl;
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_SCL_SetOutputPortParam(sclDevId, sclChnId, portId, pstOutPortParam);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SCL_SetOutputPortParam() in Scl::setOutputPortParam(). " 
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	cout << "Call Scl::setOutputPortParam() end." << endl;
+	return s32Ret;
+}
+
 

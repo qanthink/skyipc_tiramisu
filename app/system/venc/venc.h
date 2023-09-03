@@ -70,6 +70,12 @@ public:
 	MI_S32 getJpegParam(MI_VENC_CHN vencChn, MI_VENC_ParamJpeg_t *pstJpegParam);
 	MI_S32 setJpegParam(MI_VENC_CHN vencChn, MI_VENC_ParamJpeg_t *pstJpegParam);
 
+	MI_S32 setInputSourceConf(MI_VENC_DEV devId, MI_VENC_CHN chnId, 
+										MI_VENC_InputSourceConfig_t *pstInputSourceConfig);
+
+	MI_S32 setMaxStreamCnt(MI_VENC_DEV devId, MI_VENC_CHN chnId, MI_U32 u32MaxStrmCnt);
+	MI_S32 getMaxStreamCnt(MI_VENC_DEV devId, MI_VENC_CHN chnId, MI_U32 &pU32MaxStrmCnt);
+
 	MI_VENC_ModType_e getVesType(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn);
 	int setVesType(MI_VENC_DEV vencDev, MI_VENC_CHN vencChn, MI_VENC_ModType_e vesType);
 

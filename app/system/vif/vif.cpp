@@ -81,7 +81,6 @@ MI_S32 Vif::enable()
 	}
 
 	// step2: 创建VIF 设备组
-	MI_VIF_GROUP vifGroupId = 0;		// 有复杂的计算关系。
 	MI_VIF_GroupAttr_t stVifGroupAttr;
 	memset(&stVifGroupAttr, 0, sizeof(MI_VIF_GroupAttr_t));
 	stVifGroupAttr.eIntfMode = E_MI_VIF_MODE_MIPI;
@@ -167,7 +166,7 @@ MI_S32 Vif::enable()
 	stChnPort.u32ChnId = vifChnId;
 	stChnPort.u32PortId = vifPortId;
 	// 此处可优化，u32BufQueueDepth, 
-	s32Ret = MI_SYS_SetChnOutputPortDepth(Sys::u16SocId, &stChnPort, 0, 2);
+	//s32Ret = MI_SYS_SetChnOutputPortDepth(Sys::u16SocId, &stChnPort, 0, 2);
 	if(0 != s32Ret)
 	{
 		cerr << "Fail to call MI_SYS_SetChnOutputPortDepth() in Vif::enable()." 
@@ -216,7 +215,6 @@ MI_S32 Vif::disable()
 			<< "errno = 0x" << hex << s32Ret << dec << endl;
 	}
 	
-	MI_VIF_GROUP vifGroupId = 0;		// 有复杂的计算关系。
 	s32Ret = MI_VIF_DestroyDevGroup(vifGroupId);
 	if(0 != s32Ret)
 	{
