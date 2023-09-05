@@ -11,6 +11,7 @@ xxx版权所有。
 #include "scl.h"
 #include "uac_uvc.h"
 #include "st_common.h"
+#include "thread"
 
 #include <iostream>
 
@@ -417,11 +418,11 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 			}
 
 			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 3);
-			pVenc->startRecvPic(vencDevId, vencChnId);
 			pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 			pSys->bindScl2Venc(sclPortId, vencDevId, vencChnId, 30, 30, eBindType, bindParam);
 			pIsp->enablePort(Isp::ispPortId);
 			pScl->enablePort(sclPortId);
+			pVenc->startRecvPic(vencDevId, vencChnId);
 			break;
 		}
 		default:
@@ -432,15 +433,15 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 		}
 	}
 
-	//pSensor->setFps(format.frameRate);
-
 	static bool bFirstRun = true;
 	if(bFirstRun)
 	{
 		cout << "First run app, load iqfile." << endl;
 		bFirstRun = false;
+		this_thread::sleep_for(chrono::milliseconds(100));
 		Isp *pIsp = Isp::getInstance();
 		pIsp->loadBinFile((char *)"/config/iqfile/imx415_api.bin");
+		this_thread::sleep_for(chrono::milliseconds(100));
 	}
 
 	cout << "Call UVC_StartCapture() end." << endl;
