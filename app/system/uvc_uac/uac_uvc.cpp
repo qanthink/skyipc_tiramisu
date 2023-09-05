@@ -416,7 +416,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 				bindParam = format.height;
 			}
 
-			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 2);
+			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 3);
 			pVenc->startRecvPic(vencDevId, vencChnId);
 			pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 			pSys->bindScl2Venc(sclPortId, vencDevId, vencChnId, 30, 30, eBindType, bindParam);
@@ -440,7 +440,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 		cout << "First run app, load iqfile." << endl;
 		bFirstRun = false;
 		Isp *pIsp = Isp::getInstance();
-		pIsp->loadBinFile((char *)"/config/iqfile/GM1.bin");
+		pIsp->loadBinFile((char *)"/config/iqfile/imx415_api.bin");
 	}
 
 	cout << "Call UVC_StartCapture() end." << endl;
