@@ -48,11 +48,8 @@ int AudioIn::enable()
 {
 	setPubAttr();
 	enableDev();
+	setChnOutputPortDepth(1, 8);
 	enableChanel();
-	setChnOutputPortDepth(1, 3);
-	#if (1 == (USE_AED))
-	enableAed();
-	#endif
 	setVolume(volume);
 
 	return 0;
@@ -110,13 +107,15 @@ int AudioIn::setPubAttr()
 	stAiAttr.eBitwidth = eBitWidth;
 	stAiAttr.eSamplerate = eSample;
 	stAiAttr.eSoundmode = eSoundmode;
-	stAiAttr.u32PtNumPerFrm = u32PtNumPerFrm;				// demo 和文档不符
-	stAiAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;		// demo 和文档不符
-	//stAiAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_SLAVE;		// MI_API DOC
-	//stAiAttr.u32PtNumPerFrm = stAiAttr.eSamplerate / 16;	// for aec
-		
-	//stAiAttr.WorkModeSetting.stI2sConfig.eFmt = E_MI_AUDIO_I2S_FMT_I2S_MSB;
-	//stAiAttr.WorkModeSetting.stI2sConfig.eMclk = E_MI_AUDIO_I2S_MCLK_0;
+	stAiAttr.eWorkmode = E_MI_AUDIO_MODE_I2S_MASTER;
+	stAiAttr.u32CodecChnCnt = 0; //useless
+	stAiAttr.u32FrmNum = 16;
+	stAiAttr.u32PtNumPerFrm = 1024;
+	stAiAttr.WorkModeSetting.stI2sConfig.bSyncClock = TRUE;
+	stAiAttr.WorkModeSetting.stI2sConfig.eFmt = E_MI_AUDIO_I2S_FMT_I2S_MSB;
+	stAiAttr.WorkModeSetting.stI2sConfig.eMclk = E_MI_AUDIO_I2S_MCLK_0;
+	stAiAttr.WorkModeSetting.stI2sConfig.u32TdmSlots = 8;
+	stAiAttr.WorkModeSetting.stI2sConfig.eI2sBitWidth = E_MI_AUDIO_BIT_WIDTH_16;
 
 	// MI_S32 MI_AI_SetPubAttr(MI_AUDIO_DEV AIDevId, MI_AUDIO_Attr_t *pstAiAttr);
 	MI_S32 s32Ret = 0;
@@ -309,75 +308,24 @@ int AudioIn::disableAed()
 }
 
 /*-----------------------------------------------------------------------------
-描--述：获取一帧AI 数据。
-参--数：
+描--述：设置静音。
+参--数：bMute, 是否静音。
 返回值：成功，返回0; 失败，返回错误码。
-注--意：含AED 结果。
+注--意：
 -----------------------------------------------------------------------------*/
-int AudioIn::recvStream(stAIFrame_t *pstAIFrame)
+int AudioIn::setMute(bool bMute)
 {
-	if(NULL == pstAIFrame)
-	{
-		cerr << "Fail to call AudioIn::recvStream(). Argument has null value." << endl;
-		return -1;
-	}
-
+	cout << "Call AudioIn::setMute()." << endl;
 	MI_S32 s32Ret = 0;
-	MI_AUDIO_Frame_t stAudioFrame;
-	MI_AUDIO_AecFrame_t stAecFrame;
-	memset(&stAudioFrame, 0, sizeof(MI_AUDIO_Frame_t));
-	memset(&stAecFrame, 0, sizeof(MI_AUDIO_AecFrame_t));
-	s32Ret = MI_AI_GetFrame(audioDev, audioChn, &stAudioFrame, &stAecFrame, -1);
-	//s32Ret = MI_AI_GetFrame(audioDev, audioChn, &stAudioFrame, &stAecFrame, 100);
+	s32Ret = MI_AI_SetMute(audioDev, audioChn, bMute);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_AI_GetFrame(). s32Ret = 0x" << hex << s32Ret << endl;
-		return s32Ret;
+		cerr << "Fail to call MI_AI_SetMute() in AudioIn::setMute(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 	}
 
-	//cout << "stAudioFrame.u32Len = " << stAudioFrame.u32Len << endl;
-
-	#if (1 == (USE_AED))
-	// 获取AED声音事件检测结果。占用CPU 和FLASH 很高。
-	MI_AI_AedResult_t stAedResult;
-	memset(&stAedResult, 0, sizeof(stAedResult));
-	s32Ret = MI_AI_GetAedResult(audioDev, audioChn, &stAedResult);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call MI_AI_GetAedResult(). s32Ret = 0x" << hex << s32Ret << endl;
-		return s32Ret;
-	}
-	#endif
-
-	#if 0	// debug
-	cout << "bAcousticEventDetected : bLoudSoundDetected = " << (int)stAedResult.bAcousticEventDetected << 
-		" : " << (int)stAedResult.bLoudSoundDetected << endl;
-	#endif
-
-	// 拷贝数据到用户层。
-	memset(pstAIFrame, 0, sizeof(stAIFrame_t));
-	pstAIFrame->u64TimeStamp = stAudioFrame.u64TimeStamp;
-	#if 0	// ispahan, pudding
-	pstAIFrame->u32Len = stAudioFrame.u32SrcPcmLen;
-	memcpy(pstAIFrame->apFrameBuf, stAudioFrame.apSrcPcmVirAddr[0], stAudioFrame.u32SrcPcmLen);
-	#else	// tiramisu
-	pstAIFrame->u32Len = stAudioFrame.u32SrcPcmLen[0];	
-	memcpy(pstAIFrame->apFrameBuf, stAudioFrame.apSrcPcmVirAddr[0], stAudioFrame.u32SrcPcmLen[0]);
-	#endif
-
-	#if (1 == (USE_AED))
-	pstAIFrame->bAcousticEventDetected = stAedResult.bAcousticEventDetected;
-	pstAIFrame->bLoudSoundDetected = stAedResult.bLoudSoundDetected;
-	#endif
-
-	s32Ret = MI_AI_ReleaseFrame(audioDev, audioChn, &stAudioFrame, &stAecFrame);
-	if(0 != s32Ret)
-	{
-		cerr << "Fail to call MI_AI_ReleaseFrame(). s32Ret = 0x" << hex << s32Ret << endl;
-		return s32Ret;
-	}
-
-	return 0;
+	cout << "Call AudioIn::setMute() end." << endl;
+	return s32Ret;
 }
 
 /*-----------------------------------------------------------------------------
@@ -391,13 +339,59 @@ int AudioIn::recvStream(stAIFrame_t *pstAIFrame)
 -----------------------------------------------------------------------------*/
 int AudioIn::setVolume(int volumeDb)
 {
+	cout << "Call AudioIn::setVolume()." << endl;
 	MI_S32 s32Ret = 0;
 	s32Ret = MI_AI_SetVqeVolume(audioDev, audioChn, volumeDb);
 	if(0 != s32Ret)
 	{
-		cerr << "Fail to call MI_AI_SetVqeVolume(). s32Ret = 0x" << hex << s32Ret << endl;
+		cerr << "Fail to call MI_AI_SetVqeVolume() in AudioIn::setVolume(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
 	}
 
+	cout << "Call AudioIn::setVolume() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：获取音频帧。
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
+int AudioIn::getFrame(MI_AUDIO_Frame_t *pstFrm)
+{
+	cout << "Call AudioIn::getFrame()." << endl;
+	MI_S32 s32Ret = 0;
+	//MI_AI_GetFrame(MI_AUDIO_DEV AiDevId, MI_AI_CHN AiChn, MI_AUDIO_Frame_t * pstFrm, MI_AUDIO_AecFrame_t * pstAecFrm, MI_S32 s32MilliSec)
+	s32Ret = MI_AI_GetFrame(audioDev, audioChn, pstFrm, NULL, -1);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_AI_GetFrame() in AudioIn::getFrame(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	cout << "Call AudioIn::getFrame() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：释放音频帧。
+参--数：
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
+int AudioIn::releaseFrame(MI_AUDIO_Frame_t *pstFrm)
+{
+	cout << "Call AudioIn::releaseFrame()." << endl;
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_AI_ReleaseFrame(audioDev, audioChn, pstFrm, NULL);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_AI_ReleaseFrame() in AudioIn::releaseFrame(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+	}
+
+	cout << "Call AudioIn::releaseFrame() end." << endl;
 	return s32Ret;
 }
 

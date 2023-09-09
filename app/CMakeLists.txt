@@ -46,9 +46,9 @@ include_directories(
 	system/rgn/st_rgn
 	system/ircut
 	system/common
-	system/uvc_uac
-	system/uvc_uac/st_uvc
-	system/uvc_uac/st_uac
+	system/uac_uvc
+	system/uac_uvc/st_uvc
+	system/uac_uvc/st_uac
 	#aac
 	#aad
 	live555rtsp

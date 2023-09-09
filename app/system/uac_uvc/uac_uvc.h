@@ -24,6 +24,7 @@ xxx版权所有。
 #pragma once
 
 #include "uvc.h"
+#include "st_uac.h"
 #include "st_uvc.h"
 
 typedef struct{
@@ -55,7 +56,11 @@ public:
 	int startUvc();
 	int stopUvc();
 
+	int startUac();
+	int stopUac();
+
 private:
+	ST_UAC_Handle_h stUacHandle;
 	ST_UvcDev_t stUvcDev;
 	const static MI_U8 u8MaxBufCnt = 3;
 };

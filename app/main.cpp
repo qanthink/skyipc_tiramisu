@@ -186,7 +186,6 @@ int main(int argc, const char *argv[])
 	// 测试UVC
 	#if (1 == (USE_UVC))
 	UacUvc *pUacUvc = UacUvc::getInstance();
-	pUacUvc->startUvc();
 	#endif
 
 	/*

@@ -117,7 +117,8 @@ void *routeAi(void *arg)
 	unsigned int uFrameCnt = 20 * 16000 / 1024;				// n * samples / u32PtNumPerFrm = n 秒。
 
 	#if (1 == (USE_AI_SAVE_LOCAL_PCM))
-	const char *filePathPcm = "/mnt/linux/Downloads/audio.pcm";
+	//const char *filePathPcm = "/mnt/linux/Downloads/audio.pcm";
+	const char *filePathPcm = "/customer/audio.pcm";
 	ofstream ofsPcm;
 	ofsPcm.open(filePathPcm, ios::trunc);
 	if(ofsPcm.fail())
@@ -147,26 +148,23 @@ void *routeAi(void *arg)
 	while(g_bRunning)
 	{
 		int ret = 0;
-		stAIFrame_t stAudioFrame;
-		memset(&stAudioFrame, 0, sizeof(stAudioFrame));
-		
-		ret = AudioIn::getInstance()->recvStream(&stAudioFrame);
+		AudioIn *pAudioIn = AudioIn::getInstance();
+		MI_AUDIO_Frame_t stAiFrm;
+		memset(&stAiFrm, 0, sizeof(MI_AUDIO_Frame_t));
+		ret = pAudioIn->getFrame(&stAiFrm);
 		if(0 != ret)
 		{
 			cerr << "Fail to call pAudioIn->rcvStream(). ret = " << ret << endl;
 			continue;
 		}
 
-		#if 0	// debug
-		cout << "[AI bLoudSoundDetected] = " << (int)stAudioFrame.bLoudSoundDetected << endl;
-		cout << "stAudioFrame.u32Len = " << stAudioFrame.u32Len << endl;
-		//cout << "stAudioFrame.eBitWidth = " << stAudioFrame.eBitWidth << endl;
-		//cout << "stAudioFrame.eSoundmode = " << stAudioFrame.eSoundmode << endl;
+		#if 1	// debug
+		cout << "stAudioFrame.u32Len = " << stAiFrm.u32Len[0] << endl;
 		#endif
 
 		int aacBytes = 0;
 		#if (1 == (USE_FAAC_FAAD))
-		aacBytes = pAac->encEncode((int32_t *)stAudioFrame.apFrameBuf, stAudioFrame.u32Len / 2, aacBuf, pAac->getMaxOutputBytes());
+		aacBytes = pAac->encEncode((int32_t *)stAiFrm.apVirAddr[0], stAiFrm.u32Len[0] / 2, aacBuf, pAac->getMaxOutputBytes());
 		if(-1 == aacBytes || 0 == aacBytes)
 		{
 			cerr << "Fail to call pAac->enEncode(), ret = " << aacBytes << endl;
@@ -186,8 +184,7 @@ void *routeAi(void *arg)
 		#if (1 == (USE_AI_SAVE_LOCAL_PCM))
 		if(0 != uFrameCnt)
 		{
-			//ofsPcm.write((const char *)stAudioFrame.apFrameBuf, stAudioFrame.u32Len / 2);
-			ofsPcm.write((const char *)stAudioFrame.apFrameBuf, stAudioFrame.u32Len);
+			ofsPcm.write((const char *)stAiFrm.apVirAddr[0], stAiFrm.u32Len[0]);
 		}
 		else
 		{
@@ -217,7 +214,7 @@ void *routeAi(void *arg)
 		#if (1 == (USE_AVTP_AUDIO))
 		if(pAvtpAudioClient->isAllowTalking())
 		{
-			pAvtpAudioClient->sendAudioFrame(stAudioFrame.apFrameBuf, stAudioFrame.u32Len);
+			pAvtpAudioClient->sendAudioFrame(stAiFrm.apVirAddr[0], stAiFrm.u32Len[0]);
 		}
 		else
 		{
@@ -225,6 +222,12 @@ void *routeAi(void *arg)
 		}
 		//cout << "avtpAudio send size = " << stAudioFrame.u32Len << endl;
 		#endif
+
+		ret = pAudioIn->releaseFrame(&stAiFrm);
+		if(0 != ret)
+		{
+			cerr << "Fail to call pAudioIn->releaseFrame(). ret = " << ret << endl;
+		}
 	}
 
 	#if (1 == (USE_FAAC_FAAD))

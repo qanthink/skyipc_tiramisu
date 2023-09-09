@@ -4,6 +4,7 @@ xxx版权所有。
 时间：2020.7.10
 ----------------------------------------------------------------*/
 
+#include "ai.hpp"
 #include "venc.h"
 #include "sys.h"
 #include "sensor.h"
@@ -32,12 +33,14 @@ UacUvc* UacUvc::getInstance()
 UacUvc::UacUvc()
 {
 	cout << "Call UacUvc::UacUvc()." << endl;
+	startUvc();
 	cout << "Call UacUvc::UacUvc() end." << endl;
 }
 
 UacUvc::~UacUvc()
 {
 	cout << "Call UacUvc::~UacUvc()." << endl;
+	stopUvc();
 	cout << "Call UacUvc::~UacUvc() end." << endl;
 }
 
@@ -202,7 +205,7 @@ static MI_S32 UVC_MM_FillBuffer(void *uvc, ST_UVC_BufInfo_t *bufInfo)
 描--述：
 参--数：
 返回值：
-注--意：实现为空，没有看到被调用。
+注--意：可以实现为空。
 -----------------------------------------------------------------------------*/
 static MI_S32 UVC_Init(void *uvc)
 {
@@ -610,11 +613,227 @@ int UacUvc::stopUvc()
 	ST_UVC_DestroyDev(dev->handle);
 	ST_UVC_Uninit(dev->handle);
 	*/
-	ST_UVC_StopDev(&stUvcDev.handle);
-	ST_UVC_DestroyDev(stUvcDev.handle);
-	ST_UVC_Uninit(stUvcDev.handle);
+
+	if(NULL != stUvcDev.handle)
+	{
+		ST_UVC_StopDev(&stUvcDev.handle);
+		ST_UVC_DestroyDev(stUvcDev.handle);
+		ST_UVC_Uninit(stUvcDev.handle);
+		memset(&stUvcDev, 0, sizeof(ST_UvcDev_t));
+	}
 
 	cout << "Call UacUvc::stopUvc() end." << endl;
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*-----------------------------------------------------------------------------
+描--述：
+参--数：
+返回值：
+注--意：可以实现为空。
+-----------------------------------------------------------------------------*/
+static MI_S32 ST_AI_Init(MI_U32 u32AiSampleRate, MI_U8 chn)
+{
+	cout << "Call ST_AI_Init()." << endl;
+	cout << "Call ST_AI_Init() end." << endl;
+	return MI_SUCCESS;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：
+参--数：
+返回值：
+注--意：可以实现为空。
+-----------------------------------------------------------------------------*/
+static MI_S32 ST_AI_Deinit(void)
+{
+	cout << "Call ST_AI_Deinit()." << endl;
+	cout << "Call ST_AI_Deinit() end." << endl;
+	return MI_SUCCESS;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：填充UAC 音频缓冲区。
+参--数：pstUacFrame, 指向音频帧数据。
+返回值：成功，返回MI_SUCCESS;
+		失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+static MI_S32 AI_FillBuffer(ST_UAC_Frame_t *pstUacFrame)
+{
+	cout << "Call AI_FillBuffer()." << endl;
+
+	MI_S32 s32Ret = MI_SUCCESS;
+	MI_AUDIO_Frame_t stAiChFrame;
+	memset(&stAiChFrame, 0, sizeof(MI_AUDIO_Frame_t));
+
+	AudioIn *pAudioIn = AudioIn::getInstance();
+	s32Ret = pAudioIn->getFrame(&stAiChFrame);
+	if(s32Ret = MI_SUCCESS)
+	{
+		cerr << "Fail to call pAudioIn->getFrame() in AI_FillBuffer(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	memcpy(pstUacFrame->data, stAiChFrame.apVirAddr[0], stAiChFrame.u32Len[0]);
+	pstUacFrame->length = stAiChFrame.u32Len[0];
+
+	s32Ret = pAudioIn->releaseFrame(&stAiChFrame);
+	if(s32Ret = MI_SUCCESS)
+	{
+		cerr << "Fail to call pAudioIn->releaseFrame() in AI_FillBuffer(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	cout << "Call AI_FillBuffer() end." << endl;
+	return MI_SUCCESS;
+}
+
+#define AI_VOLUME_AMIC_MIN      (0)
+#define AI_VOLUME_AMIC_MAX      (21)
+
+static inline MI_S32 Vol_to_Db(ST_UAC_Volume_t stVolume)
+{
+	return ((stVolume.s32Volume - stVolume.s32Min) * 
+		(AI_VOLUME_AMIC_MAX - AI_VOLUME_AMIC_MIN) / 
+		(stVolume.s32Max - stVolume.s32Min)) + AI_VOLUME_AMIC_MIN;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：设置音量大小
+参--数：stVolume 音量。
+返回值：成功，返回MI_SUCCESS;
+		失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+static MI_S32 ST_AI_SetVqeVolume(ST_UAC_Volume_t stVolume)
+{
+	cout << "Call ST_AI_SetVqeVolume()." << endl;
+	
+	MI_S32 s32Ret = MI_SUCCESS;
+	MI_S32 s32AiVolDb = 0;
+	s32AiVolDb = Vol_to_Db(stVolume);
+
+	AudioIn *pAudioIn = AudioIn::getInstance();
+	s32Ret = pAudioIn->setVolume(s32AiVolDb);
+	if(s32Ret = MI_SUCCESS)
+	{
+		cerr << "Fail to call pAudioIn->setVolume() in ST_AI_SetVqeVolume(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	cout << "Call ST_AI_SetVqeVolume() end." << endl;
+	return s32Ret;
+}
+
+
+/*-----------------------------------------------------------------------------
+描--述：设置静音
+参--数：bMute, 是否为静音。
+返回值：成功，返回MI_SUCCESS;
+		失败，返回错误码。
+注--意：
+-----------------------------------------------------------------------------*/
+static MI_S32 ST_AI_SetMute(bool bMute)
+{
+	cout << "Call ST_AI_SetMute()." << endl;
+	
+	MI_S32 s32Ret = MI_SUCCESS;
+	MI_S32 s32AiVolDb = 0;
+
+	AudioIn *pAudioIn = AudioIn::getInstance();
+	s32Ret = pAudioIn->setMute(bMute);
+	if(s32Ret = MI_SUCCESS)
+	{
+		cerr << "Fail to call pAudioIn->setMute() in ST_AI_SetMute(). "
+			<< "errno = 0x" << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+
+	cout << "Call ST_AI_SetMute() end." << endl;
+	return s32Ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：开启UAC
+参--数：
+返回值：返回0.
+注--意：
+-----------------------------------------------------------------------------*/
+int UacUvc::startUac()
+{
+	cout << "Call UacUvc::startUac()." << endl;
+	MI_S32 trace_level = UVC_DBG_ERR;
+	ST_UAC_SetTraceLevel(trace_level);
+	
+	MI_S32 s32Ret = MI_SUCCESS;
+	//ST_UAC_OPS_t opsAo = {ST_AO_Init, AO_TakeBuffer, ST_AO_Deinit, NULL, NULL};
+	ST_UAC_OPS_t opsAi = {ST_AI_Init, AI_FillBuffer, ST_AI_Deinit, ST_AI_SetVqeVolume, ST_AI_SetMute};
+
+	memset(&stUacHandle, 0, sizeof(ST_UAC_Handle_h));
+	s32Ret = ST_UAC_AllocStream(&stUacHandle);
+	if(MI_SUCCESS != s32Ret)
+	{
+		printf("ST_UAC_AllocStream failed!\n");
+		return -1;
+	}
+
+	MI_S32 eMode = 0;
+	//eMode |= AS_OUT_MODE;
+	eMode |= AS_IN_MODE;
+
+	ST_UAC_Device_t *pstUacDev;
+	pstUacDev = (ST_UAC_Device_t *)stUacHandle;
+	pstUacDev->mode = eMode;
+	//pstUacDev->opsAo = opsAo;
+	pstUacDev->opsAi = opsAi;
+	#if 0	// Demo 中的，我认为没必要设置。
+	pstUacDev->config[1]->pcm_config.rate = u32AoSampleRate;
+	pstUacDev->config[1]->pcm_config.channels = 2;
+	pstUacDev->config[0]->pcm_config.rate = 0;
+	pstUacDev->config[0]->pcm_config.channels = 2;
+	pstUacDev->config[0]->volume.s32Volume = -EINVAL;
+	#endif
+
+	ST_UAC_StartDev(stUacHandle);
+	cout << "Call UacUvc::startUac() end." << endl;
+	return 0;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：停止UAC
+参--数：
+返回值：返回0.
+注--意：
+-----------------------------------------------------------------------------*/
+int UacUvc::stopUac()
+{
+	cout << "Call UacUvc::stopUac()." << endl;
+
+	MI_S32 s32Ret = MI_SUCCESS;
+	ST_UAC_StoptDev(stUacHandle);
+	s32Ret = ST_UAC_FreeStream(stUacHandle);
+	if(MI_SUCCESS != s32Ret)
+	{
+		printf("ST_UAC_FreeStream failed.\n");
+	}
+
+	cout << "Call UacUvc::stopUac() end." << endl;
 	return 0;
 }
 

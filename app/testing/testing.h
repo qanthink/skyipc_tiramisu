@@ -42,19 +42,19 @@ xxx版权所有。
 // UVC or IPC
 //#define USE_IPC				1	// 在Cmake 中定义了
 
-// audio
-#define USE_FAAC_FAAD		0
-
 // IQ Server
 #define USE_IQ_SERVER		1
 
-#define USE_AI				0
-#define USE_AI_SAVE_LOCAL_PCM		0
+// audio
+#define USE_AI				1
+#define USE_AI_SAVE_LOCAL_PCM		1
 #define USE_AI_SAVE_LOCAL_AAC		0
 
 #define USE_AO				0
 #define USE_AO_LOCAL_FILE	0
 #define USE_AO_NET_PCM		0
+
+#define USE_FAAC_FAAD		0
 
 // osd
 #define USE_OSD				0
