@@ -40,9 +40,7 @@ public:
 	int setPubAttr();					// 设置公有属性
 	int setChnOutputPortDepth(MI_U32 u32UserFrameDepth, MI_U32 u32BufQueueDepth);	// 设置输出端口队列深度
 	
-private:
-	bool bInitialized = false;
-
+public:
 	/* AI 初始化相关参数 */
 	const MI_AUDIO_DEV audioDev = 0;	// AI 设备号
 	const MI_AO_CHN audioChn = 0;		// AI 通道号

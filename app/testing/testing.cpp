@@ -151,6 +151,9 @@ void *routeAi(void *arg)
 		AudioIn *pAudioIn = AudioIn::getInstance();
 		MI_AUDIO_Frame_t stAiFrm;
 		memset(&stAiFrm, 0, sizeof(MI_AUDIO_Frame_t));
+		int aiChnCnt = 0;
+		aiChnCnt = (E_MI_AUDIO_SOUND_MODE_STEREO == pAudioIn->eSoundmode) ? 2 : 1;
+
 		ret = pAudioIn->getFrame(&stAiFrm);
 		if(0 != ret)
 		{
@@ -159,7 +162,11 @@ void *routeAi(void *arg)
 		}
 
 		#if 1	// debug
-		cout << "stAudioFrame.u32Len = " << stAiFrm.u32Len[0] << endl;
+		int i = 0;
+		for(i = 0; i < aiChnCnt; ++i)
+		{
+			printf("stAiFrm.u32Len[%d] = %d\n", i , stAiFrm.u32Len[i]);
+		}
 		#endif
 
 		int aacBytes = 0;
@@ -182,16 +189,19 @@ void *routeAi(void *arg)
 		}
 
 		#if (1 == (USE_AI_SAVE_LOCAL_PCM))
-		if(0 != uFrameCnt)
+		for(i = 0; i < aiChnCnt; ++i)
 		{
-			ofsPcm.write((const char *)stAiFrm.apVirAddr[0], stAiFrm.u32Len[0]);
-		}
-		else
-		{
-			if(ofsPcm.is_open())
+			if(0 != uFrameCnt)
 			{
-				ofsPcm.close();
-				cout << "Write local PCM file over. Close file." << endl;
+				ofsPcm.write((const char *)stAiFrm.apVirAddr[i], stAiFrm.u32Len[i]);
+			}
+			else
+			{
+				if(ofsPcm.is_open())
+				{
+					ofsPcm.close();
+					cout << "Write local PCM file over. Close file." << endl;
+				}
 			}
 		}
 		#endif
