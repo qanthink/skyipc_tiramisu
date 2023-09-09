@@ -440,7 +440,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 		bFirstRun = false;
 		this_thread::sleep_for(chrono::milliseconds(100));
 		Isp *pIsp = Isp::getInstance();
-		pIsp->loadBinFile((char *)"/config/iqfile/imx415_api.bin");
+		pIsp->loadBinFile((char *)"/config/iqfile/268G_imx415_v3.bin");
 		this_thread::sleep_for(chrono::milliseconds(100));
 	}
 

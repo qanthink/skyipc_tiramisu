@@ -159,8 +159,8 @@ int main(int argc, const char *argv[])
 
 	#if(1 == (USE_IQ_SERVER))
 	pIsp->openIqServer();
-	char iqFilePath[128] = "/config/iqfile/335_imx291_day.bin";
-	pIsp->loadBinFile(iqFilePath);
+	//char iqFilePath[128] = "/config/iqfile/imx415_api.bin";
+	//pIsp->loadBinFile(iqFilePath);
 	#endif
 
 	// 初始化OSD
