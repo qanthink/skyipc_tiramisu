@@ -7,7 +7,7 @@ add_subdirectory(venc)
 add_subdirectory(sys)
 add_subdirectory(common)
 add_subdirectory(audio_ai)
-#add_subdirectory(audio_ao)
+add_subdirectory(audio_ao)
 #add_subdirectory(rgn)
 add_subdirectory(ircut)
 add_subdirectory(uac_uvc)
@@ -35,7 +35,7 @@ target_link_libraries(system
 	sys 
 	common
 	audio_ai
-	#audio_ao 
+	audio_ao 
 	#rgn 
 	ircut
 	uac_uvc

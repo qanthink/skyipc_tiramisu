@@ -226,7 +226,7 @@ int main(int argc, const char *argv[])
 
 	// 获取音频AI 的线程
 	#if (1 == (USE_AI))
-	thread thAi(routeAi, (void *)NULL);
+	//thread thAi(routeAi, (void *)NULL);
 	#endif
 
 	// AO 音频测试
@@ -316,11 +316,11 @@ int main(int argc, const char *argv[])
 	#endif
 	
 	#if (1 == (USE_AI))
-	thAi.join();
+	//thAi.join();
 	cout << "ai join." << endl;
 	#endif
 	
-	#if (1 == (USE_AO))
+	#if (1 == (USE_AO) && (1 == (USE_AO_LOCAL_FILE) || 1 == (USE_AO_NET_PCM)))
 	thAo.join();
 	cout << "ao join." << endl;
 	#endif

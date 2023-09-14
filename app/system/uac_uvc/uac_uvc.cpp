@@ -34,6 +34,7 @@ UacUvc::UacUvc()
 {
 	cout << "Call UacUvc::UacUvc()." << endl;
 	startUvc();
+	startUac();
 	cout << "Call UacUvc::UacUvc() end." << endl;
 }
 
@@ -769,6 +770,25 @@ static MI_S32 ST_AI_SetMute(bool bMute)
 	return s32Ret;
 }
 
+static MI_S32 ST_AO_Init(MI_U32 u32AoSampleRate, MI_U8 chn)
+{
+	cout << "Call ST_AO_Init()." << endl;
+	return MI_SUCCESS;
+}
+
+static MI_S32 AO_TakeBuffer(ST_UAC_Frame_t *stUacFrame)
+{
+	cout << "Call AO_TakeBuffer()." << endl;
+	MI_S32 ret = MI_SUCCESS;
+	return ret;
+}
+
+static MI_S32 ST_AO_Deinit(void)
+{
+	cout << "Call ST_AO_Deinit()." << endl;
+	return MI_SUCCESS;
+}
+
 /*-----------------------------------------------------------------------------
 描--述：开启UAC
 参--数：
@@ -782,7 +802,7 @@ int UacUvc::startUac()
 	ST_UAC_SetTraceLevel(trace_level);
 	
 	MI_S32 s32Ret = MI_SUCCESS;
-	//ST_UAC_OPS_t opsAo = {ST_AO_Init, AO_TakeBuffer, ST_AO_Deinit, NULL, NULL};
+	ST_UAC_OPS_t opsAo = {ST_AO_Init, AO_TakeBuffer, ST_AO_Deinit, NULL, NULL};
 	ST_UAC_OPS_t opsAi = {ST_AI_Init, AI_FillBuffer, ST_AI_Deinit, ST_AI_SetVqeVolume, ST_AI_SetMute};
 
 	memset(&stUacHandle, 0, sizeof(ST_UAC_Handle_h));
@@ -802,15 +822,20 @@ int UacUvc::startUac()
 	pstUacDev->mode = eMode;
 	//pstUacDev->opsAo = opsAo;
 	pstUacDev->opsAi = opsAi;
-	#if 0	// Demo 中的，我认为没必要设置。
-	pstUacDev->config[1]->pcm_config.rate = u32AoSampleRate;
+	#if 1	// Demo 中的，我认为没必要设置。
+	pstUacDev->config[1]->pcm_config.rate = 48000;
 	pstUacDev->config[1]->pcm_config.channels = 2;
 	pstUacDev->config[0]->pcm_config.rate = 0;
 	pstUacDev->config[0]->pcm_config.channels = 2;
 	pstUacDev->config[0]->volume.s32Volume = -EINVAL;
 	#endif
 
-	ST_UAC_StartDev(stUacHandle);
+	s32Ret = ST_UAC_StartDev(stUacHandle);
+	if(MI_SUCCESS != s32Ret)
+	{
+		printf("ST_UAC_StartDev failed!\n");
+		return -1;
+	}
 	cout << "Call UacUvc::startUac() end." << endl;
 	return 0;
 }

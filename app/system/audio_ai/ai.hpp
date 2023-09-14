@@ -45,9 +45,11 @@ public:
 	const MI_AUDIO_DEV audioDev = 0;	// AI 设备号
 	const MI_AO_CHN audioChn = 0;		// AI 通道号
 	const MI_AUDIO_BitWidth_e eBitWidth = E_MI_AUDIO_BIT_WIDTH_16;		// 位宽
-	const MI_AUDIO_SampleRate_e eSample = E_MI_AUDIO_SAMPLE_RATE_16000;	// 采样率
+	//const MI_AUDIO_SampleRate_e eSample = E_MI_AUDIO_SAMPLE_RATE_16000;	// 采样率
+	const MI_AUDIO_SampleRate_e eSample = E_MI_AUDIO_SAMPLE_RATE_48000;	// 采样率
 	const MI_AUDIO_SoundMode_e eSoundmode = E_MI_AUDIO_SOUND_MODE_STEREO;	// 单声道和立体声。
+	//const MI_AUDIO_SoundMode_e eSoundmode = E_MI_AUDIO_SOUND_MODE_MONO;	// 单声道和立体声。
 
-	const int volume = 21;							// 默认音量
+	const int volume = 10;							// 默认音量
 };
 

@@ -360,7 +360,7 @@ int AudioIn::setVolume(int volumeDb)
 -----------------------------------------------------------------------------*/
 int AudioIn::getFrame(MI_AUDIO_Frame_t *pstFrm)
 {
-	cout << "Call AudioIn::getFrame()." << endl;
+	//cout << "Call AudioIn::getFrame()." << endl;
 	MI_S32 s32Ret = 0;
 	//MI_AI_GetFrame(MI_AUDIO_DEV AiDevId, MI_AI_CHN AiChn, MI_AUDIO_Frame_t * pstFrm, MI_AUDIO_AecFrame_t * pstAecFrm, MI_S32 s32MilliSec)
 	s32Ret = MI_AI_GetFrame(audioDev, audioChn, pstFrm, NULL, -1);
@@ -370,7 +370,7 @@ int AudioIn::getFrame(MI_AUDIO_Frame_t *pstFrm)
 			<< "errno = 0x" << hex << s32Ret << dec << endl;
 	}
 
-	cout << "Call AudioIn::getFrame() end." << endl;
+	//cout << "Call AudioIn::getFrame() end." << endl;
 	return s32Ret;
 }
 
@@ -382,7 +382,7 @@ int AudioIn::getFrame(MI_AUDIO_Frame_t *pstFrm)
 -----------------------------------------------------------------------------*/
 int AudioIn::releaseFrame(MI_AUDIO_Frame_t *pstFrm)
 {
-	cout << "Call AudioIn::releaseFrame()." << endl;
+	//scout << "Call AudioIn::releaseFrame()." << endl;
 	MI_S32 s32Ret = 0;
 	s32Ret = MI_AI_ReleaseFrame(audioDev, audioChn, pstFrm, NULL);
 	if(0 != s32Ret)
@@ -391,7 +391,7 @@ int AudioIn::releaseFrame(MI_AUDIO_Frame_t *pstFrm)
 			<< "errno = 0x" << hex << s32Ret << dec << endl;
 	}
 
-	cout << "Call AudioIn::releaseFrame() end." << endl;
+	//cout << "Call AudioIn::releaseFrame() end." << endl;
 	return s32Ret;
 }
 

@@ -47,10 +47,10 @@ xxx版权所有。
 
 // audio
 #define USE_AI				1
-#define USE_AI_SAVE_LOCAL_PCM		1
+#define USE_AI_SAVE_LOCAL_PCM		0
 #define USE_AI_SAVE_LOCAL_AAC		0
 
-#define USE_AO				0
+#define USE_AO				1
 #define USE_AO_LOCAL_FILE	0
 #define USE_AO_NET_PCM		0
 

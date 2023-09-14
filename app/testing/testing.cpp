@@ -114,7 +114,7 @@ void *routeAi(void *arg)
 
 	//unsigned int uFrameCnt = 3600 * 72 * 16000 / 1000 * 1.05;	// n * samples / 1000 = n 秒。
 	//unsigned int uFrameCnt = 60 * 16000 / 1000 * 1.05;	// n * samples / 1000 = n 秒。
-	unsigned int uFrameCnt = 20 * 16000 / 1024;				// n * samples / u32PtNumPerFrm = n 秒。
+	unsigned int uFrameCnt = 10 * 16000 / 1024;				// n * samples / u32PtNumPerFrm = n 秒。
 
 	#if (1 == (USE_AI_SAVE_LOCAL_PCM))
 	//const char *filePathPcm = "/mnt/linux/Downloads/audio.pcm";
