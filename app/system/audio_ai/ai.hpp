@@ -50,6 +50,6 @@ public:
 	const MI_AUDIO_SoundMode_e eSoundmode = E_MI_AUDIO_SOUND_MODE_STEREO;	// 单声道和立体声。
 	//const MI_AUDIO_SoundMode_e eSoundmode = E_MI_AUDIO_SOUND_MODE_MONO;	// 单声道和立体声。
 
-	const int volume = 10;							// 默认音量
+	const int volume = 5;							// 默认音量
 };
 

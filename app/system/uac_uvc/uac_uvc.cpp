@@ -563,7 +563,7 @@ int UacUvc::startUvc()
 	uint32_t maxpacket = 1024;	// 不知道啥含义，4K20.
 	//uint32_t maxpacket = 2048;	// 不知道啥含义
 	MI_U8 mult = 2;				// 不知道啥含义
-	MI_U8 burst = 13;			// 不知道啥含义
+	MI_U8 burst = 0;			// 突发传输，与USB2.0  不支持突发传输。USB3.0, burst 取8 或13.
 	MI_U8 c_intf = 0;			// 不知道啥含义
 	MI_U8 s_intf = 0;			// 不知道啥含义
 	UVC_IO_MODE_e mode = UVC_MEMORY_MMAP;	// MMA 映射方式
@@ -674,7 +674,7 @@ static MI_S32 ST_AI_Deinit(void)
 -----------------------------------------------------------------------------*/
 static MI_S32 AI_FillBuffer(ST_UAC_Frame_t *pstUacFrame)
 {
-	cout << "Call AI_FillBuffer()." << endl;
+	//cout << "Call AI_FillBuffer()." << endl;
 
 	MI_S32 s32Ret = MI_SUCCESS;
 	MI_AUDIO_Frame_t stAiChFrame;
@@ -689,8 +689,14 @@ static MI_S32 AI_FillBuffer(ST_UAC_Frame_t *pstUacFrame)
 		return s32Ret;
 	}
 
+	#if 0
 	memcpy(pstUacFrame->data, stAiChFrame.apVirAddr[0], stAiChFrame.u32Len[0]);
 	pstUacFrame->length = stAiChFrame.u32Len[0];
+	#else
+	memcpy(pstUacFrame->data, stAiChFrame.apVirAddr[0], stAiChFrame.u32Len[0]);
+	memcpy(pstUacFrame->data + stAiChFrame.u32Len[0], stAiChFrame.apVirAddr[1], stAiChFrame.u32Len[1]);
+	pstUacFrame->length = stAiChFrame.u32Len[0] + stAiChFrame.u32Len[1];
+	#endif
 
 	s32Ret = pAudioIn->releaseFrame(&stAiChFrame);
 	if(s32Ret = MI_SUCCESS)
@@ -700,7 +706,7 @@ static MI_S32 AI_FillBuffer(ST_UAC_Frame_t *pstUacFrame)
 		return s32Ret;
 	}
 
-	cout << "Call AI_FillBuffer() end." << endl;
+	//cout << "Call AI_FillBuffer() end." << endl;
 	return MI_SUCCESS;
 }
 
