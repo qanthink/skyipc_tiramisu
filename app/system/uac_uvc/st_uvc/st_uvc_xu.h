@@ -39,6 +39,16 @@ void usb_vc_cmd_cfg(uint8_t req, VC_CMD_CFG *cfg, unsigned long cur_val, struct 
 
 // process PU, CT, XU job.
 uint8_t pu_brightness_data[2];
+// qanthink
+uint8_t pu_contrast_data[2];			// 对比度
+uint8_t pu_hue_data[2];					// 色度
+uint8_t pu_saturatio_data[2];			// 饱和度
+uint8_t pu_sharpness_data[2];			// 锐度，可否理解为清晰度？
+uint8_t pu_gamma_data[2];				// 伽马
+uint8_t pu_white_balance_data[2];			// 白平衡
+uint8_t pu_backlight_contrast_data[2];		// 逆光对比
+uint8_t pu_gain_data[2];				// 增益
+// qanthink end
 uint8_t ct_scanning_mode_data;
 
 int8_t usb_vc_ct_cs_out(ST_UVC_Device_t *pdev, uint8_t entity_id, uint8_t cs, uint32_t len, struct uvc_request_data *data);

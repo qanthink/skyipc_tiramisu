@@ -887,10 +887,13 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
                                          uint8_t entity_id,uint8_t len,
                                          struct uvc_request_data *resp)
 {
+	printf("Call _UVC_Events_Process_Control\n");
     pdev->control.entity = entity_id;
     pdev->control.control = cs;
     pdev->control.length = len;
 
+	printf("entity_id = %d\n", entity_id);
+	printf("cs = %d\n", cs);
     switch (entity_id)
     {
     /* Error Code */
@@ -999,9 +1002,12 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
                 pdev->request_error_code.length = 1;
                 break;
             case UVC_GET_CUR:
+            	printf("In _UVC_Events_Process_Control, case UVC_GET_CUR.\n");
                 resp->length = 2;
                 resp->data[0] = pu_brightness_data[0];
                 resp->data[1] = pu_brightness_data[1];
+                resp->data[2] = pu_contrast_data[0];
+                resp->data[3] = pu_contrast_data[1];
                 pdev->request_error_code.data[0] = 0x00;
                 pdev->request_error_code.length = 1;
                 break;
@@ -1033,9 +1039,14 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
                 pdev->request_error_code.length = 1;
                 break;
             case UVC_GET_DEF:
+                printf("In _UVC_Events_Process_Control, case UVC_GET_DEF.\n");
                 resp->length = 2;
                 pu_brightness_data[0] = resp->data[0] = 0x00;
                 pu_brightness_data[1] = resp->data[1] = 0x00;
+                // qanthink
+				pu_contrast_data[0] = resp->data[0] = 0x00;
+				pu_contrast_data[1] = resp->data[0] = 0x00;
+                // qanthink end
                 pdev->request_error_code.data[0] = 0x00;
                 pdev->request_error_code.length = 1;
                 break;
@@ -1214,6 +1225,7 @@ static int8_t _UVC_Events_Process_Streaming(ST_UVC_Device_t *pdev,uint8_t req, u
 static int8_t _UVC_Events_Process_Class(ST_UVC_Device_t *pdev,struct usb_ctrlrequest *ctrl,
                                         struct uvc_request_data *resp)
 {
+	printf("Call _UVC_Events_Process_Class\n");
     ST_UVC_Setting_t setting = pdev->ChnAttr.setting;
 
     if ((ctrl->bRequestType & USB_RECIP_MASK) != USB_RECIP_INTERFACE)
@@ -1271,6 +1283,7 @@ static int8_t _UVC_Events_Process_Standard(ST_UVC_Device_t *pdev, struct usb_ctr
 static int8_t _UVC_Events_Process_Setup(ST_UVC_Device_t * pdev, struct usb_ctrlrequest *ctrl,
                                         struct uvc_request_data *resp)
 {
+	printf("Call _UVC_Events_Process_Setup\n");
     UVC_INFO(pdev,"( bRequestType %02x bRequest %02x wValue %04x wIndex %04x wLength %04x )",
                   ctrl->bRequestType, ctrl->bRequest,ctrl->wValue, ctrl->wIndex, ctrl->wLength);
 
@@ -1292,18 +1305,20 @@ static int8_t _UVC_Events_Process_Setup(ST_UVC_Device_t * pdev, struct usb_ctrlr
 // process PU, CT, XU job.
 int8_t usb_vc_out_data(ST_UVC_Device_t *pdev, uint8_t entity, uint8_t cs, uint32_t len, struct uvc_request_data * data)
 {
+	printf("Call usb_vc_out_data\n");
+	printf("entity = %d\n", entity);
     switch (entity)
     {
-    case UVC_VC_INPUT_TERMINAL_ID:
+    case UVC_VC_INPUT_TERMINAL_ID:		// 1
         usb_vc_ct_cs_out(pdev, entity, cs, len, data);
         break;
-    case UVC_VC_PROCESSING_UNIT_ID:
+    case UVC_VC_PROCESSING_UNIT_ID:		// 3
         usb_vc_pu_cs_out(pdev, entity, cs, len, data);
         break;
-    case UVC_VC_EXTENSION1_UNIT_ID:
+    case UVC_VC_EXTENSION1_UNIT_ID:		// 6
         usb_vc_eu1_cs_out(pdev, entity, cs, len, data);
         break;
-    case UVC_VC_EXTENSION2_UNIT_ID:
+    case UVC_VC_EXTENSION2_UNIT_ID:		// 2
         usb_vc_eu2_cs_out(entity, cs, len, data);
         break;
     default:
@@ -1378,6 +1393,7 @@ static int8_t _UVC_Events_Process_Data(ST_UVC_Device_t * pdev, struct uvc_reques
 
 static int8_t _UVC_Events_Process(ST_UVC_Device_t * pdev)
 {
+	printf("Call _UVC_Events_Process\n");
     struct v4l2_event v4l2_event;
     struct uvc_event *uvc_event = (struct uvc_event *)&v4l2_event.u.data;
     struct uvc_request_data resp;
@@ -1731,6 +1747,7 @@ _UVC_Fill_Streaming_Control(ST_UVC_Device_t * pdev, struct uvc_streaming_control
 
 static void * UVC_Event_Handle_Task(void *arg)
 {
+	printf("Call UVC_Event_Handle_Task\n");
      int32_t s32Ret = -1;
      fd_set fdsu;
      ST_UVC_Device_t * pdev = (ST_UVC_Device_t *)arg;
@@ -1763,6 +1780,7 @@ static void * UVC_Event_Handle_Task(void *arg)
          if (FD_ISSET(fd, &efds))
              _UVC_Events_Process(pdev);
     }
+    printf("Call UVC_Event_Handle_Task end\n");
     return NULL;
 }
 
@@ -2400,6 +2418,7 @@ int32_t ST_UVC_DestroyDev(ST_UVC_Handle_h handle)
 
 int32_t ST_UVC_StartDev(ST_UVC_Handle_h handle)
 {
+	printf("Call ST_UVC_StartDev\n");
     ST_UVC_Device_t * pdev = handle;
 
     UVC_INFO(pdev,"");
