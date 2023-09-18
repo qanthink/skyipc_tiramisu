@@ -1006,8 +1006,6 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
                 resp->length = 2;
                 resp->data[0] = pu_brightness_data[0];
                 resp->data[1] = pu_brightness_data[1];
-                resp->data[2] = pu_contrast_data[0];
-                resp->data[3] = pu_contrast_data[1];
                 pdev->request_error_code.data[0] = 0x00;
                 pdev->request_error_code.length = 1;
                 break;
@@ -1043,10 +1041,6 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
                 resp->length = 2;
                 pu_brightness_data[0] = resp->data[0] = 0x00;
                 pu_brightness_data[1] = resp->data[1] = 0x00;
-                // qanthink
-				pu_contrast_data[0] = resp->data[0] = 0x00;
-				pu_contrast_data[1] = resp->data[0] = 0x00;
-                // qanthink end
                 pdev->request_error_code.data[0] = 0x00;
                 pdev->request_error_code.length = 1;
                 break;
@@ -1069,6 +1063,82 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
                 break;
             }
             break;
+// qanthink
+		case UVC_PU_CONTRAST_CONTROL:
+			switch (req)
+			{
+			case UVC_SET_CUR:
+				resp->length = 2;
+				pdev->request_error_code.data[0] = 0x00;
+				pdev->request_error_code.length = 1;
+				break;
+			case UVC_GET_CUR:
+				printf("In _UVC_Events_Process_Control, case UVC_GET_CUR.\n");
+				resp->length = 2;
+				resp->data[0] = pu_brightness_data[0];
+				resp->data[1] = pu_brightness_data[1];
+				resp->data[2] = pu_contrast_data[0];
+				resp->data[3] = pu_contrast_data[1];
+				pdev->request_error_code.data[0] = 0x00;
+				pdev->request_error_code.length = 1;
+				break;
+			case UVC_GET_MIN:
+				resp->length = 2;
+				resp->data[0] = 0x00;
+				resp->data[1] = 0x00;
+				pdev->request_error_code.data[0] = 0x00;
+				pdev->request_error_code.length = 1;
+				break;
+			case UVC_GET_MAX:
+				resp->length = 2;
+				resp->data[0] = 0xFF;
+				resp->data[1] = 0x00;
+				pdev->request_error_code.data[0] = 0x00;
+				pdev->request_error_code.length = 1;
+				break;
+			case UVC_GET_RES:
+				resp->length = 2;
+				resp->data[0] = 0x01;
+				resp->data[1] = 0x00;
+				pdev->request_error_code.data[0] = 0x00;
+				pdev->request_error_code.length = 1;
+				break;
+			case UVC_GET_INFO:
+				resp->length = 1;
+				resp->data[0] = 0x03;
+				pdev->request_error_code.data[0] = 0x00;
+				pdev->request_error_code.length = 1;
+				break;
+			case UVC_GET_DEF:
+				printf("In _UVC_Events_Process_Control, case UVC_GET_DEF.\n");
+				resp->length = 2;
+				// qanthink
+				pu_contrast_data[0] = resp->data[0] = 0x00;
+				pu_contrast_data[1] = resp->data[0] = 0x00;
+				// qanthink end
+				pdev->request_error_code.data[0] = 0x00;
+				pdev->request_error_code.length = 1;
+				break;
+
+			/* not support GET_LEN cmd */
+			case UVC_GET_LEN:
+			default:
+				/*
+				 * We don't support this control, so STALL the
+				 * default control ep.
+				 */
+				resp->length = -EL2HLT;
+				/*
+				 * For every unsupported control request
+				 * set the request error code to appropriate
+				 * code.
+				 */
+				pdev->request_error_code.data[0] = 0x07;
+				pdev->request_error_code.length = 1;
+				break;
+			}
+			break;
+// qanthink end
 
         default:
             /*
@@ -1313,7 +1383,25 @@ int8_t usb_vc_out_data(ST_UVC_Device_t *pdev, uint8_t entity, uint8_t cs, uint32
         usb_vc_ct_cs_out(pdev, entity, cs, len, data);
         break;
     case UVC_VC_PROCESSING_UNIT_ID:		// 3
-        usb_vc_pu_cs_out(pdev, entity, cs, len, data);
+        //usb_vc_pu_cs_out(pdev, entity, cs, len, data);
+        switch(cs)
+        {
+			case UVC_PU_BRIGHTNESS_CONTROL:
+			{
+				printf("qanthink, UVC_PU_BRIGHTNESS_CONTROL\n");
+				break;
+			}
+			case UVC_PU_CONTRAST_CONTROL:
+			{
+				printf("qanthink, UVC_PU_CONTRAST_CONTROL\n");
+				break;
+			}
+			default:
+			{
+				printf("qanthink, default\n");
+				break;
+			}
+        }
         break;
     case UVC_VC_EXTENSION1_UNIT_ID:		// 6
         usb_vc_eu1_cs_out(pdev, entity, cs, len, data);

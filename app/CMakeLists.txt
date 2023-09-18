@@ -116,7 +116,8 @@ add_custom_target(stripTask
 add_custom_target(installTask
 	COMMAND echo ================ make install task ================
 	COMMAND cp ${PROJECT_NAME} ~/Sigmastar/customer/winShare/
-	COMMAND cp ~/Downloads/tiramisuV012_202206_usbcam/sourcecode/project/image/output/miservice/config/modules/4.9.227/g_webcam.ko ~/Sigmastar/customer/winShare/
+	#COMMAND cp ~/Downloads/tiramisuV012_202206_usbcam/sourcecode/project/image/output/miservice/config/modules/4.9.227/g_webcam.ko ~/Sigmastar/customer/winShare/
+	COMMAND cp ~/Downloads/tiramisuV012_8838+imx415/sourcecode/project/image/output/miservice/config/modules/4.9.227/g_webcam.ko ~/Sigmastar/customer/winShare/
 	COMMAND echo ================ make install end =================
 )
 
