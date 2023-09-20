@@ -339,13 +339,8 @@ static struct uvc_processing_unit_descriptor uvc_processing = {
 	.bSourceID		= UVC_IT_ID,
 	.wMaxMultiplier		= cpu_to_le16(16*1024),
 	.bControlSize		= 2,
-#if 0
 	.bmControls[0]		= 1,
 	.bmControls[1]		= 0,
-#else
-	.bmControls[0]		= 0xFF,
-	.bmControls[1]		= 0xFF,
-#endif
 #if (USB_VIDEO_CLASS_VERSION==0x150)
 	.bmControls[2]		= 0,
 #endif
