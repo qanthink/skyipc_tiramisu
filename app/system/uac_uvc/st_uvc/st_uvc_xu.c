@@ -565,8 +565,7 @@ int8_t usb_vc_eu1_cs_out(ST_UVC_Device_t *pdev, uint8_t entity_id, uint8_t cs, u
     unsigned char len;
     PCAM_IQSVR_HANDLE *iqsvr;
 #endif
-	printf("call usb_vc_eu1_cs_out\n");
-	printf("cs = %d\n", (int)cs);
+
     switch (cs)
     {
     case EU1_SET_ISP:
@@ -895,8 +894,6 @@ int8_t usb_vc_ct_cs_out(ST_UVC_Device_t *pdev, uint8_t entity_id, uint8_t cs, ui
 
 int8_t usb_vc_pu_cs_out(ST_UVC_Device_t *pdev, uint8_t entity_id, uint8_t cs, uint32_t len, struct uvc_request_data *data)
 {
-	printf("Call usb_vc_pu_cs_out\n");
-	printf("cs = %d\n", (int)cs);
     switch (cs)
     {
     case UVC_PU_BRIGHTNESS_CONTROL:
@@ -909,104 +906,7 @@ int8_t usb_vc_pu_cs_out(ST_UVC_Device_t *pdev, uint8_t entity_id, uint8_t cs, ui
         pu_brightness_data[0] = data->data[0];
         pu_brightness_data[1] = data->data[1];
         break;
-// qanthink
-	case UVC_PU_CONTRAST_CONTROL:
-	{
-		if(data->data[0] < 0x00 || data->data[0] > 0xFF || data->data[1] != 0x00)
-		{
-		    pdev->request_error_code.data[0] = 0x04;
-		    pdev->request_error_code.length = 1;
-		    return -1;
-		}
-		pu_contrast_data[0] = data->data[0];
-		pu_contrast_data[1] = data->data[1];
-		break;
-	}
-	case UVC_PU_HUE_CONTROL:
-	{
-		if(data->data[0] < 0x00 || data->data[0] > 0xFF || data->data[1] != 0x00)
-		{
-			pdev->request_error_code.data[0] = 0x04;
-			pdev->request_error_code.length = 1;
-			return -1;
-		}
-		pu_hue_data[0] = data->data[0];
-		pu_hue_data[1] = data->data[1];
-		break;
-	}
-	case UVC_PU_SATURATION_CONTROL:
-	{
-		if(data->data[0] < 0x00 || data->data[0] > 0xFF || data->data[1] != 0x00)
-		{
-			pdev->request_error_code.data[0] = 0x04;
-			pdev->request_error_code.length = 1;
-			return -1;
-		}
-		pu_saturatio_data[0] = data->data[0];
-		pu_saturatio_data[1] = data->data[1];
-		break;
-	}
-	case UVC_PU_SHARPNESS_CONTROL:
-	{
-		if(data->data[0] < 0x00 || data->data[0] > 0xFF || data->data[1] != 0x00)
-		{
-			pdev->request_error_code.data[0] = 0x04;
-			pdev->request_error_code.length = 1;
-			return -1;
-		}
-		pu_sharpness_data[0] = data->data[0];
-		pu_sharpness_data[1] = data->data[1];
-		break;
-	}
-	case UVC_PU_GAMMA_CONTROL:
-	{
-		if(data->data[0] < 0x00 || data->data[0] > 0xFF || data->data[1] != 0x00)
-		{
-			pdev->request_error_code.data[0] = 0x04;
-			pdev->request_error_code.length = 1;
-			return -1;
-		}
-		pu_gamma_data[0] = data->data[0];
-		pu_gamma_data[1] = data->data[1];
-		break;
-	}
-	case UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL:
-	{
-		if(data->data[0] < 0x00 || data->data[0] > 0xFF || data->data[1] != 0x00)
-		{
-			pdev->request_error_code.data[0] = 0x04;
-			pdev->request_error_code.length = 1;
-			return -1;
-		}
-		pu_white_balance_data[0] = data->data[0];
-		pu_white_balance_data[1] = data->data[1];
-		break;
-	}
-	case UVC_PU_BACKLIGHT_COMPENSATION_CONTROL:
-	{
-		if(data->data[0] < 0x00 || data->data[0] > 0xFF || data->data[1] != 0x00)
-		{
-			pdev->request_error_code.data[0] = 0x04;
-			pdev->request_error_code.length = 1;
-			return -1;
-		}
-		pu_backlight_contrast_data[0] = data->data[0];
-		pu_backlight_contrast_data[1] = data->data[1];
-		break;
-	}
-	case UVC_PU_GAIN_CONTROL:
-	{
-		if(data->data[0] < 0x00 || data->data[0] > 0xFF || data->data[1] != 0x00)
-		{
-			pdev->request_error_code.data[0] = 0x04;
-			pdev->request_error_code.length = 1;
-			return -1;
-		}
-		pu_gain_data[0] = data->data[0];
-		pu_gain_data[1] = data->data[1];
-		break;
-	}
-// qanthink end
+
     default:
         XU_Print(":: not support.\n");
         break;
