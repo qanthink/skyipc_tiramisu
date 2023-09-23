@@ -883,6 +883,15 @@ static void _UVC_ForceIdr(ST_UVC_Device_t * pdev)
     fops.UVC_ForceIdr(pdev);
 }
 
+/*-----------------------------------------------------------------------------
+描--述：UVC 事件处理、控制。
+参--数：
+返回值：
+注--意：GET、SET是针对于PC Tool.
+		例如PC Tool SET_CUR、PC Tool SET_CUR.
+		例如在PC Tool 上设置亮度时，只有SET_CUR 分支起作用。
+		该函数中每次SET_CUR, 都会引起st_uvc_xu.c 中usb_vc_pu_cs_out() 函数的调用。
+-----------------------------------------------------------------------------*/
 static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint8_t cs,
                                          uint8_t entity_id,uint8_t len,
                                          struct uvc_request_data *resp)
@@ -996,25 +1005,27 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
 				switch (req)
 				{
 				case UVC_SET_CUR:
+					//printf("UVC_SET_CUR\n");
 					resp->length = 2;
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;
 					break;
 				case UVC_GET_CUR:
+					//printf("UVC_GET_CUR\n");
 					resp->length = 2;
 					resp->data[0] = pu_brightness_data[0];
 					resp->data[1] = pu_brightness_data[1];
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;
 					break;
-				case UVC_GET_MIN:
+				case UVC_GET_MIN:						// 设置最小值。最小值如何为负数呢？
 					resp->length = 2;
 					resp->data[0] = 0x00;
 					resp->data[1] = 0x00;
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;
 					break;
-				case UVC_GET_MAX:
+				case UVC_GET_MAX:						// 设置最大值。
 					resp->length = 2;
 					resp->data[0] = 0xFF;
 					resp->data[1] = 0x00;
@@ -1023,7 +1034,7 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
 					break;
 				case UVC_GET_RES:
 					resp->length = 2;
-					resp->data[0] = 0x01;
+					resp->data[0] = 0x01;				// 步进间隔
 					resp->data[1] = 0x00;
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;
@@ -1034,9 +1045,9 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;
 					break;
-				case UVC_GET_DEF:
-					resp->length = 2;
-					pu_brightness_data[0] = resp->data[0] = 0x00;
+				case UVC_GET_DEF:						// 设置默认值
+					resp->length = 2;					// 用2 个字节表达数据长度，高低位组合。
+					pu_brightness_data[0] = resp->data[0] = 0x20;	// 默认数值32
 					pu_brightness_data[1] = resp->data[1] = 0x00;
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;
@@ -1268,16 +1279,19 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
 				}
 				break;
 			}	// end of UVC_PU_
-			case UVC_PU_POWER_LINE_FREQUENCY_CONTROL:
+			case UVC_PU_POWER_LINE_FREQUENCY_CONTROL:	// 取值范围[1, 2]. 1=50Hz, 2=60Hz.
 			{
+				//printf("UVC_PU_POWER_LINE_FREQUENCY_CONTROL\n");
 				switch (req)
 				{
 				case UVC_SET_CUR:
+					//printf("UVC_SET_CUR\n");
 					resp->length = 2;
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;
 					break;
 				case UVC_GET_CUR:
+					//printf("UVC_GET_CUR\n");
 					resp->length = 2;
 					resp->data[0] = pu_power_line_frequency_data[0];
 					resp->data[1] = pu_power_line_frequency_data[1];
@@ -1285,6 +1299,7 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
 					pdev->request_error_code.length = 1;
 					break;
 				case UVC_GET_MIN:
+					//printf("UVC_GET_MIN\n");
 					resp->length = 2;
 					resp->data[0] = 0x00;
 					resp->data[1] = 0x00;
@@ -1292,6 +1307,7 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
 					pdev->request_error_code.length = 1;
 					break;
 				case UVC_GET_MAX:
+					//printf("UVC_GET_MAX\n");
 					resp->length = 2;
 					resp->data[0] = 0xFF;
 					resp->data[1] = 0x00;
@@ -1299,6 +1315,7 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
 					pdev->request_error_code.length = 1;
 					break;
 				case UVC_GET_RES:
+					//printf("UVC_GET_RES\n");
 					resp->length = 2;
 					resp->data[0] = 0x01;
 					resp->data[1] = 0x00;
@@ -1306,14 +1323,17 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
 					pdev->request_error_code.length = 1;
 					break;
 				case UVC_GET_INFO:
+					//printf("UVC_GET_INFO\n");
 					resp->length = 1;
 					resp->data[0] = 0x03;
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;
 					break;
 				case UVC_GET_DEF:
+					//printf("UVC_GET_DEF\n");
 					resp->length = 2;
-					pu_power_line_frequency_data[0] = resp->data[0] = 0x00;
+					// 0x01=50Hz, 0x02=60Hz, 默认50Hz.
+					pu_power_line_frequency_data[0] = resp->data[0] = 0x01;
 					pu_power_line_frequency_data[1] = resp->data[1] = 0x00;
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;

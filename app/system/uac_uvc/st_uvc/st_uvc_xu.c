@@ -12,6 +12,7 @@ reverse engineering and compiling of the contents of SigmaStar Confidential
 Information is unlawful and strictly prohibited. SigmaStar hereby reserves the
 rights to any and all damages, losses, costs and expenses resulting therefrom.
 */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -29,6 +30,13 @@ rights to any and all damages, losses, costs and expenses resulting therefrom.
 #include "st_uvc.h"
 #include "st_isp.h"
 #include "st_uvc_xu.h"
+
+// qanthink
+#include "mi_common_datatype.h"
+#include "mi_isp_3a_datatype.h"
+#include "mi_isp_datatype.h"
+#include "mi_isp_cus3a_api.h"
+// qanthink end
 
 extern UVC_DBG_LEVEL_e uvc_debug_level;
 extern int32_t UVC_DFU_Init(ST_UVC_Device_t *pdev, size_t fw_size);
@@ -892,12 +900,19 @@ int8_t usb_vc_ct_cs_out(ST_UVC_Device_t *pdev, uint8_t entity_id, uint8_t cs, ui
     return ST_UVC_SUCCESS;
 }
 
+// qanthink
+const static MI_ISP_DEV ispDevId = 0;
+const static MI_ISP_CHANNEL ispChnId = 0;
+static int ret = 0;
+// qanthink end
+
 int8_t usb_vc_pu_cs_out(ST_UVC_Device_t *pdev, uint8_t entity_id, uint8_t cs, uint32_t len, struct uvc_request_data *data)
 {
 	switch(cs)
 	{
 		case UVC_PU_BRIGHTNESS_CONTROL:
 		{
+			//printf("In usb_vc_pu_cs_out(), UVC_PU_BRIGHTNESS_CONTROL\n");
 			if(data->data[0] < 0x00 || data->data[0] > 0xFF || data->data[1] != 0x00)
 			{
 				pdev->request_error_code.data[0] = 0x04;
@@ -947,6 +962,7 @@ int8_t usb_vc_pu_cs_out(ST_UVC_Device_t *pdev, uint8_t entity_id, uint8_t cs, ui
 		}
 		case UVC_PU_POWER_LINE_FREQUENCY_CONTROL:
 		{
+			//printf("pu_cs_out: UVC_PU_POWER_LINE_FREQUENCY_CONTROL\n");
 			if(data->data[0] < 0x00 || data->data[0] > 0xFF || data->data[1] != 0x00)
 			{
 				pdev->request_error_code.data[0] = 0x04;
@@ -955,6 +971,33 @@ int8_t usb_vc_pu_cs_out(ST_UVC_Device_t *pdev, uint8_t entity_id, uint8_t cs, ui
 			}
 			pu_power_line_frequency_data[0] = data->data[0];
 			pu_power_line_frequency_data[1] = data->data[1];
+			//printf("_data[0] = %d\n", pu_power_line_frequency_data[0]);
+			//printf("_data[1] = %d\n", pu_power_line_frequency_data[1]);
+
+			if(0x01 == pu_power_line_frequency_data[0])
+			{
+				printf("Set flicker as 50Hz.\n");
+				MI_ISP_AE_FLICKER_TYPE_e eFlickerType = SS_AE_FLICKER_TYPE_50HZ;
+				ret = MI_ISP_AE_SetFlicker(ispDevId, ispChnId, &eFlickerType);
+				if(MI_ISP_FAILURE == ret)
+				{
+					printf("Fail to call MI_ISP_AE_SetFlicker() in usb_vc_pu_cs_out().\n");
+				}
+			}
+			else if(0x02 == pu_power_line_frequency_data[0])
+			{
+				printf("Set flicker as 60Hz.\n");
+				MI_ISP_AE_FLICKER_TYPE_e eFlickerType = SS_AE_FLICKER_TYPE_60HZ;
+				ret = MI_ISP_AE_SetFlicker(ispDevId, ispChnId, &eFlickerType);
+				if(MI_ISP_FAILURE == ret)
+				{
+					printf("Fail to call MI_ISP_AE_SetFlicker() in usb_vc_pu_cs_out().\n");
+				}
+			}
+			else
+			{
+				printf("In UVC_PU_POWER_LINE_FREQUENCY_CONTROL, bad data.\n");
+			}
 			break;
 		}
 		case UVC_PU_HUE_CONTROL:

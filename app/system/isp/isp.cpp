@@ -361,6 +361,50 @@ int Isp::setExpoAuto()
 }
 
 /*-----------------------------------------------------------------------------
+描--述：获取抗闪烁参数。
+参--数：
+返回值：成功，返回0. 失败，返回-1.
+注--意：
+-----------------------------------------------------------------------------*/
+int Isp::getFlicker(MI_ISP_AE_FLICKER_TYPE_e *peFlickerType)
+{
+	cout << "Call Isp::getFlicker()." << endl;
+	int ret = 0;
+
+	ret = MI_ISP_AE_GetFlicker(ispDevId, ispChnId, peFlickerType);
+	if(MI_ISP_FAILURE == ret)
+	{
+		cerr << "Fail to call MI_ISP_AE_GetFlicker() in Isp::getFlicker()." << endl;
+		return -1;
+	}
+
+	cout << "Call Isp::getFlicker() end." << endl;
+	return 0;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：设置抗闪烁参数。
+参--数：
+返回值：成功，返回0. 失败，返回-1.
+注--意：
+-----------------------------------------------------------------------------*/
+int Isp::setFlicker(MI_ISP_AE_FLICKER_TYPE_e *peFlickerType)
+{
+	cout << "Call Isp::setFlicker()." << endl;
+	int ret = 0;
+
+	ret = MI_ISP_AE_SetFlicker(ispDevId, ispChnId, peFlickerType);
+	if(MI_ISP_FAILURE == ret)
+	{
+		cerr << "Fail to call MI_ISP_AE_SetFlicker() in Isp::setFlicker()." << endl;
+		return -1;
+	}
+
+	cout << "Call Isp::setFlicker() end." << endl;
+	return 0;
+}
+
+/*-----------------------------------------------------------------------------
 描--述：设置曝光时间。
 参--数：expoTimeUs, 曝光时间，微妙级，取值范围[1, 1 000 000]
 返回值：成功，返回0. 失败：

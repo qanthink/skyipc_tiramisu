@@ -54,7 +54,7 @@ uint8_t pu_white_balance_temperature_data[2];	// 白平衡
 
 uint8_t pu_backlight_compensation_data[2];	// 逆光对比，背光补偿
 uint8_t pu_gain_data[2];					// 增益
-uint8_t pu_power_line_frequency_data[2];	// 电力线频率
+uint8_t pu_power_line_frequency_data[2];	// 电力线频率，取值范围：1=50Hz, 2=60Hz.
 
 // 数字变倍
 //#define UVC_PU_DIGITAL_MULTIPLIER_CONTROL		0x0e

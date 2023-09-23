@@ -7,6 +7,7 @@ xxx版权所有。
 #pragma once
 
 #include "mi_isp.h"
+#include "mi_isp_3a_datatype.h"
 
 /*
 	ISP 可以创建多个PORT？
@@ -44,6 +45,9 @@ public:
 
 	int setExpoTimeUs(unsigned int expoTimeUs);
 	int setExpoAuto();
+
+	int getFlicker(MI_ISP_AE_FLICKER_TYPE_e *peFlickerType);
+	int setFlicker(MI_ISP_AE_FLICKER_TYPE_e *peFlickerType);
 
 	#if 0	// ispahan
 	int getWDRParam(MI_ISP_IQ_WDR_TYPE_t *pWdrParam);
