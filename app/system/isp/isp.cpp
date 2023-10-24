@@ -623,6 +623,92 @@ int Isp::disableWDR()
 }
 
 /*-----------------------------------------------------------------------------
+描--述：
+参--数：
+返回值：成功，返回0. 失败：
+注--意：
+-----------------------------------------------------------------------------*/
+int Isp::setAwbCurCTWB(unsigned int u32CT)
+{
+	cout << "Call Isp::setAwbCurCTWB()." << endl;
+
+	MI_ISP_AWB_CTMWB_PARAM_t ctParam;
+	memset(&ctParam, 0, sizeof(MI_ISP_AWB_CTMWB_PARAM_t));
+	ctParam.u32CT = u32CT;
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_ISP_AWB_SetCTMwbAttr(ispDevId, ispChnId, &ctParam);
+	if(MI_IQSERVER_OK != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_AWB_SetCTMwbAttr() in Isp::setAwbCurCTWB(). " 
+			<< "s32Ret = " << s32Ret << endl;
+		return -1;
+	}
+	
+	cout << "Call Isp::setAwbCurCTWB() end." << endl;
+	return 0;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：
+参--数：
+返回值：成功，返回0. 失败：
+注--意：
+-----------------------------------------------------------------------------*/
+int Isp::getAwbAttr(MI_ISP_AWB_ATTR_TYPE_t *pAwbAttr)
+{
+	cout << "Call Isp::getAwbAttr()." << endl;
+
+	if(NULL == pAwbAttr)
+	{
+		cerr << "Fail to call Isp::getAwbAttr(). Argument has null value." << endl;
+		return -1;
+	}
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_ISP_AWB_GetAttr(ispDevId, ispChnId, pAwbAttr);
+	if(MI_IQSERVER_OK != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_AWB_GetAttr() in Isp::getAwbAttr(). " 
+			<< "s32Ret = " << s32Ret << endl;
+		return -1;
+	}
+	
+	cout << "Call Isp::getAwbAttr() end." << endl;
+	return 0;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：
+参--数：
+返回值：成功，返回0. 失败：
+注--意：
+-----------------------------------------------------------------------------*/
+int Isp::setAwbAttr(MI_ISP_AWB_ATTR_TYPE_t *pAwbAttr)
+{
+	cout << "Call Isp::setAwbAttr()." << endl;
+
+	if(NULL == pAwbAttr)
+	{
+		cerr << "Fail to call Isp::setAwbAttr(). Argument has null value." << endl;
+		return -1;
+	}
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_ISP_AWB_SetAttr(ispDevId, ispChnId, pAwbAttr);
+	if(MI_IQSERVER_OK != s32Ret)
+	{
+		cerr << "Fail to call MI_ISP_AWB_SetAttr() in Isp::setAwbAttr(). " 
+			<< "s32Ret = " << s32Ret << endl;
+		return -1;
+	}
+	
+	cout << "Call Isp::setAwbAttr() end." << endl;
+	return 0;
+}
+
+
+/*-----------------------------------------------------------------------------
 描--述：打开IQ Server
 参--数：
 返回值：成功，返回0.

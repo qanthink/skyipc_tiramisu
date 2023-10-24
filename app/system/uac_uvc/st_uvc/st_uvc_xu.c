@@ -1062,14 +1062,36 @@ int8_t usb_vc_pu_cs_out(ST_UVC_Device_t *pdev, uint8_t entity_id, uint8_t cs, ui
 		}
 		case UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL:
 		{
+			//printf("case UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL\n");
+			#if 0
 			if(data->data[0] < 0x00 || data->data[0] > 0xFF || data->data[1] != 0x00)
 			{
 				pdev->request_error_code.data[0] = 0x04;
 				pdev->request_error_code.length = 1;
 				return -1;
 			}
+			#endif
 			pu_white_balance_temperature_data[0] = data->data[0];
 			pu_white_balance_temperature_data[1] = data->data[1];
+
+			int whiteBalanceData = 0;
+			whiteBalanceData |= data->data[1];
+			whiteBalanceData <<= 8;
+			whiteBalanceData |= data->data[0];
+			//printf("whiteBalanceData = %d\n", whiteBalanceData);
+			whiteBalanceData -= 0x0400;
+			whiteBalanceData -= 4096;
+			//printf("whiteBalanceData = %d\n", whiteBalanceData);
+			whiteBalanceData = 256 * whiteBalanceData / 8192;
+			printf("whiteBalanceData = %d\n", whiteBalanceData);
+
+			MI_ISP_AWB_ATTR_TYPE_t awbAttr;
+			memset(&awbAttr, 0, sizeof(MI_ISP_AWB_ATTR_TYPE_t));
+			MI_ISP_AWB_GetAttr(ispDevId, ispChnId, &awbAttr);
+			awbAttr.stAutoParaAPI.u8RGStrength = 0x80 - whiteBalanceData;
+			awbAttr.stAutoParaAPI.u8BGStrength = 0x80 + whiteBalanceData;
+			MI_ISP_AWB_SetAttr(ispDevId, ispChnId, &awbAttr);
+
 			break;
 		}
 		case UVC_PU_WHITE_BALANCE_TEMPERATURE_AUTO_CONTROL:	// 未实现

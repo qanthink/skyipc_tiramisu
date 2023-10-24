@@ -1708,6 +1708,8 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
 				break;
 			}	// end of UVC_PU_
 			#if 1
+			// 白平衡，最小值1024K(0x0400), 偏红，最大值9216K(0x2400), 偏蓝。步进为1, 有8192 个步进。
+			// 默认值为中间值5120K(0x1400).
 			case UVC_PU_WHITE_BALANCE_TEMPERATURE_CONTROL:
 			{
 				switch (req)
@@ -1727,14 +1729,14 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
 				case UVC_GET_MIN:
 					resp->length = 2;
 					resp->data[0] = 0x00;
-					resp->data[1] = 0x00;
+					resp->data[1] = 0x04;
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;
 					break;
 				case UVC_GET_MAX:
 					resp->length = 2;
-					resp->data[0] = 0xFF;
-					resp->data[1] = 0x00;
+					resp->data[0] = 0x00;
+					resp->data[1] = 0x24;
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;
 					break;
@@ -1754,7 +1756,7 @@ static int8_t _UVC_Events_Process_Control(ST_UVC_Device_t *pdev,uint8_t req,uint
 				case UVC_GET_DEF:
 					resp->length = 2;
 					pu_white_balance_temperature_data[0] = resp->data[0] = 0x00;
-					pu_white_balance_temperature_data[1] = resp->data[1] = 0x00;
+					pu_white_balance_temperature_data[1] = resp->data[1] = 0x14;
 					pdev->request_error_code.data[0] = 0x00;
 					pdev->request_error_code.length = 1;
 					break;

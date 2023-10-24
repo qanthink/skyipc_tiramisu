@@ -57,6 +57,10 @@ public:
 	int enableWDR(int autoOrManual = 0);
 	int disableWDR();
 
+	int setAwbCurCTWB(unsigned int u32CT);		// 错误调用。该参数只能GET 不能SET.
+	int getAwbAttr(MI_ISP_AWB_ATTR_TYPE_t *pAwbAttr);
+	int setAwbAttr(MI_ISP_AWB_ATTR_TYPE_t *pAwbAttr);
+
 	int openIqServer();
 	int closeIqServer();
 	int setIqServerDataPath(char *iqFilePath);

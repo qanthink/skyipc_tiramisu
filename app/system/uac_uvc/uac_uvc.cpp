@@ -451,6 +451,11 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 		pIsp->setFlicker(&eFlickerType);
 	}
 
+	if(3840 <= format.width && 2160 <= format.height)
+	{
+		pSensor->setFps(25);
+	}
+
 	cout << "Call UVC_StartCapture() end." << endl;
 	return MI_SUCCESS;
 }
