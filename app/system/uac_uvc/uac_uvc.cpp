@@ -444,7 +444,8 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 		bFirstRun = false;
 		this_thread::sleep_for(chrono::milliseconds(100));
 		Isp *pIsp = Isp::getInstance();
-		pIsp->loadBinFile((char *)"/config/iqfile/268G_imx415_v3.bin");
+		//pIsp->loadBinFile((char *)"/config/iqfile/268G_imx415_v3.bin");
+		pIsp->loadBinFile((char *)"/config/iqfile/8836_USB_night.bin");
 		this_thread::sleep_for(chrono::milliseconds(100));
 
 		MI_ISP_AE_FLICKER_TYPE_e eFlickerType = SS_AE_FLICKER_TYPE_50HZ;
