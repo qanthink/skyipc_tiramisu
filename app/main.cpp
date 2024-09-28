@@ -7,6 +7,7 @@ xxx 版权所有。
 #include <thread>
 #include <iostream>
 #include <signal.h>
+#include <string.h>
 
 #include "sensor.h"
 #include "vif.h"
@@ -104,6 +105,12 @@ int main(int argc, const char *argv[])
 	// ISP 初始化，并绑定前级VIF.
 	Isp *pIsp = Isp::getInstance();
 	pSys->bindVif2Isp(Vif::vifDevId, Isp::ispDevId, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+	MI_ISP_OutPortParam_t stIspOutputParam;
+	memset(&stIspOutputParam, 0, sizeof(MI_ISP_OutPortParam_t));
+	pIsp->getInputPortCrop(&stIspOutputParam.stCropRect);
+	stIspOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
+	pIsp->setOutputPortParam(&stIspOutputParam);
+	pIsp->enablePort(Isp::ispPortId);
 
 	// 使用私有池
 	pSys->enablePrivatePool();
@@ -111,6 +118,7 @@ int main(int argc, const char *argv[])
 	// SCL 初始化，并绑定前级ISP.
 	Scl *pScl = Scl::getInstance();
 	//pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
+	pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 
 	// 创建DIVP 缩放、剪裁通道、格式转换
 	#if (1 == (USE_DIVP))
@@ -121,20 +129,15 @@ int main(int argc, const char *argv[])
 	Venc *pVenc = Venc::getInstance();
 	#if (1 == (USE_IPC))
 	// 创建主码流
+
 	#if (1 == (USE_VENC_MAIN))
 	pScl->createPort(Scl::sclPortMain, snrW, snrH);
-	MI_ISP_OutPortParam_t stIspOutputParam;
-	memset(&stIspOutputParam, 0, sizeof(MI_ISP_OutPortParam_t));
-	pIsp->getInputPortCrop(&stIspOutputParam.stCropRect);
-	stIspOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
-	pIsp->setOutputPortParam(&stIspOutputParam);
-	pIsp->enablePort(Isp::ispPortId);
-	pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
+
 	pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, snrW, snrH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, 1 * 1024);
-	pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
+	//Venc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
 	pVenc->startRecvPic(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn);
-	pSys->bindScl2Venc(Scl::sclPortMain, MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_HW_RING, snrH);
+	pSys->bindScl2Venc(Scl::sclPortMain, MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, snrH);
 	#if (1 == (USE_DIVP))
 	#else
 	#endif	// End of USE_DIVP
@@ -142,12 +145,13 @@ int main(int argc, const char *argv[])
 
 	// 创建子码流
 	#if (1 == (USE_VENC_SUB))
-	unsigned int subW = 1280;
+	unsigned int subW = 1024;
 	unsigned int subH = 720;
 	pScl->createPort(Scl::sclPortSub, subW, subH);
+
 	pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, subW, subH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 0.25 * 1024);
-	pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE);
+	//pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE);
 	pVenc->startRecvPic(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn);
 	pSys->bindScl2Venc(Scl::sclPortSub, MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, snrH);
 	#endif
@@ -155,9 +159,13 @@ int main(int argc, const char *argv[])
 	// 创建JPEG 码流
 	#if (1 == (USE_VENC_JPEG))
 	bool bIsJpeg = true;
-	pScl->createPort(Scl::sclPortJpeg, snrW, snrH, bIsJpeg);
-	pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, snrW, snrH);
-	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 50);;
+	unsigned int jpegW = 1024;
+	unsigned int jpegH = 720;
+
+	pScl->createPort(Scl::sclPortJpeg, jpegW, jpegH, bIsJpeg);
+	pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, jpegW, jpegH);
+	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 50);
+	//pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE);
 	pVenc->startRecvPic(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn);
 	pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 	#endif	// End of USE_VENC_JPEG

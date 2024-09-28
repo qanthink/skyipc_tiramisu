@@ -61,7 +61,8 @@ MI_S32 Scl::enable()
 	
 	//Port0->HWSCL2, //Port1->HWSCL3, //Port2->HWSCL4
 	//stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL2 | E_MI_SCL_HWSCL3 | E_MI_SCL_HWSCL4;
-	stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL2;
+	stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL2;	// 只有port0 生效；
+	stSclDevAttr.u32NeedUseHWOutPortMask = E_MI_SCL_HWSCL2 | E_MI_SCL_HWSCL3 | E_MI_SCL_HWSCL4;	// port0, 1, 2 均生效；
 	
 	s32Ret = MI_SCL_CreateDevice(sclDevId, &stSclDevAttr);
 	if(0 != s32Ret)
