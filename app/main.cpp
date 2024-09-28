@@ -151,7 +151,7 @@ int main(int argc, const char *argv[])
 
 	pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, subW, subH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 0.25 * 1024);
-	//pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE);
+	//Venc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
 	pVenc->startRecvPic(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn);
 	pSys->bindScl2Venc(Scl::sclPortSub, MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, snrH);
 	#endif
@@ -159,13 +159,15 @@ int main(int argc, const char *argv[])
 	// 创建JPEG 码流
 	#if (1 == (USE_VENC_JPEG))
 	bool bIsJpeg = true;
-	unsigned int jpegW = 1024;
-	unsigned int jpegH = 720;
+	//unsigned int jpegW = 2048 - 8;
+	//unsigned int jpegH = 1152;
+	unsigned int jpegW = 2048;
+	unsigned int jpegH = 1440;
 
 	pScl->createPort(Scl::sclPortJpeg, jpegW, jpegH, bIsJpeg);
 	pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, jpegW, jpegH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 50);
-	//pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencSubChn, E_MI_VENC_INPUT_MODE_NORMAL_FRMBASE);
+	//pVenc->setInputBufMode(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
 	pVenc->startRecvPic(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn);
 	pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 	#endif	// End of USE_VENC_JPEG

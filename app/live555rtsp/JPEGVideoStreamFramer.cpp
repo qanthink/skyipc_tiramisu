@@ -290,7 +290,18 @@ void JPEGVideoStreamSource::afterGettingFrame1(unsigned frameSize, unsigned numT
 
                         break;
                     }
-
+				#if 1	// 2024.9.28 意欲解决MJPEG 宽度无法超过2048的问题；
+				case DRI_MARKER: //DRI
+				{
+					int DRILength = 0;
+					
+					pFrame++;
+					DRILength = (pFrame[0] << 8) | pFrame[1];
+					pFrame += DRILength;
+					
+					break;
+				}
+				#endif
                 case EOI_MARKER: //EOI
 
                     envir() << "End of Image\n";

@@ -70,6 +70,7 @@ char const* JPEGVideoServerMediaSubsession::getAuxSDPLine(RTPSink* rtpSink, Fram
 	// Check whether the sink's 'auxSDPLine()' is ready:
 	// checkForAuxSDPLine(this);
 
+#if 0	// 2024.9.28 源码；
 	char const* addSDPFormat =
             "b=AS:%d\r\n"
             "a=framerate:%d\r\n"
@@ -91,6 +92,16 @@ char const* JPEGVideoServerMediaSubsession::getAuxSDPLine(RTPSink* rtpSink, Fram
 		    fDummySource->widthPixels(),
 		    fDummySource->heightPixels()
 	    );
+#else	// 2024.9.28 意欲解决MJPEG 宽度无法超过2048的问题；
+	char const* addSDPFormat = "a=x-dimensions:%d,%d\r\n";
+	unsigned addSDPFormatSize = strlen(addSDPFormat) + 4 + 4 + 1;
+	char* fmtp = new char[addSDPFormatSize];
+	
+	sprintf(fmtp, addSDPFormat,
+		fDummySource->widthPixels(),
+		fDummySource->heightPixels()
+	);
+#endif
 
 	fAuxSDPLine = strDup(fmtp);
 	delete[] fmtp;
