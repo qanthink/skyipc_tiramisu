@@ -407,7 +407,8 @@ void *routeVideo(int vencDev, int vencCh)
 	snprintf(videoName, nameSize, "%s%d", "video", vencCh);
 	cout << "live555 rtsp file : " << videoName << endl;
 	unlink(videoName);
-	MyNameFifo myNameFifo(videoName, Venc::superMaxISize);
+	unsigned int fileSize = 0;
+	//MyNameFifo myNameFifo(videoName, Venc::superMaxISize);
 
 	emEncType_t emEncType = emEncTypeInvalid;
 
@@ -415,17 +416,23 @@ void *routeVideo(int vencDev, int vencCh)
 	{
 		case E_MI_VENC_MODTYPE_H264E:
 			emEncType = emEncTypeH264;
+			fileSize = Venc::superMaxISize;
 			break;
 		case E_MI_VENC_MODTYPE_H265E:
 			emEncType = emEncTypeH265;
+			fileSize = Venc::superMaxISize;
 			break;
 		case E_MI_VENC_MODTYPE_JPEGE:
 			emEncType = emEncTypeJpeg;
+			fileSize = 512 * 1024;	// 512KB的管道文件，可以应对常规4K JPEG;
 			break;
 		default:
 			emEncType = emEncTypeH264;
+			fileSize = Venc::superMaxISize;
 			break;
 	}
+
+	MyNameFifo myNameFifo(videoName, fileSize);
 
 	int retRtsp = 0;
 	Live555Rtsp *pLive555Rtsp = Live555Rtsp::getInstance();
@@ -472,6 +479,7 @@ void *routeVideo(int vencDev, int vencCh)
 			#endif
 
 			#if (1 == (USE_RTSP_LIVESTREAM))
+			//cout << "stStream.pstPack[i].u32Len = " << stStream.pstPack[i].u32Len << endl;
 			if(0 == retRtsp)	// 正常返回值。
 			{
 				int fifoFd = myNameFifo.getFdWrite();
