@@ -20,6 +20,7 @@ private:
 
 public:
 	const static MI_SNR_PADID ePADId = 0;
+	const static MI_U32 u32DefFps = 30;
 
 	int enable();									// 启用sensor
 	int disable();									// 禁用sensor
@@ -41,7 +42,6 @@ private:
 		例如IMX415 可以出：3840x2160@30fps; 2560x1440@30fps; 1920x1080@60fps; */
 	const static MI_U8 u8SnrResIndex = 7;
 	
-	const static MI_U32 u32DefFps = 30;
 	const static MI_U32 u32PlaneID = 0;
 	const static MI_BOOL bEnableHDR = false;
 };

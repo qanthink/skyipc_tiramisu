@@ -220,7 +220,7 @@ int Scl::createPort(MI_SCL_PORT sclPortId, unsigned int widthOut, unsigned int h
 		return s32Ret;
 	}
 
-	MI_SCL_OutPortParam_t  stSclOutputParam;
+	MI_SCL_OutPortParam_t stSclOutputParam;
 	memset(&stSclOutputParam, 0x0, sizeof(MI_SCL_OutPortParam_t));
 	stSclOutputParam.stSCLOutCropRect.u16X = stIspOutputParam.stCropRect.u16X;
 	stSclOutputParam.stSCLOutCropRect.u16Y = stIspOutputParam.stCropRect.u16Y;

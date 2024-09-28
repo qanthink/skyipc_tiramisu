@@ -75,7 +75,6 @@ int main(int argc, const char *argv[])
 		统一采用C++单例设计模式，getInstance() 为各模块实例的统一入口函数。
 		单例模式不存在重复初始化的问题，在调用之初执行构造，后续其它地方的调用时间开销小。
 		风格尽量趋近于C, 避免C++11 及之后的高级用法。
-		库函数尽可能使用linux 标准库函数，高效，可调试性高。暂不考虑linux->otherOS 的移植问题。
 	*/
 
 	signal(SIGINT, sigHandler);
@@ -92,7 +91,7 @@ int main(int argc, const char *argv[])
 	// Sensor 初始化。
 	// 数据流向：sensor -> vif -> vpe(或ISP) -> (SCL) -> (DIVP) -> venc -> 应用处理。
 	Sensor *pSensor = Sensor::getInstance();
-	pSensor->setFps(30);
+	pSensor->setFps(pSensor->u32DefFps);
 
 	unsigned int snrW = 0;
 	unsigned int snrH = 0;
@@ -124,6 +123,13 @@ int main(int argc, const char *argv[])
 	// 创建主码流
 	#if (1 == (USE_VENC_MAIN))
 	pScl->createPort(Scl::sclPortMain, snrW, snrH);
+	MI_ISP_OutPortParam_t stIspOutputParam;
+	memset(&stIspOutputParam, 0, sizeof(MI_ISP_OutPortParam_t));
+	pIsp->getInputPortCrop(&stIspOutputParam.stCropRect);
+	stIspOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
+	pIsp->setOutputPortParam(&stIspOutputParam);
+	pIsp->enablePort(Isp::ispPortId);
+	pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 	pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, snrW, snrH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, 1 * 1024);
 	pVenc->setInputBufMode(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
