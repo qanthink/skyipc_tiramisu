@@ -351,7 +351,7 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 			}
 
 			int sclPortId = Scl::sclPortMain;
-			pScl->setOutputPortParam(sclPortId, &stSclOutputParam);
+			//pScl->setOutputPortParam(sclPortId, &stSclOutputParam);
 			pIsp->setOutputPortParam(&stIspOutputParam);
 
 			int vencDevId = 0;
@@ -413,7 +413,8 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 				pVenc->setInputSourceConf(vencDevId, vencChnId, &stVencInputSourceConfig);
 			}
 
-			MI_SYS_BindType_e eBindType = E_MI_SYS_BIND_TYPE_REALTIME;
+			//MI_SYS_BindType_e eBindType = E_MI_SYS_BIND_TYPE_REALTIME;
+			MI_SYS_BindType_e eBindType = E_MI_SYS_BIND_TYPE_FRAME_BASE;
 			MI_U32 bindParam = 0;
 			if((V4L2_PIX_FMT_H264 == format.fcc) || (V4L2_PIX_FMT_H265 == format.fcc))
 			{
@@ -421,11 +422,13 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 				bindParam = format.height;
 			}
 
-			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 3);
-			pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
-			pSys->bindScl2Venc(sclPortId, vencDevId, vencChnId, 30, 30, eBindType, bindParam);
-			pIsp->enablePort(Isp::ispPortId);
+			bool bIsJpeg = (V4L2_PIX_FMT_MJPEG == format.fcc);
+			pScl->createPort(sclPortId, format.width, format.height, bIsJpeg);
 			pScl->enablePort(sclPortId);
+			pSys->bindScl2Venc(sclPortId, vencDevId, vencChnId, 30, 30, eBindType, bindParam);
+			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 3);
+			//pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
+			//pIsp->enablePort(Isp::ispPortId);
 			pVenc->startRecvPic(vencDevId, vencChnId);
 			break;
 		}
@@ -503,17 +506,20 @@ static MI_S32 UVC_StopCapture(void *uvc)
 			vencDevId = (V4L2_PIX_FMT_MJPEG == pstDev->setting.fcc) ? MI_VENC_DEV_ID_JPEG_0 : MI_VENC_DEV_ID_H264_H265_0;
 			pVenc->stopRecvPic(vencDevId, vencChnId);
 
-			Scl *pScl = Scl::getInstance();
 			int sclPort = Scl::sclPortMain;
+			Sys *pSys = Sys::getInstance();
+			pSys->unbindScl2Venc(sclPort, vencDevId, vencChnId);
+			//pSys->unbindIsp2Scl(Isp::ispDevId, Scl::sclDevId);
+			
+			Scl *pScl = Scl::getInstance();
 			pScl->disablePort(sclPort);
+			pScl->destoryPort(sclPort);
 
+			#if 0
 			Isp *pIsp = Isp::getInstance();
 			int ispPort = Isp::ispPortId;
 			pIsp->disablePort(ispPort);
-
-			Sys *pSys = Sys::getInstance();
-			pSys->unbindScl2Venc(sclPort, vencDevId, vencChnId);
-			pSys->unbindIsp2Scl(Isp::ispDevId, Scl::sclDevId);
+			#endif
 
 			pVenc->destroyChn(vencDevId, vencChnId);
 			break;

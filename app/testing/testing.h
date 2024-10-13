@@ -88,7 +88,7 @@ xxx版权所有。
 
 // rtsp
 #define USE_RTSP_LOCALFILE	0
-#define USE_RTSP_LIVESTREAM	0
+#define USE_RTSP_LIVESTREAM	1
 #endif
 
 // wifi and avtp
@@ -96,7 +96,7 @@ xxx版权所有。
 #define USE_AVTP_VIDEO		0
 
 #define USE_SPI_PANEL		0
-#define TEST_ETHERNET		0
+#define USE_ETHERNET		1
 
 extern volatile bool g_bRunning;
 

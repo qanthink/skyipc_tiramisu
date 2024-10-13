@@ -16,7 +16,6 @@ xxx 版权所有。
 #include "venc.h"
 #include "sys.h"
 #include "testing.h"
-#include "ethernet.h"
 
 #if (1 == (USE_AI))
 #include "ai.hpp"
@@ -80,19 +79,6 @@ int main(int argc, const char *argv[])
 	*/
 
 	signal(SIGINT, sigHandler);
-
-	Ethernet *pEthernet = Ethernet::getInstance();
-	if(1 == pEthernet->getInterfaceRunningState("eth0"))
-	{
-		cout << "Eth0 is Running" << endl;
-	}
-	else
-	{
-		cout << "eth0 is maybe not running." << endl;
-	}
-	
-	return -1;
-	
 
 	/* ==================== 第一部分，系统初始化 ==================== */
 	#if (1 == (TEST_IRCUT))
@@ -183,7 +169,8 @@ int main(int argc, const char *argv[])
 	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 50);
 	//pVenc->setInputBufMode(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
 	pVenc->startRecvPic(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn);
-	pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
+	//pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
+	pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
 	#endif	// End of USE_VENC_JPEG
 	#endif	// End of USE_IPC
 
@@ -216,6 +203,24 @@ int main(int argc, const char *argv[])
 	// 测试UVC
 	#if (1 == (USE_UVC))
 	UacUvc *pUacUvc = UacUvc::getInstance();
+	#endif
+
+	#if (1 == (USE_UVC | USE_IPC))	// 同时使用UVC和IPC
+	bool bIsJpeg = true;
+	unsigned int jpegW = 2560;
+	unsigned int jpegH = 1440;
+
+	pScl->createPort(Scl::sclPortJpeg, jpegW, jpegH, bIsJpeg);
+	pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, jpegW, jpegH);
+	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 50);
+	//pVenc->setInputBufMode(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
+	pVenc->startRecvPic(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn);
+	//pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
+	pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+	#if 1
+
+	thread thVideoJpeg(routeVideo, (int)MI_VENC_DEV_ID_JPEG_0, (int)Venc::vencJpegChn);
+	#endif
 	#endif
 
 	/*
