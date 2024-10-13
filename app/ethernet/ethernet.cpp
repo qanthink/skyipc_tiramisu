@@ -38,11 +38,11 @@ Ethernet::~Ethernet()
 返回值：0, 网口不存在；非0, 网口存在；
 注--意：
 -----------------------------------------------------------------------------*/
-int Ethernet::isInterfaceExist(const char *interface)
+int Ethernet::getInterfaceExistState(const char *interface)
 {
 	if(NULL == interface)
 	{
-		cerr << "Fail to call Ethernet::getInterfaceIP(). Argument has null value." << endl;
+		cerr << "Fail to call Ethernet::getInterfaceExistState(). Argument has null value." << endl;
 		return 0;
 	}
 
@@ -97,11 +97,11 @@ int Ethernet::isInterfaceExist(const char *interface)
 返回值：0, Down; 1, Up; -1, error
 注--意：
 -----------------------------------------------------------------------------*/
-int Ethernet::isInterfaceUpOrDown(const char *interface)
+int Ethernet::getInterfaceUpDownState(const char *interface)
 {
 	if(NULL == interface)
 	{
-		cerr << "Fail to call Ethernet::getInterfaceIP(). Argument has null value." << endl;
+		cerr << "Fail to call Ethernet::getInterfaceUpDownState(). Argument has null value." << endl;
 		return -1;
 	}
 
@@ -122,24 +122,84 @@ int Ethernet::isInterfaceUpOrDown(const char *interface)
 	ret = ioctl(skfd, SIOCGIFFLAGS, &ifr);
 	if(-1 == ret)
 	{
-		//printf("%s:%d IOCTL error!\n", __FILE__, __LINE__);
-		//printf("Maybe ethernet inferface %s is not valid!", ifr.ifr_name);
+		printf("%s:%d IOCTL error!\n", __FILE__, __LINE__);
+		printf("Maybe ethernet inferface %s is not valid!", ifr.ifr_name);
 		close(skfd);
 		skfd = -1;
 		return -1;
 	}
 
-	close(skfd);
-	skfd = -1;
-
-	if(ifr.ifr_flags & IFF_RUNNING)
+	if(ifr.ifr_flags & IFF_UP)
 	{
-		return 1;
+		printf("%s is UP :)\n", ifr.ifr_name);
+		ret = 1;
 	}
 	else
 	{
-		return 0;
+		printf("%s is DOWN :)\n", ifr.ifr_name);
+		ret = 0;
 	}
+
+	close(skfd);
+	skfd = -1;
+
+	return ret;
+}
+
+/*-----------------------------------------------------------------------------
+描--述：判断网口是否在运行，通常用来判断网线是否插入；
+参--数：网口名称，例如eth0.
+返回值：0, Not Running, 网口未接入；1, Running, 网口接入；
+		-1, 出错；
+注--意：
+-----------------------------------------------------------------------------*/
+int Ethernet::getInterfaceRunningState(const char *interface)
+{
+	if(NULL == interface)
+	{
+		cerr << "Fail to call Ethernet::getInterfaceRunningState(). Argument has null value." << endl;
+		return -1;
+	}
+
+	int skfd = 0;
+	struct ifreq ifr;
+	memset(&ifr, 0, sizeof(struct ifreq));
+
+	skfd = socket(AF_INET, SOCK_DGRAM, 0);
+	if(-1 == skfd)
+	{
+		printf("%s:%d Open socket error!\n", __FILE__, __LINE__);
+		return -1;
+	}
+
+	strcpy(ifr.ifr_name, interface);
+
+	int ret = 0;
+	ret = ioctl(skfd, SIOCGIFFLAGS, &ifr);
+	if(-1 == ret)
+	{
+		printf("%s:%d IOCTL error!\n", __FILE__, __LINE__);
+		printf("Maybe ethernet inferface %s is not valid!", ifr.ifr_name);
+		close(skfd);
+		skfd = -1;
+		return -1;
+	}
+
+	if(ifr.ifr_flags & IFF_RUNNING)
+	{
+		printf("%s is running :)\n", ifr.ifr_name);
+		ret = 1;
+	}
+	else
+	{
+		printf("%s is not running :(\n", ifr.ifr_name);  
+		ret = 0;
+	}
+
+	close(skfd);
+	skfd = -1;
+
+	return ret;
 }
 
 /*-----------------------------------------------------------------------------

@@ -16,6 +16,7 @@ xxx 版权所有。
 #include "venc.h"
 #include "sys.h"
 #include "testing.h"
+#include "ethernet.h"
 
 #if (1 == (USE_AI))
 #include "ai.hpp"
@@ -79,6 +80,19 @@ int main(int argc, const char *argv[])
 	*/
 
 	signal(SIGINT, sigHandler);
+
+	Ethernet *pEthernet = Ethernet::getInstance();
+	if(1 == pEthernet->getInterfaceRunningState("eth0"))
+	{
+		cout << "Eth0 is Running" << endl;
+	}
+	else
+	{
+		cout << "eth0 is maybe not running." << endl;
+	}
+	
+	return -1;
+	
 
 	/* ==================== 第一部分，系统初始化 ==================== */
 	#if (1 == (TEST_IRCUT))

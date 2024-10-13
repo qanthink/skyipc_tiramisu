@@ -18,8 +18,9 @@ class Ethernet{
 public:
 	static Ethernet* getInstance();
 
-	int isInterfaceExist(const char *interface);
-	int isInterfaceUpOrDown(const char *interface);
+	int getInterfaceExistState(const char *interface);
+	int getInterfaceUpDownState(const char *interface);
+	int getInterfaceRunningState(const char *interface);
 	const char *getInterfaceIP(const char *interface, char *ipBuf, unsigned int ipBufLen);
 	int getKeywordValue(const char *inputBuf, unsigned int inputBufLen, char *outputBuf, unsigned int outputBufLen, const char *keyWordBegin, const char *keyWordEnd);
 	const char *getWifiSsid(const char *wpaConfPath, char *buf, unsigned int bufLen);
