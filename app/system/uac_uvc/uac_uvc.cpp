@@ -351,7 +351,6 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 			}
 
 			int sclPortId = Scl::sclPortMain;
-			//pScl->setOutputPortParam(sclPortId, &stSclOutputParam);
 			pIsp->setOutputPortParam(&stIspOutputParam);
 
 			int vencDevId = 0;
@@ -413,22 +412,31 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 				pVenc->setInputSourceConf(vencDevId, vencChnId, &stVencInputSourceConfig);
 			}
 
-			//MI_SYS_BindType_e eBindType = E_MI_SYS_BIND_TYPE_REALTIME;
-			MI_SYS_BindType_e eBindType = E_MI_SYS_BIND_TYPE_FRAME_BASE;
 			MI_U32 bindParam = 0;
+			//MI_SYS_BindType_e eBindType = E_MI_SYS_BIND_TYPE_REALTIME;		// 常用；
+			MI_SYS_BindType_e eBindType = E_MI_SYS_BIND_TYPE_FRAME_BASE;	// 创建两路JPEG 用；
+
 			if((V4L2_PIX_FMT_H264 == format.fcc) || (V4L2_PIX_FMT_H265 == format.fcc))
 			{
 				eBindType = E_MI_SYS_BIND_TYPE_HW_RING;
 				bindParam = format.height;
+			}
+			else if(V4L2_PIX_FMT_MJPEG == format.fcc)
+			{
+				eBindType = E_MI_SYS_BIND_TYPE_FRAME_BASE;
+				bindParam = 0;
+			}
+			else
+			{
+				eBindType = E_MI_SYS_BIND_TYPE_FRAME_BASE;
+				bindParam = 0;
 			}
 
 			bool bIsJpeg = (V4L2_PIX_FMT_MJPEG == format.fcc);
 			pScl->createPort(sclPortId, format.width, format.height, bIsJpeg);
 			pScl->enablePort(sclPortId);
 			pSys->bindScl2Venc(sclPortId, vencDevId, vencChnId, 30, 30, eBindType, bindParam);
-			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 3);
-			//pSys->bindIsp2Scl(Isp::ispDevId, Scl::sclDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
-			//pIsp->enablePort(Isp::ispPortId);
+			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 2);
 			pVenc->startRecvPic(vencDevId, vencChnId);
 			break;
 		}
@@ -491,9 +499,9 @@ static MI_S32 UVC_StopCapture(void *uvc)
 		{
 			#if 0
 			STCHECKRESULT(MI_SCL_DisableOutputPort(SclDevId, SclChnId, SclPortId));
-            if(!g_bEnableHDMI)STCHECKRESULT(MI_ISP_DisableOutputPort(IspDevId, IspChnId, IspPortId));
-            if(!g_bEnableHDMI)STCHECKRESULT(ST_Sys_UnBind(&stBindInfo[0]));
-            #endif
+			if(!g_bEnableHDMI)STCHECKRESULT(MI_ISP_DisableOutputPort(IspDevId, IspChnId, IspPortId));
+			if(!g_bEnableHDMI)STCHECKRESULT(ST_Sys_UnBind(&stBindInfo[0]));
+			#endif
 			break;
 		}
 		case V4L2_PIX_FMT_MJPEG:
@@ -505,23 +513,16 @@ static MI_S32 UVC_StopCapture(void *uvc)
 			Venc *pVenc = Venc::getInstance();
 			vencDevId = (V4L2_PIX_FMT_MJPEG == pstDev->setting.fcc) ? MI_VENC_DEV_ID_JPEG_0 : MI_VENC_DEV_ID_H264_H265_0;
 			pVenc->stopRecvPic(vencDevId, vencChnId);
+			pVenc->destroyChn(vencDevId, vencChnId);
 
 			int sclPort = Scl::sclPortMain;
 			Sys *pSys = Sys::getInstance();
 			pSys->unbindScl2Venc(sclPort, vencDevId, vencChnId);
-			//pSys->unbindIsp2Scl(Isp::ispDevId, Scl::sclDevId);
 			
 			Scl *pScl = Scl::getInstance();
 			pScl->disablePort(sclPort);
 			pScl->destoryPort(sclPort);
 
-			#if 0
-			Isp *pIsp = Isp::getInstance();
-			int ispPort = Isp::ispPortId;
-			pIsp->disablePort(ispPort);
-			#endif
-
-			pVenc->destroyChn(vencDevId, vencChnId);
 			break;
 		}
 		default:

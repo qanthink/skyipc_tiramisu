@@ -169,8 +169,7 @@ int main(int argc, const char *argv[])
 	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 50);
 	//pVenc->setInputBufMode(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
 	pVenc->startRecvPic(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn);
-	//pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
-	pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+	pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 	#endif	// End of USE_VENC_JPEG
 	#endif	// End of USE_IPC
 
@@ -207,20 +206,17 @@ int main(int argc, const char *argv[])
 
 	#if (1 == (USE_UVC | USE_IPC))	// 同时使用UVC和IPC
 	bool bIsJpeg = true;
-	unsigned int jpegW = 2560;
-	unsigned int jpegH = 1440;
+	unsigned int jpegW = 3840;
+	unsigned int jpegH = 2160;
 
 	pScl->createPort(Scl::sclPortJpeg, jpegW, jpegH, bIsJpeg);
 	pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, jpegW, jpegH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 50);
-	//pVenc->setInputBufMode(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, E_MI_VENC_INPUT_MODE_RING_ONE_FRM);
+	pVenc->setMaxStreamCnt(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 2);
 	pVenc->startRecvPic(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn);
-	//pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);
 	pSys->bindScl2Venc(Scl::sclPortJpeg, MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
-	#if 1
 
 	thread thVideoJpeg(routeVideo, (int)MI_VENC_DEV_ID_JPEG_0, (int)Venc::vencJpegChn);
-	#endif
 	#endif
 
 	/*
@@ -392,6 +388,11 @@ int main(int argc, const char *argv[])
 
 	#if (1 == (USE_UVC))
 	pUacUvc->stopUvc();
+	#endif
+
+	#if (1 == (USE_UVC | USE_IPC))	// 同时使用UVC和IPC
+	thVideoJpeg.join();
+	cout << "vencJpeg join." << endl;
 	#endif
 
 	#if(1 == (USE_IQ_SERVER))
