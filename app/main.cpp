@@ -161,8 +161,8 @@ int main(int argc, const char *argv[])
 	bool bIsJpeg = true;
 	//unsigned int jpegW = 2048 - 8;
 	//unsigned int jpegH = 1152;
-	unsigned int jpegW = 3840;
-	unsigned int jpegH = 2160;
+	unsigned int jpegW = 2560;
+	unsigned int jpegH = 1440;
 
 	pScl->createPort(Scl::sclPortJpeg, jpegW, jpegH, bIsJpeg);
 	pVenc->createJpegStream(MI_VENC_DEV_ID_JPEG_0, Venc::vencJpegChn, jpegW, jpegH);

@@ -27,7 +27,7 @@ add_subdirectory(testing)
 add_subdirectory(mylib)
 #add_subdirectory(audio_player)
 #add_subdirectory(spipanel)
-#add_subdirectory(ethernet)
+add_subdirectory(ethernet)
 #add_subdirectory(sky_avtp)
 
 #设置头文件搜索目录，本地
@@ -60,7 +60,7 @@ include_directories(
 	mylib/myqueue
 	#audio_player
 	#spipanel
-	#ethernet
+	ethernet
 	#sky_avtp
 )
 
@@ -74,7 +74,7 @@ link_directories(
 	mylib
 	#audio_player
 	#spipanel
-	#ethernet
+	ethernet
 	#sky_avtp
 )
 
@@ -96,7 +96,8 @@ target_link_libraries(${PROJECT_NAME}
 	live555rtsp
 	#ffmpeg 
 	mylib
-	#spipanel ethernet 
+	#spipanel
+	ethernet 
 	#sky_avtp
 	#audio_player
 	pthread
