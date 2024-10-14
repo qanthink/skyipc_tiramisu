@@ -247,7 +247,8 @@ int Scl::createPort(MI_SCL_PORT sclPortId, unsigned int widthOut, unsigned int h
 	//stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
 	if(bIsJpeg)
 	{
-		stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV422_YUYV;
+		//stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV422_YUYV;			// MJPEG YUV422废内存；
+		stSclOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;	// MJPEG YUV420省内存；
 	}
 	else
 	{

@@ -424,7 +424,7 @@ void *routeVideo(int vencDev, int vencCh)
 			break;
 		case E_MI_VENC_MODTYPE_JPEGE:
 			emEncType = emEncTypeJpeg;
-			fileSize = 512 * 1024;	// 512KB的管道文件，可以应对常规4K JPEG;
+			fileSize = 1024 * 1024;	// 512KB的管道文件，可以应对常规4K JPEG; 1MB 完全足够；
 			break;
 		default:
 			emEncType = emEncTypeH264;
@@ -1185,13 +1185,15 @@ int interAction()
 			Isp *pIsp = Isp::getInstance();
 			pIrCutLed->closeLedIr();
 			pIrCutLed->openFilter();
-			pIsp->loadBinFile((char *)"/config/iqfile/335_imx291_day.bin");
+			//pIsp->loadBinFile((char *)"/config/iqfile/335_imx291_day.bin");
+			pIsp->loadBinFile((char *)"/config/iqfile/268G_imx415_v3.bin");
 		}
 		else if(1 == cmdVal)
 		{
 			IrCutLed *pIrCutLed = IrCutLed::getInstance();
 			Isp *pIsp = Isp::getInstance();
-			pIsp->loadBinFile((char *)"/config/iqfile/335_imx291_night.bin");
+			//pIsp->loadBinFile((char *)"/config/iqfile/335_imx291_night.bin");
+			pIsp->loadBinFile((char *)"/config/iqfile/8836_USB_night.bin");
 			pIrCutLed->closeFilter();
 			pIrCutLed->openLedIr();
 		}

@@ -781,3 +781,35 @@ MI_S32 Sys::disablePrivatePool()
 	return s32Ret;
 }
 
+/*-----------------------------------------------------------------------------
+描--述：设置SCL端口深度
+参--数：u32DevId, u32PortId, 设备ID和端口ID.
+		u32UserFrameDepth, u32BufQueueDepth 用户深度和队列深度；
+返回值：
+注--意：
+-----------------------------------------------------------------------------*/
+MI_S32 Sys::setSclPortDepth(MI_U32        u32DevId, MI_U32 u32PortId, MI_U32 u32UserFrameDepth, MI_U32 u32BufQueueDepth)
+{
+	cout << "Call Sys::setSclPortDepth(). " << endl;
+
+	MI_SYS_ChnPort_t stChnPort;
+	memset(&stChnPort, 0x0, sizeof(MI_SYS_ChnPort_t));
+
+	stChnPort.eModId = E_MI_MODULE_ID_SCL;
+	stChnPort.u32DevId = u32DevId;
+	stChnPort.u32ChnId = 0;
+	stChnPort.u32PortId = u32PortId;
+
+	MI_S32 s32Ret = 0;
+	s32Ret = MI_SYS_SetChnOutputPortDepth(u16SocId, &stChnPort, u32UserFrameDepth, u32BufQueueDepth);
+	if(0 != s32Ret)
+	{
+		cerr << "Fail to call MI_SYS_SetChnOutputPortDepth() in Sys::setSclPortDepth(). "
+			<< "s32Ret = " << hex << s32Ret << dec << endl;
+		return s32Ret;
+	}
+	
+	cout << "Call Sys::setSclPortDepth() end. " << endl;
+	return s32Ret;
+}
+

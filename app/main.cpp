@@ -104,13 +104,16 @@ int main(int argc, const char *argv[])
 
 	// ISP 初始化，并绑定前级VIF.
 	Isp *pIsp = Isp::getInstance();
-	pSys->bindVif2Isp(Vif::vifDevId, Isp::ispDevId, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+	//pSys->bindVif2Isp(Vif::vifDevId, Isp::ispDevId, 30, 30, E_MI_SYS_BIND_TYPE_FRAME_BASE, 0);
+	pSys->bindVif2Isp(Vif::vifDevId, Isp::ispDevId, 30, 30, E_MI_SYS_BIND_TYPE_REALTIME, 0);	// Raletime 省内存；
 	MI_ISP_OutPortParam_t stIspOutputParam;
 	memset(&stIspOutputParam, 0, sizeof(MI_ISP_OutPortParam_t));
 	pIsp->getInputPortCrop(&stIspOutputParam.stCropRect);
 	stIspOutputParam.ePixelFormat = E_MI_SYS_PIXEL_FRAME_YUV_SEMIPLANAR_420;
 	pIsp->setOutputPortParam(&stIspOutputParam);
 	pIsp->enablePort(Isp::ispPortId);
+	this_thread::sleep_for(chrono::milliseconds(500));
+	pIsp->loadBinFile((char *)"/config/iqfile/268G_imx415_v3.bin");
 
 	// 使用私有池
 	pSys->enablePrivatePool();
@@ -132,6 +135,10 @@ int main(int argc, const char *argv[])
 
 	#if (1 == (USE_VENC_MAIN))
 	pScl->createPort(Scl::sclPortMain, snrW, snrH);
+	
+	MI_U32 u32BufQueueDepth = 0;
+	u32BufQueueDepth = 3;
+	pSys->setSclPortDepth(Scl::sclDevId, Scl::sclPortMain, 0, u32BufQueueDepth);	// 原厂建议设置buf depth = 3;
 
 	pVenc->createH264Stream(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, snrW, snrH);
 	pVenc->changeBitrate(MI_VENC_DEV_ID_H264_H265_0, Venc::vencMainChn, 1 * 1024);

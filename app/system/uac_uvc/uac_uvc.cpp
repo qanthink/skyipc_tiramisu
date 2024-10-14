@@ -435,6 +435,11 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 			bool bIsJpeg = (V4L2_PIX_FMT_MJPEG == format.fcc);
 			pScl->createPort(sclPortId, format.width, format.height, bIsJpeg);
 			pScl->enablePort(sclPortId);
+
+			MI_U32 u32BufQueueDepth = 0;
+			u32BufQueueDepth = 3;
+			pSys->setSclPortDepth(Scl::sclDevId, sclPortId, 0, u32BufQueueDepth);	// 原厂建议设置buf depth = 3;
+			
 			pSys->bindScl2Venc(sclPortId, vencDevId, vencChnId, 30, 30, eBindType, bindParam);
 			pVenc->setMaxStreamCnt(vencDevId, vencChnId, 2);
 			pVenc->startRecvPic(vencDevId, vencChnId);
@@ -453,10 +458,10 @@ static MI_S32 UVC_StartCapture(void *uvc, Stream_Params_t format)
 	{
 		cout << "First run app, load iqfile." << endl;
 		bFirstRun = false;
-		this_thread::sleep_for(chrono::milliseconds(100));
+		//this_thread::sleep_for(chrono::milliseconds(100));
 		Isp *pIsp = Isp::getInstance();
 		//pIsp->loadBinFile((char *)"/config/iqfile/268G_imx415_v3.bin");
-		pIsp->loadBinFile((char *)"/config/iqfile/8836_USB_night.bin");
+		//pIsp->loadBinFile((char *)"/config/iqfile/8836_USB_night.bin");
 		this_thread::sleep_for(chrono::milliseconds(100));
 
 		MI_ISP_AE_FLICKER_TYPE_e eFlickerType = SS_AE_FLICKER_TYPE_50HZ;

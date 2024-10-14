@@ -54,5 +54,7 @@ public:
 	// 私有池
 	MI_S32 enablePrivatePool();
 	MI_S32 disablePrivatePool();
+
+	MI_S32 setSclPortDepth(MI_U32        u32DevId, MI_U32 u32PortId, MI_U32 u32UserFrameDepth, MI_U32 u32BufQueueDepth);
 };
 
